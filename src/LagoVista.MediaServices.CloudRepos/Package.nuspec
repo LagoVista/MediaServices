@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>LagoVista.MediaServices.CloudRepos</id>
+    <version>2.1.773-beta0712</version>
+    <authors>Software Logistics, LLC</authors>
+    <owners>Software Logistics, LLC</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectUrl>https://github.com/LagoVista/DeviceAdmin</projectUrl>
+    <iconUrl>http://bytemaster.blob.core.windows.net/icons/LagoVistaIcon.png</iconUrl>
+    <description>Provides long term persistence for working with Documents, Images and videos in the LagoVista IoT and Devices Framework</description>
+    <releaseNotes>Initial and Unstable Release</releaseNotes>
+    <copyright>Copyright 2017</copyright>
+    <tags>LagoVista HomeAutomation IoT</tags>
+  </metadata>
+  <files>
+    <file src="bin\release\netstandard2.0\*.dll" target="lib\netstandard2.0" />
+  </files>
+</package>
