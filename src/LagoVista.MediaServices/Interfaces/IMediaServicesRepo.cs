@@ -16,6 +16,9 @@ namespace LagoVista.MediaServices.Interfaces
 
     public interface IMediaServicesConnectionSettings
     {
-        IConnectionSettings DeviceTypeResourceMediaConnection { get; }
+        IConnectionSettings MediaLibraryConnection { get; }
+        IConnectionSettings MediaStorageConnection { get; }
+
+        bool ShouldConsolidateCollections { get; }
     }
 }

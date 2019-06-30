@@ -15,11 +15,20 @@ using System.IO;
 
 namespace LagoVista.MediaServices.Rest.Controllers
 {
+    /// <summary>
+    /// The Media Controller will let users upload images and download them.
+    /// </summary>
     public class MediaController : LagoVistaBaseController
     {
 
         IMediaServicesManager _mediaServicesManager;
 
+        /// <summary>
+        /// The Media Controller will let users upload images and download them.
+        /// </summary>
+        /// <param name="userManager"></param>
+        /// <param name="logger"></param>
+        /// <param name="mediaServiceManager"></param>
         public MediaController(UserManager<AppUser> userManager, IAdminLogger logger, IMediaServicesManager mediaServiceManager) : base(userManager, logger)
         {
             _mediaServicesManager = mediaServiceManager;
@@ -37,6 +46,12 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return response;
         }
 
+        /// <summary>
+        /// Upload a media resource.
+        /// </summary>
+        /// <param name="id">unique id of the resource.</param>
+        /// <param name="file">file to be uploaded.</param>
+        /// <returns></returns>
         [HttpPost("/api/media/resources/{id}")]
         public async Task<InvokeResult<MediaResource>> UploadMediaAsync(string id, IFormFile file)
         {
@@ -46,8 +61,13 @@ namespace LagoVista.MediaServices.Rest.Controllers
             }
         }
 
+        /// <summary>
+        /// Download a media item
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet("/api/media/resources/{id}")]
-        public async Task<IActionResult> DownloadMedia(string deviceTypeId, string id)
+        public async Task<IActionResult> DownloadMedia(string id)
         {
             var response = await _mediaServicesManager.GetResourceMediaAsync(id, OrgEntityHeader, UserEntityHeader);
 

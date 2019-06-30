@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -10,11 +10,11 @@
     <DocumentationFile>bin\Release\netstandard2.0\LagoVista.MediaServices.Rest.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="LagoVista.Core" Version="2.1.773-beta0712" />
-    <PackageReference Include="LagoVista.IoT.Logging" Version="2.1.773-beta0712" />
-    <PackageReference Include="LagoVista.IoT.Web.Common" Version="2.1.773-beta0712" />
-    <PackageReference Include="LagoVista.UserAdmin" Version="2.1.773-beta0712" />
-    <PackageReference Include="LagoVista.UserAdmin.Models" Version="2.1.773-beta0712" />
+    <PackageReference Include="LagoVista.Core" Version="2.1.774-beta0711" />
+    <PackageReference Include="LagoVista.IoT.Logging" Version="2.1.774-beta0711" />
+    <PackageReference Include="LagoVista.IoT.Web.Common" Version="2.1.774-beta0711" />
+    <PackageReference Include="LagoVista.UserAdmin" Version="2.1.774-beta0711" />
+    <PackageReference Include="LagoVista.UserAdmin.Models" Version="2.1.774-beta0711" />
     <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />

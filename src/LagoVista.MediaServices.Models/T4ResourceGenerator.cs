@@ -1,4 +1,4 @@
-﻿/*6/29/2019 10:55:50*/
+﻿/*6/29/2019 18:47:27*/
 using System.Globalization;
 using System.Reflection;
 
@@ -108,15 +108,21 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:Common_ValidationErrors
 
 		public static string Common_ValidationErrors { get { return GetResourceString("Common_ValidationErrors"); } }
-//Resources:MediaServicesResources:MedaiResource_Description
+//Resources:MediaServicesResources:MediaLibrary_Description
 
-		public static string MedaiResource_Description { get { return GetResourceString("MedaiResource_Description"); } }
-//Resources:MediaServicesResources:MedaiResource_Title
+		public static string MediaLibrary_Description { get { return GetResourceString("MediaLibrary_Description"); } }
+//Resources:MediaServicesResources:MediaLibrary_Help
 
-		public static string MedaiResource_Title { get { return GetResourceString("MedaiResource_Title"); } }
+		public static string MediaLibrary_Help { get { return GetResourceString("MediaLibrary_Help"); } }
+//Resources:MediaServicesResources:MediaLibrary_Title
+
+		public static string MediaLibrary_Title { get { return GetResourceString("MediaLibrary_Title"); } }
 //Resources:MediaServicesResources:MediaResource_ContentLength
 
 		public static string MediaResource_ContentLength { get { return GetResourceString("MediaResource_ContentLength"); } }
+//Resources:MediaServicesResources:MediaResource_Description
+
+		public static string MediaResource_Description { get { return GetResourceString("MediaResource_Description"); } }
 //Resources:MediaServicesResources:MediaResource_Help
 
 		public static string MediaResource_Help { get { return GetResourceString("MediaResource_Help"); } }
@@ -129,6 +135,12 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:MediaResource_Link_Help
 
 		public static string MediaResource_Link_Help { get { return GetResourceString("MediaResource_Link_Help"); } }
+//Resources:MediaServicesResources:MediaResource_MediaLibrary
+
+		public static string MediaResource_MediaLibrary { get { return GetResourceString("MediaResource_MediaLibrary"); } }
+//Resources:MediaServicesResources:MediaResource_Title
+
+		public static string MediaResource_Title { get { return GetResourceString("MediaResource_Title"); } }
 //Resources:MediaServicesResources:MediaResources_FileName
 
 		public static string MediaResources_FileName { get { return GetResourceString("MediaResources_FileName"); } }
@@ -183,13 +195,17 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string Common_Resources = "Common_Resources";
 			public const string Common_UniqueId = "Common_UniqueId";
 			public const string Common_ValidationErrors = "Common_ValidationErrors";
-			public const string MedaiResource_Description = "MedaiResource_Description";
-			public const string MedaiResource_Title = "MedaiResource_Title";
+			public const string MediaLibrary_Description = "MediaLibrary_Description";
+			public const string MediaLibrary_Help = "MediaLibrary_Help";
+			public const string MediaLibrary_Title = "MediaLibrary_Title";
 			public const string MediaResource_ContentLength = "MediaResource_ContentLength";
+			public const string MediaResource_Description = "MediaResource_Description";
 			public const string MediaResource_Help = "MediaResource_Help";
 			public const string MediaResource_IsFileUpload = "MediaResource_IsFileUpload";
 			public const string MediaResource_Link = "MediaResource_Link";
 			public const string MediaResource_Link_Help = "MediaResource_Link_Help";
+			public const string MediaResource_MediaLibrary = "MediaResource_MediaLibrary";
+			public const string MediaResource_Title = "MediaResource_Title";
 			public const string MediaResources_FileName = "MediaResources_FileName";
 			public const string MediaResources_MimeType = "MediaResources_MimeType";
 			public const string MediaResources_ResourceType = "MediaResources_ResourceType";

@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace LagoVista.MediaServices.CloudRepos
 {
-    public class MediaServicesRepo
+    public class MediaServicesRepo : IMediaServicesRepo
     {
         ILogger _logger;
         IConnectionSettings _blobConnectionSettings;
@@ -20,13 +20,13 @@ namespace LagoVista.MediaServices.CloudRepos
         public MediaServicesRepo(IAdminLogger adminLogger, IMediaServicesConnectionSettings settings)
         {
             _logger = adminLogger;
-            _blobConnectionSettings = settings.DeviceTypeResourceMediaConnection;
+            _blobConnectionSettings = settings.MediaStorageConnection;
         }
 
         public MediaServicesRepo(IInstanceLogger instanceLogger, IMediaServicesConnectionSettings settings)
         {
             _logger = instanceLogger;
-            _blobConnectionSettings = settings.DeviceTypeResourceMediaConnection;
+            _blobConnectionSettings = settings.MediaStorageConnection;
         }
 
         private CloudBlobClient CreateBlobClient(IConnectionSettings settings)

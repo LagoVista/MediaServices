@@ -24,8 +24,8 @@ namespace LagoVista.MediaServices.Models
         Other,
     }
 
-    [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MedaiResource_Title, MediaServicesResources.Names.MediaResource_Help , MediaServicesResources.Names.MedaiResource_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources))]
-    public class MediaResource: IValidateable 
+    [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResource_Title, MediaServicesResources.Names.MediaResource_Help, MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources))]
+    public class MediaResource : IValidateable
     {
 
         public const string DeviceResourceTypes_Manual = "manual";
@@ -44,20 +44,23 @@ namespace LagoVista.MediaServices.Models
         public string Id { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.MediaResources_FileName, FieldType: FieldTypes.Text, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public string FileName { get; set; }
-        [FormField(LabelResource: MediaServicesResources.Names.Common_Key, IsRequired:true, FieldType: FieldTypes.Key, ResourceType: typeof(MediaServicesResources))]
+        [FormField(LabelResource: MediaServicesResources.Names.Common_Key, IsRequired: true, FieldType: FieldTypes.Key, ResourceType: typeof(MediaServicesResources))]
         public string Key { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_IsFileUpload, FieldType: FieldTypes.CheckBox, ResourceType: typeof(MediaServicesResources))]
         public bool IsFileUpload { get; set; }
-        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Link, HelpResource: MediaServicesResources.Names.MediaResource_Link_Help,  FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Link, HelpResource: MediaServicesResources.Names.MediaResource_Link_Help, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
         public string Link { get; set; }
-        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_ContentLength, FieldType: FieldTypes.Integer,IsUserEditable:false, ResourceType: typeof(MediaServicesResources))]
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_ContentLength, FieldType: FieldTypes.Integer, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public long ContentSize { get; set; }
-        [FormField(LabelResource: MediaServicesResources.Names.MediaResources_MimeType,  IsUserEditable:false, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResources_MimeType, IsUserEditable: false, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
         public string MimeType { get; set; }
-        [FormField(LabelResource: MediaServicesResources.Names.Common_Name, IsRequired:true, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
+        [FormField(LabelResource: MediaServicesResources.Names.Common_Name, IsRequired: true, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
         public string Name { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.Common_Description, FieldType: FieldTypes.MultiLineText, ResourceType: typeof(MediaServicesResources))]
         public string Description { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_MediaLibrary, FieldType: FieldTypes.Text, IsRequired:true, IsUserEditable:false, ResourceType: typeof(MediaServicesResources))]
+        public EntityHeader MediaLibrary {get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.MediaResources_ResourceType, WaterMark: MediaServicesResources.Names.MediaResources_ResourceType_Select, IsRequired:true, EnumType:typeof(MediaResourceTypes), FieldType: FieldTypes.Picker, ResourceType: typeof(MediaServicesResources))]
         public EntityHeader<MediaResourceTypes> ResourceType { get; set; }

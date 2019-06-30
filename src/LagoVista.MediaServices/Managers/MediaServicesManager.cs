@@ -62,8 +62,8 @@ namespace LagoVista.MediaServices.Managers
 
             return new MediaItemResponse()
             {
-                ContentType = deviceResource.MimeType,
-                FileName = deviceResource.FileName,
+              ///  ContentType = deviceResource.MimeType,
+               // FileName = deviceResource.FileName,
                 ImageBytes = mediaItem.Result
             };
         }
