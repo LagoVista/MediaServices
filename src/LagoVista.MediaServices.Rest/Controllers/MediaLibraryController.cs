@@ -37,7 +37,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// Medial Library - Add
         /// </summary>
         /// <param name="medialibrary"></param>
-        [HttpPost("/api/medialibrary")]
+        [HttpPost("/api/media/library")]
         public Task<InvokeResult> AddMediaLibraryAsync([FromBody] MediaLibrary medialibrary)
         {
             return _mediaLibraryManager.AddMediaLibraryAsync(medialibrary, OrgEntityHeader, UserEntityHeader);
@@ -48,7 +48,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// </summary>
         /// <param name="medialibrary"></param>
         /// <returns></returns>
-        [HttpPut("/api/medialibrary")]
+        [HttpPut("/api/media/library")]
         public Task<InvokeResult> UpdateMediaLibraryAsync([FromBody] MediaLibrary medialibrary)
         {
             SetUpdatedProperties(medialibrary);
@@ -59,7 +59,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// Medial Library - Get for Current Org
         /// </summary>
         /// <returns></returns>
-        [HttpGet("/api/medialibraries")]
+        [HttpGet("/api/media/libraries")]
         public async Task<ListResponse<MediaLibrarySummary>> GetMediaLibrarysForOrg()
         {
             var hostSummaries = await _mediaLibraryManager.GetMediaLibrariesForOrgsAsync(OrgEntityHeader.Id, UserEntityHeader);
@@ -71,7 +71,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        [HttpGet("/api/medialibrary/{id}/inuse")]
+        [HttpGet("/api/media/library/{id}/inuse")]
         public Task<DependentObjectCheckResult> InUseCheck(String id)
         {
             return _mediaLibraryManager.CheckMediaLibraryInUseAsync(id, OrgEntityHeader, UserEntityHeader);
@@ -82,7 +82,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        [HttpGet("/api/medialibrary/{id}")]
+        [HttpGet("/api/media/library/{id}")]
         public async Task<DetailResponse<MediaLibrary>> GetMediaLibrary(String id)
         {
             var MediaLibrary = await _mediaLibraryManager.GetMediaLibraryAsync(id, OrgEntityHeader, UserEntityHeader);
@@ -94,7 +94,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// Medial Library - Key In Use
         /// </summary>
         /// <returns></returns>
-        [HttpGet("/api/medialibrary/{key}/keyinuse")]
+        [HttpGet("/api/media/library/{key}/keyinuse")]
         public Task<bool> GetMediaLibraryKeyInUseAsync(String key)
         {
             return _mediaLibraryManager.QueryMediaLibraryKeyInUseAsync(key, CurrentOrgId);
@@ -104,7 +104,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// Medial Library - Delete
         /// </summary>
         /// <returns></returns>
-        [HttpDelete("/api/medialibrary/{id}")]
+        [HttpDelete("/api/media/library/{id}")]
         public Task<InvokeResult> DeleteMediaLibraryAsync(string id)
         {
             return _mediaLibraryManager.DeleteMediaLibraryAsync(id, OrgEntityHeader, UserEntityHeader);
@@ -114,7 +114,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         ///  Medial Library - Create New
         /// </summary>
         /// <returns></returns>
-        [HttpGet("/api/medialibrary/factory")]
+        [HttpGet("/api/media/library/factory")]
         public DetailResponse<MediaLibrary> CreateMediaLibrary()
         {
             var response = DetailResponse<MediaLibrary>.Create();

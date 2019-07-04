@@ -2,6 +2,7 @@
 using LagoVista.Core.Interfaces;
 using LagoVista.Core.Managers;
 using LagoVista.Core.Models;
+using LagoVista.Core.Models.UIMetaData;
 using LagoVista.Core.Validation;
 using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Interfaces;
@@ -9,8 +10,8 @@ using LagoVista.MediaServices.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading.Tasks;
+using static LagoVista.Core.Models.AuthorizeResult;
 
 namespace LagoVista.MediaServices.Managers
 {
@@ -23,6 +24,17 @@ namespace LagoVista.MediaServices.Managers
         {
             _mediaRepo = mediaRepo;
         }
+
+        public async Task<InvokeResult> AddMediaResourceRecordAsync(MediaResource resource, EntityHeader org, EntityHeader user)
+        {
+            await AuthorizeAsync(resource, AuthorizeActions.Create, user, org);
+            ValidationCheck(resource, Actions.Create);
+
+            await _mediaRepo.AddMediaResourceRecordAsync(resource);
+
+            return InvokeResult.Success;
+        }
+
 
         public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string contentType, EntityHeader org, EntityHeader user)
         {
@@ -49,6 +61,18 @@ namespace LagoVista.MediaServices.Managers
             }
         }
 
+        public async Task<MediaResource> GetMediaResourceRecordAsync(string id, EntityHeader org, EntityHeader user)
+        {
+            var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
+            await AuthorizeAsync(resource, AuthorizeActions.Read, user, org);
+            return resource;
+        }
+
+        public async Task<IEnumerable<MediaResourceSummary>> GetMediaResourceSummariesAsync(string libraryId, string orgId, EntityHeader user)
+        {
+            await AuthorizeOrgAccessAsync(user, orgId, typeof(MediaResource));
+            return await _mediaRepo.GetResourcesForLibrary(orgId, libraryId);
+        }
 
         public async Task<MediaItemResponse> GetResourceMediaAsync(string id, EntityHeader org, EntityHeader user)
         {
@@ -66,6 +90,16 @@ namespace LagoVista.MediaServices.Managers
                // FileName = deviceResource.FileName,
                 ImageBytes = mediaItem.Result
             };
+        }
+
+        public async Task<InvokeResult> UpdateMediaResourceRecordAsync(MediaResource resource, EntityHeader org, EntityHeader user)
+        {
+            await AuthorizeAsync(resource, AuthorizeActions.Update, user, org);
+            ValidationCheck(resource, Actions.Create);
+
+            await _mediaRepo.UpdateMediaResourceRecordAsync(resource);
+
+            return InvokeResult.Success;
         }
     }
 }

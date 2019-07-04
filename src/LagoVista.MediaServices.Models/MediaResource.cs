@@ -1,4 +1,5 @@
 ﻿using LagoVista.Core.Attributes;
+using LagoVista.Core.Interfaces;
 using LagoVista.Core.Models;
 using LagoVista.Core.Validation;
 using LagoVista.MediaServices.Models.Resources;
@@ -25,7 +26,7 @@ namespace LagoVista.MediaServices.Models
     }
 
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResource_Title, MediaServicesResources.Names.MediaResource_Help, MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources))]
-    public class MediaResource : IValidateable
+    public class MediaResource : IIDEntity, INoSQLEntity, IValidateable, IOwnedEntity, IAuditableEntity
     {
 
         public const string DeviceResourceTypes_Manual = "manual";
@@ -40,6 +41,20 @@ namespace LagoVista.MediaServices.Models
         {
             IsFileUpload = true;
         }
+
+        [FormField(LabelResource: Resources.MediaServicesResources.Names.Common_IsPublic, FieldType: FieldTypes.Bool, ResourceType: typeof(MediaServicesResources))]
+        public bool IsPublic { get; set; }
+        public EntityHeader OwnerOrganization { get; set; }
+        public EntityHeader OwnerUser { get; set; }
+        [FormField(LabelResource: Resources.MediaServicesResources.Names.Common_CreationDate, FieldType: FieldTypes.JsonDateTime, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: false)]
+        public String CreationDate { get; set; }
+
+        public EntityHeader CreatedBy { get; set; }
+
+        [FormField(LabelResource: Resources.MediaServicesResources.Names.Common_LastUpdated, FieldType: FieldTypes.JsonDateTime, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: false)]
+        public String LastUpdatedDate { get; set; }
+
+        public EntityHeader LastUpdatedBy { get; set; }
 
         public string Id { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.MediaResources_FileName, FieldType: FieldTypes.Text, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
@@ -59,11 +74,13 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.Common_Description, FieldType: FieldTypes.MultiLineText, ResourceType: typeof(MediaServicesResources))]
         public string Description { get; set; }
 
-        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_MediaLibrary, FieldType: FieldTypes.Text, IsRequired:true, IsUserEditable:false, ResourceType: typeof(MediaServicesResources))]
-        public EntityHeader MediaLibrary {get; set; }
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_MediaLibrary, FieldType: FieldTypes.Text, IsRequired: true, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
+        public EntityHeader MediaLibrary { get; set; }
 
-        [FormField(LabelResource: MediaServicesResources.Names.MediaResources_ResourceType, WaterMark: MediaServicesResources.Names.MediaResources_ResourceType_Select, IsRequired:true, EnumType:typeof(MediaResourceTypes), FieldType: FieldTypes.Picker, ResourceType: typeof(MediaServicesResources))]
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResources_ResourceType, WaterMark: MediaServicesResources.Names.MediaResources_ResourceType_Select, IsRequired: true, EnumType: typeof(MediaResourceTypes), FieldType: FieldTypes.Picker, ResourceType: typeof(MediaServicesResources))]
         public EntityHeader<MediaResourceTypes> ResourceType { get; set; }
+        public string DatabaseName { get; set; }
+        public string EntityType { get; set; }
 
         public void SetContentType(string contentType)
         {
@@ -102,14 +119,27 @@ namespace LagoVista.MediaServices.Models
             }
         }
 
+        public MediaResourceSummary CreateSummary()
+        {
+            return new MediaResourceSummary()
+            {
+                Id = Id,
+                Description = Description,
+                IsPublic = IsPublic,
+                Key = Key,
+                Name = Name,
+                ResourceType = ResourceType.Text
+            };
+        }
+
         [CustomValidator]
         public void Validate(ValidationResult result)
         {
-            if(IsFileUpload)
+            if (IsFileUpload)
             {
                 Link = String.Empty;
 
-                if(String.IsNullOrEmpty(FileName))
+                if (String.IsNullOrEmpty(FileName))
                 {
                     result.AddUserError("Must provide file.");
                 }
@@ -120,13 +150,16 @@ namespace LagoVista.MediaServices.Models
                 MimeType = null;
                 FileName = null;
 
-                if(String.IsNullOrEmpty(Link))
+                if (String.IsNullOrEmpty(Link))
                 {
                     result.AddUserError("Must provide link.");
                 }
             }
-
-
         }
+    }
+
+    public class MediaResourceSummary : SummaryData
+    {
+        public string ResourceType { get; set; }
     }
 }

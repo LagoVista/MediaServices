@@ -6,26 +6,25 @@ using LagoVista.MediaServices.Interfaces;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using System;
+using System.Linq;
 using LagoVista.Core;
 using System.IO;
 using System.Threading.Tasks;
+using LagoVista.CloudStorage.DocumentDB;
+using LagoVista.MediaServices.Models;
+using System.Collections.Generic;
 
 namespace LagoVista.MediaServices.CloudRepos
 {
-    public class MediaServicesRepo : IMediaServicesRepo
+    public class MediaServicesRepo : DocumentDBRepoBase<MediaResource>, IMediaServicesRepo
     {
         ILogger _logger;
         IConnectionSettings _blobConnectionSettings;
 
         public MediaServicesRepo(IAdminLogger adminLogger, IMediaServicesConnectionSettings settings)
+             : base(settings.MediaLibraryConnection.Uri, settings.MediaLibraryConnection.AccessKey, settings.MediaLibraryConnection.ResourceName, adminLogger)
         {
             _logger = adminLogger;
-            _blobConnectionSettings = settings.MediaStorageConnection;
-        }
-
-        public MediaServicesRepo(IInstanceLogger instanceLogger, IMediaServicesConnectionSettings settings)
-        {
-            _logger = instanceLogger;
             _blobConnectionSettings = settings.MediaStorageConnection;
         }
 
@@ -64,6 +63,11 @@ namespace LagoVista.MediaServices.CloudRepos
                 _logger.AddException("DeviceMediaRepo_GetStorageContainerAsync", ex);
                 return InvokeResult<CloudBlobContainer>.FromException("DeviceMediaRepo_GetStorageContainerAsync", ex);
             }
+        }
+
+        public Task AddMediaResourceRecordAsync(MediaResource resource)
+        {
+            return this.CreateDocumentAsync(resource);
         }
 
         public async Task<InvokeResult> AddMediaAsync(byte[] data, string orgId, string fileName, string contentType)
@@ -154,6 +158,24 @@ namespace LagoVista.MediaServices.CloudRepos
             }
 
             return InvokeResult<byte[]>.FromError("Could not load media.");
+        }
+
+        public async Task<IEnumerable<MediaResourceSummary>> GetResourcesForLibrary(string orgId, string libraryId)
+        {
+            var items = await base.QueryAsync(qry => qry.IsPublic == true || (qry.OwnerOrganization.Id == orgId && qry.MediaLibrary.Id == libraryId));
+
+            return from item in items
+                   select item.CreateSummary();
+        }
+
+        public Task UpdateMediaResourceRecordAsync(MediaResource updated)
+        {
+            return this.UpsertDocumentAsync(updated);
+        }
+
+        public Task<MediaResource> GetMediaResourceRecordAsync(string id)
+        {
+            return this.GetDocumentAsync(id);
         }
     }
 }

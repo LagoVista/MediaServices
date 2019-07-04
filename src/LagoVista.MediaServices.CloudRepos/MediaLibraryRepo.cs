@@ -27,7 +27,7 @@ namespace LagoVista.MediaServices.CloudRepos
 
         public Task AddMediaLibraryAsync(MediaLibrary mediaLibrary)
         {
-            return this.AddMediaLibraryAsync(mediaLibrary);
+            return this.CreateDocumentAsync(mediaLibrary);
         }
 
         public Task DeleteStateMachineAsync(string id)
