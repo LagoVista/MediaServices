@@ -72,6 +72,17 @@ namespace LagoVista.MediaServices.Rest.Controllers
         }
 
         /// <summary>
+        /// Media Resources - Delete the Media Resource Record
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpDelete("/api/media/resource/{id}")]
+        public Task<InvokeResult> DeleteMediaResource(string id)
+        {
+            return _mediaServicesManager.DeleteMediaResourceAsync(id, OrgEntityHeader, UserEntityHeader);
+        }
+
+        /// <summary>
         /// Media Resources - Update Media Resource Record.
         /// </summary>
         /// <param name="resource"></param>

@@ -55,13 +55,13 @@ namespace LagoVista.MediaServices.CloudRepos
             }
             catch (ArgumentException ex)
             {
-                _logger.AddException("DeviceMediaRepo_GetStorageContainerAsync", ex);
-                return InvokeResult<CloudBlobContainer>.FromException("DeviceMediaRepo_GetStorageContainerAsync_InitAsync", ex);
+                _logger.AddException("MediaServicesRepo_GetStorageContainerAsync", ex);
+                return InvokeResult<CloudBlobContainer>.FromException("MediaServicesRepo_GetStorageContainerAsync_InitAsync", ex);
             }
             catch (StorageException ex)
             {
-                _logger.AddException("DeviceMediaRepo_GetStorageContainerAsync", ex);
-                return InvokeResult<CloudBlobContainer>.FromException("DeviceMediaRepo_GetStorageContainerAsync", ex);
+                _logger.AddException("MediaServicesRepo_GetStorageContainerAsync", ex);
+                return InvokeResult<CloudBlobContainer>.FromException("MediaServicesRepo_GetStorageContainerAsync", ex);
             }
         }
 
@@ -100,12 +100,12 @@ namespace LagoVista.MediaServices.CloudRepos
                 {
                     if (retryCount == numberRetries)
                     {
-                        _logger.AddException("DeviceMediaRepo_AddItemAsync", ex);
-                        return InvokeResult.FromException("DeviceMediaRepo_AddItemAsync", ex);
+                        _logger.AddException("MediaServicesRepo_AddItemAsync", ex);
+                        return InvokeResult.FromException("MediaServicesRepo_AddItemAsync", ex);
                     }
                     else
                     {
-                        _logger.AddCustomEvent(LagoVista.Core.PlatformSupport.LogLevel.Warning, "DeviceMediaRepo_AddItemAsync", "", ex.Message.ToKVP("exceptionMessage"), ex.GetType().Name.ToKVP("exceptionType"), retryCount.ToString().ToKVP("retryCount"));
+                        _logger.AddCustomEvent(LagoVista.Core.PlatformSupport.LogLevel.Warning, "MediaServicesRepo_AddItemAsync", "", ex.Message.ToKVP("exceptionMessage"), ex.GetType().Name.ToKVP("exceptionType"), retryCount.ToString().ToKVP("retryCount"));
                     }
                     await Task.Delay(retryCount * 250);
                 }
@@ -115,7 +115,23 @@ namespace LagoVista.MediaServices.CloudRepos
 
         }
 
-        public async Task<InvokeResult<byte[]>> GetMediaAsync(string id, string org)
+        public Task UpdateMediaResourceRecordAsync(MediaResource updated)
+        {
+            return this.UpsertDocumentAsync(updated);
+        }
+
+        public Task<MediaResource> GetMediaResourceRecordAsync(string id)
+        {
+            return this.GetDocumentAsync(id);
+        }
+
+        public Task DeleteMediaRecordAsync(string id)
+        {
+            return this.DeleteDocumentAsync(id);
+        }
+
+
+        public async Task<InvokeResult<byte[]>> GetMediaAsync(string blobReferenceName, string org)
         {
             var result = await GetStorageContainerAsync(org);
             if (!result.Successful)
@@ -125,7 +141,7 @@ namespace LagoVista.MediaServices.CloudRepos
 
             var container = result.Result;
 
-            var blob = container.GetBlockBlobReference(id);
+            var blob = container.GetBlockBlobReference(blobReferenceName);
 
             var numberRetries = 5;
             var retryCount = 0;
@@ -145,12 +161,12 @@ namespace LagoVista.MediaServices.CloudRepos
                 {
                     if (retryCount == numberRetries)
                     {
-                        _logger.AddException("DeviceMediaRepo_AddItemAsync", ex);
-                        return InvokeResult<byte[]>.FromException("DeviceMediaRepo_AddItemAsync", ex);
+                        _logger.AddException("MediaServicesRepo_AddItemAsync", ex);
+                        return InvokeResult<byte[]>.FromException("MediaServicesRepo_AddItemAsync", ex);
                     }
                     else
                     {
-                        _logger.AddCustomEvent(LagoVista.Core.PlatformSupport.LogLevel.Warning, "DeviceMediaRepo_GetMediaAsync", "", ex.Message.ToKVP("exceptionMessage"), ex.GetType().Name.ToKVP("exceptionType"), retryCount.ToString().ToKVP("retryCount"));
+                        _logger.AddCustomEvent(LagoVista.Core.PlatformSupport.LogLevel.Warning, "MediaServicesRepo_GetMediaAsync", "", ex.Message.ToKVP("exceptionMessage"), ex.GetType().Name.ToKVP("exceptionType"), retryCount.ToString().ToKVP("retryCount"));
                     }
 
                     await Task.Delay(retryCount * 250);
@@ -168,14 +184,47 @@ namespace LagoVista.MediaServices.CloudRepos
                    select item.CreateSummary();
         }
 
-        public Task UpdateMediaResourceRecordAsync(MediaResource updated)
-        {
-            return this.UpsertDocumentAsync(updated);
-        }
 
-        public Task<MediaResource> GetMediaResourceRecordAsync(string id)
+        public async Task DeleteMediaAsync(string blobReferenceName, string orgId)
         {
-            return this.GetDocumentAsync(id);
+            var result = await GetStorageContainerAsync(orgId);
+            if (!result.Successful)
+            {
+                throw new Exception("Could not get storage container.");
+            }
+
+            var container = result.Result;
+
+            var blob = container.GetBlockBlobReference(blobReferenceName);
+
+            var numberRetries = 5;
+            var retryCount = 0;
+            var completed = false;
+            while (retryCount++ < numberRetries && !completed)
+            {
+                try
+                {
+                    await blob.DeleteAsync();
+                    completed = true;
+                }
+                catch (Exception ex)
+                {
+                    if (retryCount == numberRetries)
+                    {
+                        _logger.AddException("MediaServicesRepo_DeleteMediaAsync", ex);
+                    }
+                    else
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"Could not get blob reference {blobReferenceName} for organization id {orgId}.");
+                        Console.ResetColor();
+
+                        _logger.AddCustomEvent(LagoVista.Core.PlatformSupport.LogLevel.Warning, "MediaServicesRepo_DeleteMediaAsync", "", ex.Message.ToKVP("exceptionMessage"), ex.GetType().Name.ToKVP("exceptionType"), retryCount.ToString().ToKVP("retryCount"));
+                    }
+
+                    await Task.Delay(retryCount * 250);
+                }
+            }
         }
     }
 }

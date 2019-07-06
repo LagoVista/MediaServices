@@ -18,15 +18,23 @@ namespace LagoVista.MediaServices.Managers
     public class MediaServicesManager : ManagerBase, IMediaServicesManager
     {
         IMediaServicesRepo _mediaRepo;
+        IMediaLibraryRepo _libraryRepo;
 
-        public MediaServicesManager(IMediaServicesRepo mediaRepo, IAdminLogger logger, IAppConfig appConfig, IDependencyManager depmanager, ISecurity security) :
+        public MediaServicesManager(IMediaServicesRepo mediaRepo, IMediaLibraryRepo repo, IAdminLogger logger, IAppConfig appConfig, IDependencyManager depmanager, ISecurity security) :
             base(logger, appConfig, depmanager, security)
         {
             _mediaRepo = mediaRepo;
+            _libraryRepo = repo;
         }
 
         public async Task<InvokeResult> AddMediaResourceRecordAsync(MediaResource resource, EntityHeader org, EntityHeader user)
         {
+            if(resource.MediaLibrary != null && String.IsNullOrEmpty(resource.MediaLibrary.Text))
+            {
+                var library = await _libraryRepo.GetMediaLibrary(resource.MediaLibrary.Id);
+                resource.MediaLibrary.Text = library.Name;
+            }
+
             await AuthorizeAsync(resource, AuthorizeActions.Create, user, org);
             ValidationCheck(resource, Actions.Create);
 
@@ -35,13 +43,13 @@ namespace LagoVista.MediaServices.Managers
             return InvokeResult.Success;
         }
 
-
         public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string contentType, EntityHeader org, EntityHeader user)
         {
             var deviceTypeResource = new MediaResource();
             deviceTypeResource.Id = id;
             await AuthorizeAsync(user, org, "addDeviceTypeResource", $"{{mediaItemId:'{id}'}}");
 
+            // Also sets the blob reference name.
             deviceTypeResource.SetContentType(contentType);
 
             var bytes = new byte[stream.Length];
@@ -50,7 +58,7 @@ namespace LagoVista.MediaServices.Managers
 
             deviceTypeResource.ContentSize = stream.Length;
 
-            var result = await _mediaRepo.AddMediaAsync(bytes, org.Id, deviceTypeResource.FileName, contentType);
+            var result = await _mediaRepo.AddMediaAsync(bytes, org.Id, deviceTypeResource.StorageReferenceName, contentType);
             if (result.Successful)
             {
                 return InvokeResult<MediaResource>.Create(deviceTypeResource);
@@ -59,6 +67,17 @@ namespace LagoVista.MediaServices.Managers
             {
                 return InvokeResult<MediaResource>.FromInvokeResult(result);
             }
+        }
+
+        public async Task<InvokeResult> DeleteMediaResourceAsync(string id, EntityHeader org, EntityHeader user)
+        {
+            var record = await _mediaRepo.GetMediaResourceRecordAsync(id);
+            await AuthorizeAsync(record, AuthorizeActions.Delete, user, org);
+
+            await _mediaRepo.DeleteMediaRecordAsync(id);
+            await _mediaRepo.DeleteMediaAsync(record.StorageReferenceName, org.Id);
+
+            return InvokeResult.Success;
         }
 
         public async Task<MediaResource> GetMediaResourceRecordAsync(string id, EntityHeader org, EntityHeader user)
@@ -78,7 +97,8 @@ namespace LagoVista.MediaServices.Managers
         {
             await AuthorizeOrgAccessAsync(user, org.Id, typeof(MediaResource));
 
-            var mediaItem = await _mediaRepo.GetMediaAsync(id, org.Id);
+            var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
+            var mediaItem = await _mediaRepo.GetMediaAsync(resource.StorageReferenceName, org.Id);
             if (!mediaItem.Successful)
             {
                 throw new RecordNotFoundException(nameof(MediaResource), id);
@@ -86,8 +106,8 @@ namespace LagoVista.MediaServices.Managers
 
             return new MediaItemResponse()
             {
-              ///  ContentType = deviceResource.MimeType,
-               // FileName = deviceResource.FileName,
+                ContentType = resource.MimeType,
+                FileName = resource.FileName,
                 ImageBytes = mediaItem.Result
             };
         }

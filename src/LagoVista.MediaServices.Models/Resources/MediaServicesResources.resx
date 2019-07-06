@@ -237,4 +237,7 @@
   <data name="MediaResource_MediaLibrary" xml:space="preserve">
     <value>Media Library</value>
   </data>
+  <data name="MediaResource_StorageRefName" xml:space="preserve">
+    <value>Storage Reference Name</value>
+  </data>
 </root>

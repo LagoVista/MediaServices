@@ -9,8 +9,11 @@ namespace LagoVista.MediaServices.Interfaces
     public interface IMediaServicesRepo
     {
         Task<InvokeResult> AddMediaAsync(byte[] data, string org, string fileName, string contentType);
-        Task<InvokeResult<byte[]>> GetMediaAsync(string id, string org);
+        Task<InvokeResult<byte[]>> GetMediaAsync(string blobReferenceName, string org);
         Task<MediaResource> GetMediaResourceRecordAsync(string id);
+        Task DeleteMediaRecordAsync(string id);
+        Task DeleteMediaAsync(string blobReferenceName, string orgId);
+
         Task AddMediaResourceRecordAsync(MediaResource resource);
         Task<IEnumerable<MediaResourceSummary>> GetResourcesForLibrary(string orgId, string libraryId);
         Task UpdateMediaResourceRecordAsync(MediaResource updated);

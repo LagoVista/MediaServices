@@ -1,4 +1,4 @@
-﻿using LagoVista.Core.Attributes;
+﻿    using LagoVista.Core.Attributes;
 using LagoVista.Core.Interfaces;
 using LagoVista.Core.Models;
 using LagoVista.Core.Validation;
@@ -67,7 +67,7 @@ namespace LagoVista.MediaServices.Models
         public string Link { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_ContentLength, FieldType: FieldTypes.Integer, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public long ContentSize { get; set; }
-        [FormField(LabelResource: MediaServicesResources.Names.MediaResources_MimeType, IsUserEditable: false, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResources_MimeType, IsRequired:true, IsUserEditable: false, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
         public string MimeType { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.Common_Name, IsRequired: true, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
         public string Name { get; set; }
@@ -82,39 +82,42 @@ namespace LagoVista.MediaServices.Models
         public string DatabaseName { get; set; }
         public string EntityType { get; set; }
 
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_StorageRefName, WaterMark: MediaServicesResources.Names.MediaResources_ResourceType_Select, IsRequired: true, EnumType: typeof(MediaResourceTypes), FieldType: FieldTypes.Picker, ResourceType: typeof(MediaServicesResources))]
+        public string StorageReferenceName { get; set; }
+
         public void SetContentType(string contentType)
         {
-            FileName = $"{Id}.media";
+            StorageReferenceName = $"{Id}.media";
             MimeType = "application/octet-stream";
 
             if (contentType.ToLower().Contains("gif"))
             {
-                FileName = $"{Id}.gif";
+                StorageReferenceName = $"{Id}.gif";
                 MimeType = "image/gif";
             }
             else if (contentType.ToLower().Contains("png"))
             {
-                FileName = $"{Id}.png";
+                StorageReferenceName = $"{Id}.png";
                 MimeType = "image/png";
             }
             else if (contentType.ToLower().Contains("jpg"))
             {
-                FileName = $"{Id}.jpg";
+                StorageReferenceName = $"{Id}.jpg";
                 MimeType = "image/jpeg";
             }
             else if (contentType.ToLower().Contains("jpeg"))
             {
-                FileName = $"{Id}.jpeg";
+                StorageReferenceName = $"{Id}.jpeg";
                 MimeType = "image/jpeg";
             }
             else if (contentType.ToLower().Contains("pdf"))
             {
-                FileName = $"{Id}.pdf";
+                StorageReferenceName = $"{Id}.pdf";
                 MimeType = "application/pdf";
             }
             else if (contentType.ToLower().Contains("csv"))
             {
-                FileName = $"{Id}.csv";
+                StorageReferenceName = $"{Id}.csv";
                 MimeType = "text/plain";
             }
         }
@@ -128,7 +131,9 @@ namespace LagoVista.MediaServices.Models
                 IsPublic = IsPublic,
                 Key = Key,
                 Name = Name,
-                ResourceType = ResourceType.Text
+                ResourceType = ResourceType.Text,
+                MimeType = MimeType,
+                ContentSize = ContentSize,
             };
         }
 
@@ -161,5 +166,7 @@ namespace LagoVista.MediaServices.Models
     public class MediaResourceSummary : SummaryData
     {
         public string ResourceType { get; set; }
+        public string MimeType { get; set; }
+        public long ContentSize { get; set; }
     }
 }
