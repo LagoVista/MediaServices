@@ -172,7 +172,7 @@
     <value>Validation Errors</value>
   </data>
   <data name="MediaResource_Description" xml:space="preserve">
-    <value>A Media Resource is a digital asset that can be uploaded and downloaded and attatched to other items.</value>
+    <value>A Media Resource is a digital asset that can be uploaded and associated with other items items in the system.  A good use for these is to associate user manuals or videos.</value>
   </data>
   <data name="MediaResource_Title" xml:space="preserve">
     <value>Media Resource</value>
@@ -214,7 +214,7 @@
     <value>Content Length</value>
   </data>
   <data name="MediaResource_Help" xml:space="preserve">
-    <value>A Media Resource is a digital asset that can be uploaded and downloaded and attatched to other items.</value>
+    <value>A Media Resource is a digital asset that can be uploaded and associated with other items items in the system.  A good use for these is to associate user manuals or videos.</value>
   </data>
   <data name="MediaResource_IsFileUpload" xml:space="preserve">
     <value>Is File Upload</value>
@@ -223,13 +223,13 @@
     <value>Link</value>
   </data>
   <data name="MediaResource_Link_Help" xml:space="preserve">
-    <value>A link lets you add a link to an external resource on the internet.</value>
+    <value>A link lets you add a link to an existing, external online resource.</value>
   </data>
   <data name="MediaLibrary_Description" xml:space="preserve">
-    <value>The Media Library is used to organize media items.</value>
+    <value>The Media Library is used to organize Online Media Resources.</value>
   </data>
   <data name="MediaLibrary_Help" xml:space="preserve">
-    <value>The Media Library is used to organize media items.</value>
+    <value>The Media Library is used to organize Online Media Resources.</value>
   </data>
   <data name="MediaLibrary_Title" xml:space="preserve">
     <value>Media Library</value>
@@ -239,5 +239,11 @@
   </data>
   <data name="MediaResource_StorageRefName" xml:space="preserve">
     <value>Storage Reference Name</value>
+  </data>
+  <data name="MediaResource_IsFileUpload_Help" xml:space="preserve">
+    <value>If you select this option, you will need to upload a file, otherwise, you can enter a link to an existing online resource.</value>
+  </data>
+  <data name="MediaResource_ResourceType_Help" xml:space="preserve">
+    <value> The Resource Type is used to organize and search for the different types of media resources.</value>
   </data>
 </root>

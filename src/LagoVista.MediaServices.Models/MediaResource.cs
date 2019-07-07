@@ -59,15 +59,15 @@ namespace LagoVista.MediaServices.Models
         public string Id { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.MediaResources_FileName, FieldType: FieldTypes.Text, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public string FileName { get; set; }
-        [FormField(LabelResource: MediaServicesResources.Names.Common_Key, IsRequired: true, FieldType: FieldTypes.Key, ResourceType: typeof(MediaServicesResources))]
+        [FormField(LabelResource: Resources.MediaServicesResources.Names.Common_Key, HelpResource: Resources.MediaServicesResources.Names.Common_Key_Help, FieldType: FieldTypes.Key, RegExValidationMessageResource: Resources.MediaServicesResources.Names.Common_Key_Validation, ResourceType: typeof(MediaServicesResources), IsRequired: true)]
         public string Key { get; set; }
-        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_IsFileUpload, FieldType: FieldTypes.CheckBox, ResourceType: typeof(MediaServicesResources))]
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_IsFileUpload, HelpResource: Resources.MediaServicesResources.Names.MediaResource_IsFileUpload_Help, FieldType: FieldTypes.CheckBox, ResourceType: typeof(MediaServicesResources))]
         public bool IsFileUpload { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Link, HelpResource: MediaServicesResources.Names.MediaResource_Link_Help, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
         public string Link { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_ContentLength, FieldType: FieldTypes.Integer, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
-        public long ContentSize { get; set; }
-        [FormField(LabelResource: MediaServicesResources.Names.MediaResources_MimeType, IsRequired:true, IsUserEditable: false, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
+        public long? ContentSize { get; set; }
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResources_MimeType, IsUserEditable: false, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
         public string MimeType { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.Common_Name, IsRequired: true, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
         public string Name { get; set; }
@@ -77,12 +77,12 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_MediaLibrary, FieldType: FieldTypes.Text, IsRequired: true, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public EntityHeader MediaLibrary { get; set; }
 
-        [FormField(LabelResource: MediaServicesResources.Names.MediaResources_ResourceType, WaterMark: MediaServicesResources.Names.MediaResources_ResourceType_Select, IsRequired: true, EnumType: typeof(MediaResourceTypes), FieldType: FieldTypes.Picker, ResourceType: typeof(MediaServicesResources))]
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResources_ResourceType, WaterMark: MediaServicesResources.Names.MediaResources_ResourceType_Select, HelpResource: Resources.MediaServicesResources.Names.MediaResource_ResourceType_Help, IsRequired: true, EnumType: typeof(MediaResourceTypes), FieldType: FieldTypes.Picker, ResourceType: typeof(MediaServicesResources))]
         public EntityHeader<MediaResourceTypes> ResourceType { get; set; }
         public string DatabaseName { get; set; }
         public string EntityType { get; set; }
 
-        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_StorageRefName, WaterMark: MediaServicesResources.Names.MediaResources_ResourceType_Select, IsRequired: true, EnumType: typeof(MediaResourceTypes), FieldType: FieldTypes.Picker, ResourceType: typeof(MediaServicesResources))]
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_StorageRefName, WaterMark: MediaServicesResources.Names.MediaResources_ResourceType_Select, EnumType: typeof(MediaResourceTypes), FieldType: FieldTypes.Picker, ResourceType: typeof(MediaServicesResources))]
         public string StorageReferenceName { get; set; }
 
         public void SetContentType(string contentType)
@@ -148,12 +148,25 @@ namespace LagoVista.MediaServices.Models
                 {
                     result.AddUserError("Must provide file.");
                 }
+                else
+                {
+                    if (String.IsNullOrEmpty(MimeType))
+                    {
+                        result.AddUserError("Mime Type is a Required FIeld..");
+                    }
+
+                    if (String.IsNullOrEmpty(StorageReferenceName))
+                    {
+                        result.AddUserError("Mime Type is a Required FIeld..");
+                    }
+                }
             }
             else
             {
-                ContentSize = 0;
+                ContentSize = null;
                 MimeType = null;
                 FileName = null;
+                StorageReferenceName = null;
 
                 if (String.IsNullOrEmpty(Link))
                 {
@@ -167,6 +180,6 @@ namespace LagoVista.MediaServices.Models
     {
         public string ResourceType { get; set; }
         public string MimeType { get; set; }
-        public long ContentSize { get; set; }
+        public long? ContentSize { get; set; }
     }
 }

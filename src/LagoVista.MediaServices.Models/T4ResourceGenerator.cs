@@ -1,4 +1,4 @@
-﻿/*7/6/2019 08:40:18*/
+﻿/*7/7/2019 08:15:30*/
 using System.Globalization;
 using System.Reflection;
 
@@ -129,6 +129,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:MediaResource_IsFileUpload
 
 		public static string MediaResource_IsFileUpload { get { return GetResourceString("MediaResource_IsFileUpload"); } }
+//Resources:MediaServicesResources:MediaResource_IsFileUpload_Help
+
+		public static string MediaResource_IsFileUpload_Help { get { return GetResourceString("MediaResource_IsFileUpload_Help"); } }
 //Resources:MediaServicesResources:MediaResource_Link
 
 		public static string MediaResource_Link { get { return GetResourceString("MediaResource_Link"); } }
@@ -138,6 +141,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:MediaResource_MediaLibrary
 
 		public static string MediaResource_MediaLibrary { get { return GetResourceString("MediaResource_MediaLibrary"); } }
+//Resources:MediaServicesResources:MediaResource_ResourceType_Help
+
+		public static string MediaResource_ResourceType_Help { get { return GetResourceString("MediaResource_ResourceType_Help"); } }
 //Resources:MediaServicesResources:MediaResource_StorageRefName
 
 		public static string MediaResource_StorageRefName { get { return GetResourceString("MediaResource_StorageRefName"); } }
@@ -205,9 +211,11 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string MediaResource_Description = "MediaResource_Description";
 			public const string MediaResource_Help = "MediaResource_Help";
 			public const string MediaResource_IsFileUpload = "MediaResource_IsFileUpload";
+			public const string MediaResource_IsFileUpload_Help = "MediaResource_IsFileUpload_Help";
 			public const string MediaResource_Link = "MediaResource_Link";
 			public const string MediaResource_Link_Help = "MediaResource_Link_Help";
 			public const string MediaResource_MediaLibrary = "MediaResource_MediaLibrary";
+			public const string MediaResource_ResourceType_Help = "MediaResource_ResourceType_Help";
 			public const string MediaResource_StorageRefName = "MediaResource_StorageRefName";
 			public const string MediaResource_Title = "MediaResource_Title";
 			public const string MediaResources_FileName = "MediaResources_FileName";
