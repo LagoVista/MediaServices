@@ -116,7 +116,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         {
             using (var strm = file.OpenReadStream())
             {
-                return await _mediaServicesManager.AddResourceMediaAsync(id, strm, file.ContentType, OrgEntityHeader, UserEntityHeader);
+                return await _mediaServicesManager.AddResourceMediaAsync(id, strm, file.FileName, file.ContentType, OrgEntityHeader, UserEntityHeader);
             }
         }
 

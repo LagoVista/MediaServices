@@ -82,7 +82,6 @@ namespace LagoVista.MediaServices.Models
         public string DatabaseName { get; set; }
         public string EntityType { get; set; }
 
-        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_StorageRefName, WaterMark: MediaServicesResources.Names.MediaResources_ResourceType_Select, EnumType: typeof(MediaResourceTypes), FieldType: FieldTypes.Picker, ResourceType: typeof(MediaServicesResources))]
         public string StorageReferenceName { get; set; }
 
         public void SetContentType(string contentType)
@@ -134,6 +133,8 @@ namespace LagoVista.MediaServices.Models
                 ResourceType = ResourceType.Text,
                 MimeType = MimeType,
                 ContentSize = ContentSize,
+                Link = Link,
+                IsFileUpload = IsFileUpload,
             };
         }
 
@@ -152,12 +153,12 @@ namespace LagoVista.MediaServices.Models
                 {
                     if (String.IsNullOrEmpty(MimeType))
                     {
-                        result.AddUserError("Mime Type is a Required FIeld..");
+                        result.AddUserError("Mime Type is a Required Field.");
                     }
 
                     if (String.IsNullOrEmpty(StorageReferenceName))
                     {
-                        result.AddUserError("Mime Type is a Required FIeld..");
+                        result.AddUserError("Storage Reference Name is a Required Field.");
                     }
                 }
             }
@@ -181,5 +182,7 @@ namespace LagoVista.MediaServices.Models
         public string ResourceType { get; set; }
         public string MimeType { get; set; }
         public long? ContentSize { get; set; }
+        public bool IsFileUpload { get; set; }
+        public string Link { get; set; }
     }
 }

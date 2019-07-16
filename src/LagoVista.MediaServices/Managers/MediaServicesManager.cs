@@ -43,7 +43,7 @@ namespace LagoVista.MediaServices.Managers
             return InvokeResult.Success;
         }
 
-        public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string contentType, EntityHeader org, EntityHeader user)
+        public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user)
         {
             var deviceTypeResource = new MediaResource();
             deviceTypeResource.Id = id;
@@ -55,7 +55,7 @@ namespace LagoVista.MediaServices.Managers
             var bytes = new byte[stream.Length];
             stream.Position = 0;
             stream.Read(bytes, 0, (int)stream.Length);
-
+            deviceTypeResource.FileName = fileName;
             deviceTypeResource.ContentSize = stream.Length;
 
             var result = await _mediaRepo.AddMediaAsync(bytes, org.Id, deviceTypeResource.StorageReferenceName, contentType);
