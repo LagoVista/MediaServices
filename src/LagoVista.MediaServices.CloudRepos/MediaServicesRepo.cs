@@ -28,6 +28,8 @@ namespace LagoVista.MediaServices.CloudRepos
             _blobConnectionSettings = settings.MediaStorageConnection;
         }
 
+        protected override bool ShouldConsolidateCollections => true;
+
         private CloudBlobClient CreateBlobClient(IConnectionSettings settings)
         {
             var baseuri = $"https://{settings.AccountId}.blob.core.windows.net";

@@ -3,6 +3,7 @@ using LagoVista.Core.Interfaces;
 using LagoVista.Core.Models;
 using LagoVista.Core.Validation;
 using LagoVista.MediaServices.Models.Resources;
+using Newtonsoft.Json;
 using System;
 
 namespace LagoVista.MediaServices.Models
@@ -56,6 +57,8 @@ namespace LagoVista.MediaServices.Models
 
         public EntityHeader LastUpdatedBy { get; set; }
 
+        [JsonProperty("id")]
+        [FormField(LabelResource: Resources.MediaServicesResources.Names.Common_UniqueId, IsUserEditable: false, ResourceType: typeof(MediaServicesResources), IsRequired: true)]
         public string Id { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.MediaResources_FileName, FieldType: FieldTypes.Text, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public string FileName { get; set; }

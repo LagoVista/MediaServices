@@ -75,7 +75,10 @@ namespace LagoVista.MediaServices.Managers
             await AuthorizeAsync(record, AuthorizeActions.Delete, user, org);
 
             await _mediaRepo.DeleteMediaRecordAsync(id);
-            await _mediaRepo.DeleteMediaAsync(record.StorageReferenceName, org.Id);
+            if (record.IsFileUpload)
+            {
+                await _mediaRepo.DeleteMediaAsync(record.StorageReferenceName, org.Id);
+            }
 
             return InvokeResult.Success;
         }
