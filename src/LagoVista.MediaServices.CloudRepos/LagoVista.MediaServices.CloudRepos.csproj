@@ -1,15 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <NetStandardImplicitPackageVersion>2.0.3</NetStandardImplicitPackageVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LagoVista.Core" Version="2.1.870-beta0733" />
-    <PackageReference Include="LagoVista.IoT.Logging" Version="2.1.870-beta0733" />
-    <PackageReference Include="LagoVista.UserAdmin" Version="2.1.870-beta0733" />
+    <PackageReference Include="LagoVista.Core" Version="2.1.881-beta0745" />
+    <PackageReference Include="LagoVista.IoT.Logging" Version="2.1.881-beta0745" />
+    <PackageReference Include="LagoVista.UserAdmin" Version="2.1.881-beta0745" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Include="LagoVista.CloudStorage" Version="2.1.870-beta0733" />
+    <PackageReference Include="LagoVista.CloudStorage" Version="2.1.881-beta0745" />
     <PackageReference Include="Microsoft.Azure.DocumentDB.Core" Version="2.7.0" />
     <PackageReference Include="WindowsAzure.Storage" Version="9.3.3" />
   </ItemGroup>
@@ -17,6 +17,4 @@
   <ItemGroup>
     <ProjectReference Include="..\LagoVista.MediaServices\LagoVista.MediaServices.csproj" />
   </ItemGroup>
-
-
 </Project>
