@@ -91,7 +91,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         public Task<InvokeResult> UpdateMediaResourceRecordAsync([FromBody] MediaResource resource)
         {
             SetUpdatedProperties(resource);
-            return _mediaServicesManager.AddMediaResourceRecordAsync(resource, OrgEntityHeader, UserEntityHeader);
+            return _mediaServicesManager.UpdateMediaResourceRecordAsync(resource, OrgEntityHeader, UserEntityHeader);
         }
 
         /// <summary>
