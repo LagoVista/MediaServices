@@ -1,4 +1,5 @@
-﻿using LagoVista.CloudStorage.DocumentDB;
+﻿using LagoVista.CloudStorage;
+using LagoVista.CloudStorage.DocumentDB;
 using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
@@ -11,8 +12,8 @@ namespace LagoVista.MediaServices.CloudRepos
     public class MediaLibraryRepo : DocumentDBRepoBase<MediaLibrary>, IMediaLibraryRepo
     {
         private bool _shouldConsolidateCollections;
-        public MediaLibraryRepo(IMediaServicesConnectionSettings repoSettings, IAdminLogger logger)
-            : base(repoSettings.MediaLibraryConnection.Uri, repoSettings.MediaLibraryConnection.AccessKey, repoSettings.MediaLibraryConnection.ResourceName, logger)
+        public MediaLibraryRepo(IMediaServicesConnectionSettings repoSettings, IAdminLogger logger, ICacheProvider cacheProvider)
+            : base(repoSettings.MediaLibraryConnection.Uri, repoSettings.MediaLibraryConnection.AccessKey, repoSettings.MediaLibraryConnection.ResourceName, logger, cacheProvider)
         {
             _shouldConsolidateCollections = repoSettings.ShouldConsolidateCollections;
         }

@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using LagoVista.CloudStorage.DocumentDB;
 using LagoVista.MediaServices.Models;
 using System.Collections.Generic;
+using LagoVista.CloudStorage;
 
 namespace LagoVista.MediaServices.CloudRepos
 {
@@ -21,8 +22,8 @@ namespace LagoVista.MediaServices.CloudRepos
         ILogger _logger;
         IConnectionSettings _blobConnectionSettings;
 
-        public MediaServicesRepo(IAdminLogger adminLogger, IMediaServicesConnectionSettings settings)
-             : base(settings.MediaLibraryConnection.Uri, settings.MediaLibraryConnection.AccessKey, settings.MediaLibraryConnection.ResourceName, adminLogger)
+        public MediaServicesRepo(IAdminLogger adminLogger, IMediaServicesConnectionSettings settings, ICacheProvider cacheProvider)
+             : base(settings.MediaLibraryConnection.Uri, settings.MediaLibraryConnection.AccessKey, settings.MediaLibraryConnection.ResourceName, adminLogger, cacheProvider)
         {
             _logger = adminLogger;
             _blobConnectionSettings = settings.MediaStorageConnection;

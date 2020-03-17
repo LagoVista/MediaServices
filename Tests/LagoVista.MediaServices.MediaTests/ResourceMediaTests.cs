@@ -24,7 +24,7 @@ namespace LagoVista.MediaServices.MediaTests
             });
 
 
-            var repo = new MediaServicesRepo(new AdminLogger(new Utils.LogWriter()), _resourceMediaConnections.Object);
+            var repo = new MediaServicesRepo(new AdminLogger(new Utils.LogWriter()), _resourceMediaConnections.Object, null);
             var rnd = new Random();
             var byteArray = new byte[1024];
             for (var idx = 0; idx < byteArray.Length; ++idx)
@@ -47,7 +47,7 @@ namespace LagoVista.MediaServices.MediaTests
                 AccessKey = Environment.GetEnvironmentVariable("TEST_AZURESTORAGE_ACCESSKEY", EnvironmentVariableTarget.User)
             });
 
-            var repo = new MediaServicesRepo(new AdminLogger(new Utils.LogWriter()), _resourceMediaConnections.Object);
+            var repo = new MediaServicesRepo(new AdminLogger(new Utils.LogWriter()), _resourceMediaConnections.Object, null);
             var rnd = new Random();
             var byteArray = new byte[1024];
             for (var idx = 0; idx < byteArray.Length; ++idx)
