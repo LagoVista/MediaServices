@@ -11,7 +11,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LagoVista.MediaServices.Res
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LagoVista.MediaServices.CloudRepos", "src\LagoVista.MediaServices.CloudRepos\LagoVista.MediaServices.CloudRepos.csproj", "{A805A549-CE94-4D2F-8A78-8AF8B8B3ED90}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LagoVista.MediaServices.MediaTests", "Tests\LagoVista.MediaServices.MediaTests\LagoVista.MediaServices.MediaTests.csproj", "{8A0B1956-7067-4B45-84DF-B701767C8EE2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LagoVista.MediaServices.MediaTests", "Tests\LagoVista.MediaServices.MediaTests\LagoVista.MediaServices.MediaTests.csproj", "{8A0B1956-7067-4B45-84DF-B701767C8EE2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{3CF0CF6D-ADCE-41F1-BD85-F3C845EDAEAB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{90334958-5D8F-4762-A652-044C8AC457C6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -42,6 +46,13 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{71037FB0-0905-470A-8747-DF3432201A0C} = {3CF0CF6D-ADCE-41F1-BD85-F3C845EDAEAB}
+		{0192EA7F-FA8A-406A-885E-5D2DB264A260} = {3CF0CF6D-ADCE-41F1-BD85-F3C845EDAEAB}
+		{6809C938-037A-40AB-9FFF-2104EDFD6C8A} = {3CF0CF6D-ADCE-41F1-BD85-F3C845EDAEAB}
+		{A805A549-CE94-4D2F-8A78-8AF8B8B3ED90} = {3CF0CF6D-ADCE-41F1-BD85-F3C845EDAEAB}
+		{8A0B1956-7067-4B45-84DF-B701767C8EE2} = {90334958-5D8F-4762-A652-044C8AC457C6}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5071E953-3F49-4DE0-BDB0-AB0BE5BF0D56}
