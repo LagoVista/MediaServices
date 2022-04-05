@@ -1,4 +1,5 @@
-﻿using LagoVista.Core.Exceptions;
+﻿using LagoVista.Core;
+using LagoVista.Core.Exceptions;
 using LagoVista.Core.Interfaces;
 using LagoVista.Core.Managers;
 using LagoVista.Core.Models;
@@ -45,23 +46,31 @@ namespace LagoVista.MediaServices.Managers
 
         public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user)
         {
-            var deviceTypeResource = new MediaResource();
-            deviceTypeResource.Id = id;
+            var medaiResource = new MediaResource();
+            medaiResource.Id = id;
+            medaiResource.CreationDate = DateTime.UtcNow.ToJSONString();
+            medaiResource.LastUpdatedDate = medaiResource.CreationDate;
+            medaiResource.CreatedBy = user;
+            medaiResource.LastUpdatedBy = user;
+            medaiResource.OwnerOrganization = org;
+
             await AuthorizeAsync(user, org, "addDeviceTypeResource", $"{{mediaItemId:'{id}'}}");
 
             // Also sets the blob reference name.
-            deviceTypeResource.SetContentType(contentType);
+            medaiResource.SetContentType(contentType);
+
+            medaiResource.ResourceType = EntityHeader<MediaResourceTypes>.Create(medaiResource.MimeType.StartsWith("image") ? MediaResourceTypes.Picture : MediaResourceTypes.Other);
 
             var bytes = new byte[stream.Length];
             stream.Position = 0;
             stream.Read(bytes, 0, (int)stream.Length);
-            deviceTypeResource.FileName = fileName;
-            deviceTypeResource.ContentSize = stream.Length;
-
-            var result = await _mediaRepo.AddMediaAsync(bytes, org.Id, deviceTypeResource.StorageReferenceName, contentType);
+            medaiResource.FileName = fileName;
+            medaiResource.ContentSize = stream.Length;
+            
+            var result = await _mediaRepo.AddMediaAsync(bytes, org.Id, medaiResource.StorageReferenceName, contentType);
             if (result.Successful)
             {
-                return InvokeResult<MediaResource>.Create(deviceTypeResource);
+                return InvokeResult<MediaResource>.Create(medaiResource);
             }
             else
             {
@@ -99,9 +108,25 @@ namespace LagoVista.MediaServices.Managers
         public async Task<MediaItemResponse> GetResourceMediaAsync(string id, EntityHeader org, EntityHeader user)
         {
             await AuthorizeOrgAccessAsync(user, org.Id, typeof(MediaResource));
-
             var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
             var mediaItem = await _mediaRepo.GetMediaAsync(resource.StorageReferenceName, org.Id);
+            if (!mediaItem.Successful)
+            {
+                throw new RecordNotFoundException(nameof(MediaResource), id);
+            }
+
+            return new MediaItemResponse()
+            {
+                ContentType = resource.MimeType,
+                FileName = resource.FileName,
+                ImageBytes = mediaItem.Result
+            };
+        }
+
+        public async Task<MediaItemResponse> GetMediaItemAsync(string orgId, string id)
+        {
+            var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
+            var mediaItem = await _mediaRepo.GetMediaAsync(id, orgId);
             if (!mediaItem.Successful)
             {
                 throw new RecordNotFoundException(nameof(MediaResource), id);
