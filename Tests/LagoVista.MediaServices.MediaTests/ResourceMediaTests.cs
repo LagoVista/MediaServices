@@ -40,9 +40,9 @@ namespace LagoVista.MediaServices.MediaTests
 
             _resourceMediaConnections.Setup(dep => dep.MediaLibraryConnection).Returns(new ConnectionSettings()
             {
-                Uri = Environment.GetEnvironmentVariable("TEST_DOCUMENT_DB_URI", EnvironmentVariableTarget.User),
-                AccessKey = Environment.GetEnvironmentVariable("TEST_DOCUMENT_DB_ACCESS_KEY", EnvironmentVariableTarget.User),
-                ResourceName = Environment.GetEnvironmentVariable("TEST_DOCUMENT_DB_RESOURCE", EnvironmentVariableTarget.User),
+                Uri = Environment.GetEnvironmentVariable("TEST_DOCDB_URI", EnvironmentVariableTarget.User),
+                AccessKey = Environment.GetEnvironmentVariable("TEST_DOCDB_ACCOUTKEY", EnvironmentVariableTarget.User),
+                ResourceName = Environment.GetEnvironmentVariable("TEST_DOCDB_RESOURCE", EnvironmentVariableTarget.User),
             });
 
             var repo = new MediaServicesRepo(new AdminLogger(new Utils.LogWriter()), _resourceMediaConnections.Object, null);
@@ -71,9 +71,9 @@ namespace LagoVista.MediaServices.MediaTests
            
             _resourceMediaConnections.Setup(dep => dep.MediaLibraryConnection).Returns(new ConnectionSettings()
             {
-                Uri = Environment.GetEnvironmentVariable("TEST_DOCUMENT_DB_URI", EnvironmentVariableTarget.User),
-                AccessKey = Environment.GetEnvironmentVariable("TEST_DOCUMENT_DB_ACCESS_KEY", EnvironmentVariableTarget.User),
-                ResourceName = Environment.GetEnvironmentVariable("TEST_DOCUMENT_DB_RESOURCE", EnvironmentVariableTarget.User),
+                Uri = Environment.GetEnvironmentVariable("TEST_DOCDB_URI", EnvironmentVariableTarget.User),
+                AccessKey = Environment.GetEnvironmentVariable("TEST_DOCDB_ACCESS_KEY", EnvironmentVariableTarget.User),
+                ResourceName = Environment.GetEnvironmentVariable("TEST_DOCDB_RESOURCE", EnvironmentVariableTarget.User),
             });
 
             var repo = new MediaServicesRepo(new AdminLogger(new Utils.LogWriter()), _resourceMediaConnections.Object, null);

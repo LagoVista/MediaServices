@@ -3,8 +3,6 @@ using LagoVista.Core.PlatformSupport;
 using LagoVista.Core.Validation;
 using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Interfaces;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
 using System;
 using System.Linq;
 using LagoVista.Core;
@@ -14,6 +12,8 @@ using LagoVista.CloudStorage.DocumentDB;
 using LagoVista.MediaServices.Models;
 using System.Collections.Generic;
 using LagoVista.CloudStorage;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 
 namespace LagoVista.MediaServices.CloudRepos
 {
@@ -31,40 +31,35 @@ namespace LagoVista.MediaServices.CloudRepos
 
         protected override bool ShouldConsolidateCollections => true;
 
-        private CloudBlobClient CreateBlobClient(IConnectionSettings settings)
+        private BlobServiceClient CreateBlobClient(IConnectionSettings settings)
         {
-            var baseuri = $"https://{settings.AccountId}.blob.core.windows.net";
-
-            var uri = new Uri(baseuri);
-            return new CloudBlobClient(uri, new Microsoft.WindowsAzure.Storage.Auth.StorageCredentials(settings.AccountId, settings.AccessKey));
+            var connectionString = $"DefaultEndpointsProtocol=https;AccountName={settings.AccountId};AccountKey={settings.AccessKey}";
+            return new BlobServiceClient(connectionString);
         }
 
-        private async Task<InvokeResult<CloudBlobContainer>> GetStorageContainerAsync(string orgId)
+        private async Task<InvokeResult<BlobContainerClient>> GetStorageContainerAsync(string orgId)
         {
             var client = CreateBlobClient(_blobConnectionSettings);
+
             var containerName = $"dtresource-{orgId}".ToLower();
-            Console.WriteLine(containerName);
-            var container = client.GetContainerReference(containerName);
+
+            var containerClient = client.GetBlobContainerClient(containerName);
+
+
             try
             {
-                var options = new BlobRequestOptions()
-                {
-                    MaximumExecutionTime = TimeSpan.FromSeconds(15)
-                };
-
-                var opContext = new OperationContext();
-                await container.CreateIfNotExistsAsync(options, opContext);
-                return InvokeResult<CloudBlobContainer>.Create(container);
+                await containerClient.CreateIfNotExistsAsync();
+                return InvokeResult<BlobContainerClient>.Create(containerClient);
             }
             catch (ArgumentException ex)
             {
                 _logger.AddException("MediaServicesRepo_GetStorageContainerAsync", ex);
-                return InvokeResult<CloudBlobContainer>.FromException("MediaServicesRepo_GetStorageContainerAsync_InitAsync", ex);
+                return InvokeResult<BlobContainerClient>.FromException("MediaServicesRepo_GetStorageContainerAsync_InitAsync", ex);
             }
-            catch (StorageException ex)
+            catch (Exception ex)
             {
                 _logger.AddException("MediaServicesRepo_GetStorageContainerAsync", ex);
-                return InvokeResult<CloudBlobContainer>.FromException("MediaServicesRepo_GetStorageContainerAsync", ex);
+                return InvokeResult<BlobContainerClient>.FromException("MediaServicesRepo_GetStorageContainerAsync", ex);
             }
         }
 
@@ -82,11 +77,8 @@ namespace LagoVista.MediaServices.CloudRepos
             }
 
             var container = result.Result;
+            var blob = container.GetBlobClient(fileName);
 
-            var blob = container.GetBlockBlobReference(fileName);
-            blob.Properties.ContentType = contentType;
-
-            //TODO: Should really encapsulate the idea of retry of an action w/ error reporting
             var numberRetries = 5;
             var retryCount = 0;
             var completed = false;
@@ -95,8 +87,15 @@ namespace LagoVista.MediaServices.CloudRepos
             {
                 try
                 {
+                    var header = new BlobHttpHeaders { ContentType = contentType };
+
                     stream.Seek(0, SeekOrigin.Begin);
-                    await blob.UploadFromStreamAsync(stream);
+                    var blobResult = await blob.UploadAsync(stream, new BlobUploadOptions { HttpHeaders = header });
+                    var statusCode = blobResult.GetRawResponse().Status;
+
+                    if (statusCode < 200 || statusCode > 299)
+                        throw new InvalidOperationException($"Invalid response Code {statusCode}");
+
                     return InvokeResult.Success;
                 }
                 catch (Exception ex)
@@ -144,7 +143,7 @@ namespace LagoVista.MediaServices.CloudRepos
 
             var container = result.Result;
 
-            var blob = container.GetBlockBlobReference(blobReferenceName);
+            var blobClient = container.GetBlobClient(blobReferenceName);
 
             var numberRetries = 5;
             var retryCount = 0;
@@ -153,12 +152,8 @@ namespace LagoVista.MediaServices.CloudRepos
             {
                 try
                 {
-                    using (var ms = new MemoryStream())
-                    {
-                        await blob.DownloadToStreamAsync(ms);
-                        ms.Seek(0, SeekOrigin.Begin);
-                        return InvokeResult<byte[]>.Create(ms.GetBuffer());
-                    }
+                    var content = await blobClient.DownloadContentAsync();
+                    return InvokeResult<byte[]>.Create(content.Value.Content.ToArray());
                 }
                 catch (Exception ex)
                 {
@@ -198,7 +193,7 @@ namespace LagoVista.MediaServices.CloudRepos
 
             var container = result.Result;
 
-            var blob = container.GetBlockBlobReference(blobReferenceName);
+            var blobClient = container.GetBlobClient(blobReferenceName);
 
             var numberRetries = 5;
             var retryCount = 0;
@@ -207,9 +202,9 @@ namespace LagoVista.MediaServices.CloudRepos
             {
                 try
                 {
-                    await blob.DeleteAsync();
+                    await blobClient.DeleteAsync();
                     completed = true;
-                }
+                } 
                 catch (Exception ex)
                 {
                     if (retryCount == numberRetries)
