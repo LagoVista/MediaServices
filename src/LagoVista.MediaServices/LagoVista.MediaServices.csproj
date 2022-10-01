@@ -4,12 +4,8 @@
     <TargetFramework>netstandard2.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.13.1" />
-    <PackageReference Include="LagoVista.Core" Version="3.0.1960.0607" />
-    <PackageReference Include="LagoVista.IoT.Logging" Version="3.0.1960.0607" />
-    <PackageReference Include="LagoVista.UserAdmin" Version="3.0.1960.0607" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-  </ItemGroup>
+    <PackageReference Include="LagoVista.UserAdmin" Version="3.0.1963.1145" />
+    </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LagoVista.MediaServices.Models\LagoVista.MediaServices.Models.csproj" />
   </ItemGroup>

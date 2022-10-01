@@ -4,12 +4,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LagoVista.Core" Version="3.0.1960.0607" />
-    <PackageReference Include="LagoVista.IoT.Logging" Version="3.0.1960.0607" />
-    <PackageReference Include="LagoVista.UserAdmin" Version="3.0.1960.0607" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="LagoVista.CloudStorage" Version="3.0.1960.0607" />
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.30.1" />
+    <PackageReference Include="LagoVista.UserAdmin" Version="3.0.1963.1145" />
+    <PackageReference Include="LagoVista.CloudStorage" Version="3.0.1963.1145" />
   </ItemGroup>
 
   <ItemGroup>

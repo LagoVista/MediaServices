@@ -10,12 +10,7 @@
     <DocumentationFile>bin\Release\netstandard2.0\LagoVista.MediaServices.Rest.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="LagoVista.Core" Version="3.0.1960.0607" />
-    <PackageReference Include="LagoVista.IoT.Logging" Version="3.0.1960.0607" />
-    <PackageReference Include="LagoVista.IoT.Web.Common" Version="3.0.1960.0607" />
-    <PackageReference Include="LagoVista.UserAdmin" Version="3.0.1960.0607" />
-    <PackageReference Include="LagoVista.UserAdmin.Models" Version="3.0.1960.0607" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="LagoVista.IoT.Web.Common" Version="3.0.1963.1145" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LagoVista.MediaServices.Models\LagoVista.MediaServices.Models.csproj" />
