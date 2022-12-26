@@ -4,8 +4,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LagoVista.UserAdmin" Version="3.0.1963.1145" />
-    <PackageReference Include="LagoVista.CloudStorage" Version="3.0.1963.1145" />
+    <PackageReference Include="LagoVista.UserAdmin" Version="3.0.2049.0900" />
+    <PackageReference Include="LagoVista.CloudStorage" Version="3.0.2049.0900" />
   </ItemGroup>
 
   <ItemGroup>
