@@ -129,9 +129,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
         public async Task<IActionResult> DownloadMedia(string id)
         {
             var response = await _mediaServicesManager.GetResourceMediaAsync(id, OrgEntityHeader, UserEntityHeader);
-
             var ms = new MemoryStream(response.ImageBytes);
-            return new FileStreamResult(ms, response.ContentType);
+            return File(ms, response.ContentType, response.FileName);
         }
     }
 }
