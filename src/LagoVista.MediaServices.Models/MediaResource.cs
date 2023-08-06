@@ -5,6 +5,7 @@ using LagoVista.Core.Validation;
 using LagoVista.MediaServices.Models.Resources;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 
 namespace LagoVista.MediaServices.Models
 {
@@ -27,7 +28,7 @@ namespace LagoVista.MediaServices.Models
     }
 
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResource_Title, MediaServicesResources.Names.MediaResource_Help, MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources))]
-    public class MediaResource : IIDEntity, INoSQLEntity, IValidateable, IOwnedEntity, IAuditableEntity
+    public class MediaResource : IIDEntity, INoSQLEntity, IValidateable, IOwnedEntity, IAuditableEntity, IFormDescriptor
     {
 
         public const string DeviceResourceTypes_Manual = "manual";
@@ -60,7 +61,7 @@ namespace LagoVista.MediaServices.Models
         [JsonProperty("id")]
         [FormField(LabelResource: Resources.MediaServicesResources.Names.Common_UniqueId, IsUserEditable: false, ResourceType: typeof(MediaServicesResources), IsRequired: true)]
         public string Id { get; set; }
-        [FormField(LabelResource: MediaServicesResources.Names.MediaResources_FileName, FieldType: FieldTypes.Text, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResources_FileName, FieldType: FieldTypes.MediaResourceUpload, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public string FileName { get; set; }
         [FormField(LabelResource: Resources.MediaServicesResources.Names.Common_Key, HelpResource: Resources.MediaServicesResources.Names.Common_Key_Help, FieldType: FieldTypes.Key, RegExValidationMessageResource: Resources.MediaServicesResources.Names.Common_Key_Validation, ResourceType: typeof(MediaServicesResources), IsRequired: true)]
         public string Key { get; set; }
@@ -177,6 +178,22 @@ namespace LagoVista.MediaServices.Models
                     result.AddUserError("Must provide link.");
                 }
             }
+        }
+
+        public List<string> GetFormFields()
+        {
+            return new List<string>()
+            {
+                nameof(Name),
+                nameof(Key),
+                nameof(IsFileUpload),
+                nameof(FileName),
+                nameof(ResourceType),
+                nameof(Link),
+                nameof(ContentSize),
+                nameof(MimeType),
+                nameof(Description),
+            };
         }
     }
 
