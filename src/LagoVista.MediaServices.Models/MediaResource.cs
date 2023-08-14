@@ -151,7 +151,7 @@ namespace LagoVista.MediaServices.Models
 
                 if (String.IsNullOrEmpty(FileName))
                 {
-                    result.AddUserError("Must provide file.");
+                    result.AddUserError("Must provide file name.");
                 }
                 else
                 {
