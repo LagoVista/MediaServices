@@ -1,6 +1,7 @@
 ﻿    using LagoVista.Core.Attributes;
 using LagoVista.Core.Interfaces;
 using LagoVista.Core.Models;
+using LagoVista.Core.Models.UIMetaData;
 using LagoVista.Core.Validation;
 using LagoVista.MediaServices.Models.Resources;
 using Newtonsoft.Json;
@@ -28,7 +29,7 @@ namespace LagoVista.MediaServices.Models
     }
 
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResource_Title, MediaServicesResources.Names.MediaResource_Help, MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources))]
-    public class MediaResource : IIDEntity, INoSQLEntity, IValidateable, IOwnedEntity, IAuditableEntity, IFormDescriptor
+    public class MediaResource : IIDEntity, INoSQLEntity, IValidateable, IOwnedEntity, IAuditableEntity, IFormDescriptor, IFormConditionalFields
     {
 
         public const string DeviceResourceTypes_Manual = "manual";
@@ -193,6 +194,29 @@ namespace LagoVista.MediaServices.Models
                 nameof(ContentSize),
                 nameof(MimeType),
                 nameof(Description),
+            };
+        }
+
+        public FormConditionals GetConditionalFields()
+        {
+            return new FormConditionals()
+            {
+                ConditionalFields = new List<string> { nameof(ContentSize), nameof(MimeType), nameof(Link) },
+                Conditionals = new List<FormConditional>()
+                {
+                    new FormConditional()
+                    {
+                        Field = nameof(IsFileUpload),
+                        Value = "true",
+                        VisibleFields = new List<string>() {nameof(ContentSize), nameof(MimeType)}
+                    },
+                    new FormConditional()
+                    {
+                        Field = nameof(IsFileUpload),
+                        Value = "false",
+                        VisibleFields = new List<string>() {nameof(Link)}
+                    }
+                }
             };
         }
     }
