@@ -9,7 +9,7 @@ namespace LagoVista.MediaServices.Interfaces
 {
     public interface IMediaServicesManager
     {
-        Task<InvokeResult<MediaResource>> AddResourceMediaAsync(string id, Stream media, string name, string contentType, EntityHeader org, EntityHeader user);
+        Task<InvokeResult<MediaResource>> AddResourceMediaAsync(string id, Stream media, string name, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false);
         Task<MediaItemResponse> GetResourceMediaAsync(string id, EntityHeader org, EntityHeader user);
         Task<InvokeResult> AddMediaResourceRecordAsync(MediaResource resource, EntityHeader org, EntityHeader user);
         Task<MediaResource> GetMediaResourceRecordAsync(string id, EntityHeader org, EntityHeader user);

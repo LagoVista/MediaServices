@@ -117,6 +117,11 @@ namespace LagoVista.MediaServices.CloudRepos
 
         }
 
+        public Task AddOrUpdateMediaResourceAsync(MediaResource updated)
+        {
+            return this.UpsertDocumentAsync(updated);
+        }
+
         public Task UpdateMediaResourceRecordAsync(MediaResource updated)
         {
             return this.UpsertDocumentAsync(updated);

@@ -44,33 +44,41 @@ namespace LagoVista.MediaServices.Managers
             return InvokeResult.Success;
         }
 
-        public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user)
+        public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false)
         {
-            var medaiResource = new MediaResource();
-            medaiResource.Id = id;
-            medaiResource.CreationDate = DateTime.UtcNow.ToJSONString();
-            medaiResource.LastUpdatedDate = medaiResource.CreationDate;
-            medaiResource.CreatedBy = user;
-            medaiResource.LastUpdatedBy = user;
-            medaiResource.OwnerOrganization = org;
+            var mediaResource = new MediaResource();
+            mediaResource.Id = id;
+            mediaResource.CreationDate = DateTime.UtcNow.ToJSONString();
+            mediaResource.LastUpdatedDate = mediaResource.CreationDate;
+            mediaResource.CreatedBy = user;
+            mediaResource.LastUpdatedBy = user;
+            mediaResource.OwnerOrganization = org;
+            if (saveResourceRecord)
+            {
+                mediaResource.Name = "Auto Inserted";
+                mediaResource.Key = "autoinserted";
+            }
 
             await AuthorizeAsync(user, org, "addDeviceTypeResource", $"{{mediaItemId:'{id}'}}");
 
             // Also sets the blob reference name.
-            medaiResource.SetContentType(contentType);
+            mediaResource.SetContentType(contentType);
 
-            medaiResource.ResourceType = EntityHeader<MediaResourceTypes>.Create(medaiResource.MimeType.StartsWith("image") ? MediaResourceTypes.Picture : MediaResourceTypes.Other);
+            mediaResource.ResourceType = EntityHeader<MediaResourceTypes>.Create(mediaResource.MimeType.StartsWith("image") ? MediaResourceTypes.Picture : MediaResourceTypes.Other);
 
             var bytes = new byte[stream.Length];
             stream.Position = 0;
             stream.Read(bytes, 0, (int)stream.Length);
-            medaiResource.FileName = fileName;
-            medaiResource.ContentSize = stream.Length;
+            mediaResource.FileName = fileName;
+            mediaResource.ContentSize = stream.Length;
             
-            var result = await _mediaRepo.AddMediaAsync(bytes, org.Id, medaiResource.StorageReferenceName, contentType);
+            var result = await _mediaRepo.AddMediaAsync(bytes, org.Id, mediaResource.StorageReferenceName, contentType);
             if (result.Successful)
             {
-                return InvokeResult<MediaResource>.Create(medaiResource);
+                if (saveResourceRecord)
+                    await _mediaRepo.AddOrUpdateMediaResourceAsync(mediaResource);
+
+                return InvokeResult<MediaResource>.Create(mediaResource);
             }
             else
             {

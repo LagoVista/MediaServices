@@ -17,6 +17,8 @@ namespace LagoVista.MediaServices.Interfaces
         Task AddMediaResourceRecordAsync(MediaResource resource);
         Task<IEnumerable<MediaResourceSummary>> GetResourcesForLibrary(string orgId, string libraryId);
         Task UpdateMediaResourceRecordAsync(MediaResource updated);
+
+        Task AddOrUpdateMediaResourceAsync(MediaResource record);
     }
 
     public interface IMediaServicesConnectionSettings
