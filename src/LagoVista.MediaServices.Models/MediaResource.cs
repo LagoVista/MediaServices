@@ -29,7 +29,7 @@ namespace LagoVista.MediaServices.Models
     }
 
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResource_Title, MediaServicesResources.Names.MediaResource_Help, MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources))]
-    public class MediaResource : IIDEntity, INoSQLEntity, IValidateable, IOwnedEntity, IAuditableEntity, IFormDescriptor, IFormConditionalFields
+    public class MediaResource : IIDEntity, INoSQLEntity, IValidateable, INamedEntity, IOwnedEntity, IAuditableEntity, IFormDescriptor, IFormConditionalFields
     {
 
         public const string DeviceResourceTypes_Manual = "manual";
