@@ -29,7 +29,7 @@ namespace LagoVista.MediaServices.Models
     }
 
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResource_Title, MediaServicesResources.Names.MediaResource_Help, MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources))]
-    public class MediaResource : IIDEntity, INoSQLEntity, IValidateable, INamedEntity, IOwnedEntity, IAuditableEntity, IFormDescriptor, IFormConditionalFields
+    public class MediaResource : EntityBase, IValidateable, IDescriptionEntity, IFormDescriptor, IFormConditionalFields
     {
 
         public const string DeviceResourceTypes_Manual = "manual";
@@ -45,27 +45,8 @@ namespace LagoVista.MediaServices.Models
             IsFileUpload = true;
         }
 
-        [FormField(LabelResource: Resources.MediaServicesResources.Names.Common_IsPublic, FieldType: FieldTypes.Bool, ResourceType: typeof(MediaServicesResources))]
-        public bool IsPublic { get; set; }
-        public EntityHeader OwnerOrganization { get; set; }
-        public EntityHeader OwnerUser { get; set; }
-        [FormField(LabelResource: Resources.MediaServicesResources.Names.Common_CreationDate, FieldType: FieldTypes.JsonDateTime, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: false)]
-        public String CreationDate { get; set; }
-
-        public EntityHeader CreatedBy { get; set; }
-
-        [FormField(LabelResource: Resources.MediaServicesResources.Names.Common_LastUpdated, FieldType: FieldTypes.JsonDateTime, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: false)]
-        public String LastUpdatedDate { get; set; }
-
-        public EntityHeader LastUpdatedBy { get; set; }
-
-        [JsonProperty("id")]
-        [FormField(LabelResource: Resources.MediaServicesResources.Names.Common_UniqueId, IsUserEditable: false, ResourceType: typeof(MediaServicesResources), IsRequired: true)]
-        public string Id { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.MediaResources_FileName, FieldType: FieldTypes.MediaResourceUpload, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public string FileName { get; set; }
-        [FormField(LabelResource: Resources.MediaServicesResources.Names.Common_Key, HelpResource: Resources.MediaServicesResources.Names.Common_Key_Help, FieldType: FieldTypes.Key, RegExValidationMessageResource: Resources.MediaServicesResources.Names.Common_Key_Validation, ResourceType: typeof(MediaServicesResources), IsRequired: true)]
-        public string Key { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_IsFileUpload, HelpResource: Resources.MediaServicesResources.Names.MediaResource_IsFileUpload_Help, FieldType: FieldTypes.CheckBox, ResourceType: typeof(MediaServicesResources))]
         public bool IsFileUpload { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Link, HelpResource: MediaServicesResources.Names.MediaResource_Link_Help, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
@@ -74,8 +55,6 @@ namespace LagoVista.MediaServices.Models
         public long? ContentSize { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.MediaResources_MimeType, IsUserEditable: false, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
         public string MimeType { get; set; }
-        [FormField(LabelResource: MediaServicesResources.Names.Common_Name, IsRequired: true, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
-        public string Name { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.Common_Description, FieldType: FieldTypes.MultiLineText, ResourceType: typeof(MediaServicesResources))]
         public string Description { get; set; }
 
@@ -84,9 +63,7 @@ namespace LagoVista.MediaServices.Models
 
         [FormField(LabelResource: MediaServicesResources.Names.MediaResources_ResourceType, WaterMark: MediaServicesResources.Names.MediaResources_ResourceType_Select, HelpResource: Resources.MediaServicesResources.Names.MediaResource_ResourceType_Help, IsRequired: true, EnumType: typeof(MediaResourceTypes), FieldType: FieldTypes.Picker, ResourceType: typeof(MediaServicesResources))]
         public EntityHeader<MediaResourceTypes> ResourceType { get; set; }
-        public string DatabaseName { get; set; }
-        public string EntityType { get; set; }
-
+      
         public string StorageReferenceName { get; set; }
 
         public void SetContentType(string contentType)
