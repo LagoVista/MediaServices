@@ -1,4 +1,4 @@
-﻿/*7/7/2019 08:15:30*/
+﻿/*12/20/2023 5:36:09 AM*/
 using System.Globalization;
 using System.Reflection;
 
@@ -108,6 +108,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:Common_ValidationErrors
 
 		public static string Common_ValidationErrors { get { return GetResourceString("Common_ValidationErrors"); } }
+//Resources:MediaServicesResources:MediaLibraries_Title
+
+		public static string MediaLibraries_Title { get { return GetResourceString("MediaLibraries_Title"); } }
 //Resources:MediaServicesResources:MediaLibrary_Description
 
 		public static string MediaLibrary_Description { get { return GetResourceString("MediaLibrary_Description"); } }
@@ -162,6 +165,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:MediaResources_ResourceType_Select
 
 		public static string MediaResources_ResourceType_Select { get { return GetResourceString("MediaResources_ResourceType_Select"); } }
+//Resources:MediaServicesResources:MediaResources_Title
+
+		public static string MediaResources_Title { get { return GetResourceString("MediaResources_Title"); } }
 //Resources:MediaServicesResources:MediaResourceType_Manual
 
 		public static string MediaResourceType_Manual { get { return GetResourceString("MediaResourceType_Manual"); } }
@@ -204,6 +210,7 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string Common_Resources = "Common_Resources";
 			public const string Common_UniqueId = "Common_UniqueId";
 			public const string Common_ValidationErrors = "Common_ValidationErrors";
+			public const string MediaLibraries_Title = "MediaLibraries_Title";
 			public const string MediaLibrary_Description = "MediaLibrary_Description";
 			public const string MediaLibrary_Help = "MediaLibrary_Help";
 			public const string MediaLibrary_Title = "MediaLibrary_Title";
@@ -222,6 +229,7 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string MediaResources_MimeType = "MediaResources_MimeType";
 			public const string MediaResources_ResourceType = "MediaResources_ResourceType";
 			public const string MediaResources_ResourceType_Select = "MediaResources_ResourceType_Select";
+			public const string MediaResources_Title = "MediaResources_Title";
 			public const string MediaResourceType_Manual = "MediaResourceType_Manual";
 			public const string MediaResourceType_Other = "MediaResourceType_Other";
 			public const string MediaResourceType_PartsList = "MediaResourceType_PartsList";

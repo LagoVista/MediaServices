@@ -1,4 +1,4 @@
-﻿    using LagoVista.Core.Attributes;
+﻿using LagoVista.Core.Attributes;
 using LagoVista.Core.Interfaces;
 using LagoVista.Core.Models;
 using LagoVista.Core.Models.UIMetaData;
@@ -28,8 +28,11 @@ namespace LagoVista.MediaServices.Models
         Other,
     }
 
-    [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResource_Title, MediaServicesResources.Names.MediaResource_Help, MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources))]
-    public class MediaResource : EntityBase, IValidateable, IDescriptionEntity, IFormDescriptor, IFormConditionalFields
+    [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResource_Title, MediaServicesResources.Names.MediaResource_Help, 
+        MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources),
+        FactoryUrl: "/api/media/resource/factory", GetListUrl: "/api/media/library/{libraryid}/resources", GetUrl: "/api/media/resource/{id}", DeleteUrl: "/api/media/resource/{id}",
+        SaveUrl: "/api/media/resource")]
+    public class MediaResource : EntityBase, IValidateable, IDescriptionEntity, IFormDescriptor, IFormConditionalFields, ISummaryFactory
     {
 
         public const string DeviceResourceTypes_Manual = "manual";
@@ -63,7 +66,7 @@ namespace LagoVista.MediaServices.Models
 
         [FormField(LabelResource: MediaServicesResources.Names.MediaResources_ResourceType, WaterMark: MediaServicesResources.Names.MediaResources_ResourceType_Select, HelpResource: Resources.MediaServicesResources.Names.MediaResource_ResourceType_Help, IsRequired: true, EnumType: typeof(MediaResourceTypes), FieldType: FieldTypes.Picker, ResourceType: typeof(MediaServicesResources))]
         public EntityHeader<MediaResourceTypes> ResourceType { get; set; }
-      
+
         public string StorageReferenceName { get; set; }
 
         public void SetContentType(string contentType)
@@ -196,14 +199,49 @@ namespace LagoVista.MediaServices.Models
                 }
             };
         }
+
+        ISummaryData ISummaryFactory.CreateSummary()
+        {
+            return CreateSummary();
+        }
     }
 
-    public class MediaResourceSummary : SummaryData
+    [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResources_Title, MediaServicesResources.Names.MediaResource_Help,
+    MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.Summary, ResourceType: typeof(MediaServicesResources),
+    FactoryUrl: "/api/media/resource/factory", GetListUrl: "/api/media/library/{libraryid}/resources", GetUrl: "/api/media/resource/{id}", DeleteUrl: "/api/media/resource/{id}",
+    SaveUrl: "/api/media/resource")]
+    public class MediaResourceSummary : ISummaryData
     {
         public string ResourceType { get; set; }
         public string MimeType { get; set; }
         public long? ContentSize { get; set; }
         public bool IsFileUpload { get; set; }
         public string Link { get; set; }
+
+        public bool IsPublic { get; set; }
+
+        public string Description { get; set; }
+
+        public string Id { get; set; }
+        public string Key { get; set; }
+
+        // this looks ugly so we can standardized on inserting a media resource summary into other records rather
+        // then just an entity header.
+        private string _name;
+        public string Name
+        {
+            get {
+                if (String.IsNullOrEmpty(_name))
+                    return Text;
+
+                return _name;
+            }
+            set { _name = value; }
+        }
+
+        public string Text
+        {
+            get; set;
+        }
     }
 }

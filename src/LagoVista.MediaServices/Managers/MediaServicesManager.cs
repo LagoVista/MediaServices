@@ -28,7 +28,7 @@ namespace LagoVista.MediaServices.Managers
             _libraryRepo = repo;
         }
 
-        public async Task<InvokeResult> AddMediaResourceRecordAsync(MediaResource resource, EntityHeader org, EntityHeader user)
+        public async Task<InvokeResult<MediaResourceSummary>> AddMediaResourceRecordAsync(MediaResource resource, EntityHeader org, EntityHeader user)
         {
             if(resource.MediaLibrary != null && String.IsNullOrEmpty(resource.MediaLibrary.Text))
             {
@@ -41,7 +41,7 @@ namespace LagoVista.MediaServices.Managers
 
             await _mediaRepo.AddMediaResourceRecordAsync(resource);
 
-            return InvokeResult.Success;
+            return InvokeResult<MediaResourceSummary>.Create(resource.CreateSummary());
         }
 
         public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false)
@@ -107,10 +107,10 @@ namespace LagoVista.MediaServices.Managers
             return resource;
         }
 
-        public async Task<IEnumerable<MediaResourceSummary>> GetMediaResourceSummariesAsync(string libraryId, string orgId, EntityHeader user)
+        public async Task<ListResponse<MediaResourceSummary>> GetMediaResourceSummariesAsync(string libraryId, string orgId, ListRequest listRequest, EntityHeader user)
         {
             await AuthorizeOrgAccessAsync(user, orgId, typeof(MediaResource));
-            return await _mediaRepo.GetResourcesForLibrary(orgId, libraryId);
+            return await _mediaRepo.GetResourcesForLibrary(orgId, libraryId, listRequest);
         }
 
         public async Task<MediaItemResponse> GetResourceMediaAsync(string id, EntityHeader org, EntityHeader user)
@@ -148,14 +148,14 @@ namespace LagoVista.MediaServices.Managers
             };
         }
 
-        public async Task<InvokeResult> UpdateMediaResourceRecordAsync(MediaResource resource, EntityHeader org, EntityHeader user)
+        public async Task<InvokeResult<MediaResourceSummary>> UpdateMediaResourceRecordAsync(MediaResource resource, EntityHeader org, EntityHeader user)
         {
             await AuthorizeAsync(resource, AuthorizeActions.Update, user, org);
             ValidationCheck(resource, Actions.Create);
 
             await _mediaRepo.UpdateMediaResourceRecordAsync(resource);
 
-            return InvokeResult.Success;
+            return InvokeResult<MediaResourceSummary>.Create(resource.CreateSummary());
         }
     }
 }

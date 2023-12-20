@@ -1,6 +1,7 @@
 ﻿using LagoVista.CloudStorage;
 using LagoVista.CloudStorage.DocumentDB;
 using LagoVista.Core.Interfaces;
+using LagoVista.Core.Models.UIMetaData;
 using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
@@ -37,12 +38,9 @@ namespace LagoVista.MediaServices.CloudRepos
             return this.DeleteDocumentAsync(id);
         }
 
-        public async Task<IEnumerable<MediaLibrarySummary>> GetMediaLibrariesForOrgsAsync(string orgId)
+        public Task<ListResponse<MediaLibrarySummary>> GetMediaLibrariesForOrgsAsync(string orgId, ListRequest listRequest)
         {
-            var items = await base.QueryAsync(qry => qry.IsPublic == true || qry.OwnerOrganization.Id == orgId);
-
-            return from item in items
-                   select item.CreateSummary();
+            return base.QuerySummaryAsync<MediaLibrarySummary, MediaLibrary>(qry => qry.IsPublic == true || qry.OwnerOrganization.Id == orgId, med=>med.Name, listRequest);
         }
 
         public Task<MediaLibrary> GetMediaLibrary(string id)

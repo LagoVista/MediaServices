@@ -1,7 +1,7 @@
 ﻿using LagoVista.Core.Interfaces;
+using LagoVista.Core.Models.UIMetaData;
 using LagoVista.Core.Validation;
 using LagoVista.MediaServices.Models;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace LagoVista.MediaServices.Interfaces
@@ -15,7 +15,7 @@ namespace LagoVista.MediaServices.Interfaces
         Task DeleteMediaAsync(string blobReferenceName, string orgId);
 
         Task AddMediaResourceRecordAsync(MediaResource resource);
-        Task<IEnumerable<MediaResourceSummary>> GetResourcesForLibrary(string orgId, string libraryId);
+        Task<ListResponse<MediaResourceSummary>> GetResourcesForLibrary(string orgId, string libraryId, ListRequest listRequest);
         Task UpdateMediaResourceRecordAsync(MediaResource updated);
 
         Task AddOrUpdateMediaResourceAsync(MediaResource record);

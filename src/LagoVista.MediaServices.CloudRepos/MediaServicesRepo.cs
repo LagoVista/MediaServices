@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using LagoVista.CloudStorage;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using LagoVista.Core.Models.UIMetaData;
 
 namespace LagoVista.MediaServices.CloudRepos
 {
@@ -179,12 +180,9 @@ namespace LagoVista.MediaServices.CloudRepos
             return InvokeResult<byte[]>.FromError("Could not load media.");
         }
 
-        public async Task<IEnumerable<MediaResourceSummary>> GetResourcesForLibrary(string orgId, string libraryId)
+        public  Task<ListResponse<MediaResourceSummary>> GetResourcesForLibrary(string orgId, string libraryId, ListRequest listRequest)
         {
-            var items = await base.QueryAsync(qry => qry.IsPublic == true || (qry.OwnerOrganization.Id == orgId && qry.MediaLibrary.Id == libraryId));
-
-            return from item in items
-                   select item.CreateSummary();
+            return base.QuerySummaryAsync<MediaResourceSummary, MediaResource>(qry => qry.IsPublic == true || (qry.OwnerOrganization.Id == orgId && qry.MediaLibrary.Id == libraryId), med=>med.Name, listRequest);
         }
 
 

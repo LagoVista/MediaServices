@@ -1,4 +1,5 @@
 ﻿using LagoVista.Core.Models;
+using LagoVista.Core.Models.UIMetaData;
 using LagoVista.Core.Validation;
 using LagoVista.MediaServices.Models;
 using System;
@@ -15,7 +16,7 @@ namespace LagoVista.MediaServices.Interfaces
 
         Task<DependentObjectCheckResult> CheckMediaLibraryInUseAsync(string id, EntityHeader org, EntityHeader user);
 
-        Task<IEnumerable<MediaLibrarySummary>> GetMediaLibrariesForOrgsAsync(string orgId, EntityHeader user);
+        Task<ListResponse<MediaLibrarySummary>> GetMediaLibrariesForOrgsAsync(string orgId, ListRequest listRequest, EntityHeader user);
         Task<InvokeResult> UpdateMediaLibraryAsync(MediaLibrary mediaLibrary, EntityHeader org, EntityHeader user);
         Task<InvokeResult> DeleteMediaLibraryAsync(string id, EntityHeader org, EntityHeader user);
         Task<bool> QueryMediaLibraryKeyInUseAsync(string key, string orgId);

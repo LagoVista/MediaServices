@@ -1,6 +1,7 @@
 ﻿using LagoVista.Core.Interfaces;
 using LagoVista.Core.Managers;
 using LagoVista.Core.Models;
+using LagoVista.Core.Models.UIMetaData;
 using LagoVista.Core.Validation;
 using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Interfaces;
@@ -47,10 +48,10 @@ namespace LagoVista.MediaServices.Managers
             return InvokeResult.Success;
         }
 
-        public async Task<IEnumerable<MediaLibrarySummary>> GetMediaLibrariesForOrgsAsync(string orgId, EntityHeader user)
+        public async Task<ListResponse<MediaLibrarySummary>> GetMediaLibrariesForOrgsAsync(string orgId, ListRequest listRequest, EntityHeader user)
         {
             await AuthorizeOrgAccessAsync(user, orgId, typeof(MediaLibrary));
-            return await _repo.GetMediaLibrariesForOrgsAsync(orgId);
+            return await _repo.GetMediaLibrariesForOrgsAsync(orgId, listRequest);
         }
 
         public async Task<MediaLibrary> GetMediaLibraryAsync(string id, EntityHeader org, EntityHeader user)

@@ -1,4 +1,5 @@
-﻿using LagoVista.MediaServices.Models;
+﻿using LagoVista.Core.Models.UIMetaData;
+using LagoVista.MediaServices.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -8,7 +9,7 @@ namespace LagoVista.MediaServices.Interfaces
     { 
         Task AddMediaLibraryAsync(MediaLibrary mediaLibrary);
         Task<MediaLibrary> GetMediaLibrary(string id);
-        Task<IEnumerable<MediaLibrarySummary>> GetMediaLibrariesForOrgsAsync(string orgId);
+        Task<ListResponse<MediaLibrarySummary>> GetMediaLibrariesForOrgsAsync(string orgId, ListRequest listRequest);
         Task<bool> QueryKeyInUseAsync(string key, string orgId);
         Task UpdateMediaLibraryAsync(MediaLibrary mediaLibrary);
         Task DeleteStateMachineAsync(string id);

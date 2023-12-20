@@ -60,10 +60,9 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet("/api/media/libraries")]
-        public async Task<ListResponse<MediaLibrarySummary>> GetMediaLibrarysForOrg()
+        public Task<ListResponse<MediaLibrarySummary>> GetMediaLibrarysForOrg()
         {
-            var hostSummaries = await _mediaLibraryManager.GetMediaLibrariesForOrgsAsync(OrgEntityHeader.Id, UserEntityHeader);
-            return ListResponse<MediaLibrarySummary>.Create(hostSummaries);
+            return _mediaLibraryManager.GetMediaLibrariesForOrgsAsync(OrgEntityHeader.Id, GetListRequestFromHeader(), UserEntityHeader);
         }
 
         /// <summary>

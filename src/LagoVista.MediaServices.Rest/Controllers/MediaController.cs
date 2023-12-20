@@ -54,7 +54,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// <param name="resource"></param>
         /// <returns></returns>
         [HttpPost("/api/media/resource")]
-        public Task<InvokeResult> AddMediaResourceRecordAsync([FromBody] MediaResource resource)
+        public Task<InvokeResult<MediaResourceSummary>> AddMediaResourceRecordAsync([FromBody] MediaResource resource)
         {
             return _mediaServicesManager.AddMediaResourceRecordAsync(resource, OrgEntityHeader, UserEntityHeader);
         }
@@ -88,7 +88,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// <param name="resource"></param>
         /// <returns></returns>
         [HttpPut("/api/media/resource")]
-        public Task<InvokeResult> UpdateMediaResourceRecordAsync([FromBody] MediaResource resource)
+        public Task<InvokeResult<MediaResourceSummary>> UpdateMediaResourceRecordAsync([FromBody] MediaResource resource)
         {
             SetUpdatedProperties(resource);
             return _mediaServicesManager.UpdateMediaResourceRecordAsync(resource, OrgEntityHeader, UserEntityHeader);
@@ -99,10 +99,9 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet("/api/media/library/{libraryid}/resources")]
-        public async Task<ListResponse<MediaResourceSummary>> GetResourceForLibraryAsync(string libraryid)
+        public Task<ListResponse<MediaResourceSummary>> GetResourceForLibraryAsync(string libraryid)
         {
-            var summaries = await _mediaServicesManager.GetMediaResourceSummariesAsync(libraryid, OrgEntityHeader.Id, UserEntityHeader);
-            return ListResponse<MediaResourceSummary>.Create(summaries);
+            return _mediaServicesManager.GetMediaResourceSummariesAsync(libraryid, OrgEntityHeader.Id, GetListRequestFromHeader(), UserEntityHeader);
         }
 
         /// <summary>
