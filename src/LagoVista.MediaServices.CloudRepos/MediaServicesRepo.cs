@@ -182,7 +182,7 @@ namespace LagoVista.MediaServices.CloudRepos
 
         public  Task<ListResponse<MediaResourceSummary>> GetResourcesForLibrary(string orgId, string libraryId, ListRequest listRequest)
         {
-            return base.QuerySummaryAsync<MediaResourceSummary, MediaResource>(qry => qry.IsPublic == true || (qry.OwnerOrganization.Id == orgId && qry.MediaLibrary.Id == libraryId), med=>med.Name, listRequest);
+            return base.QuerySummaryAsync<MediaResourceSummary, MediaResource>(qry => (qry.IsPublic == true || qry.OwnerOrganization.Id == orgId) && qry.MediaLibrary.Id == libraryId, med=>med.Name, listRequest);
         }
 
 
