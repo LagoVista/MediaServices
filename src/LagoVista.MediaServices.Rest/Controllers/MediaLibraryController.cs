@@ -117,9 +117,9 @@ namespace LagoVista.MediaServices.Rest.Controllers
         public DetailResponse<MediaLibrary> CreateMediaLibrary()
         {
             var response = DetailResponse<MediaLibrary>.Create();
-            response.Model.Id = Guid.NewGuid().ToId();
             SetAuditProperties(response.Model);
             SetOwnedProperties(response.Model);
+            response.FormFields.Remove(nameof(MediaLibrary.MediaResources).CamelCase());
             return response;
         }
     }

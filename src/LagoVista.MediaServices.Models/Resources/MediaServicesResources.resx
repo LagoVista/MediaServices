@@ -252,4 +252,7 @@
   <data name="MediaResources_Title" xml:space="preserve">
     <value>Media Resources</value>
   </data>
+  <data name="MediaLibrary_MediaResources" xml:space="preserve">
+    <value>Resources</value>
+  </data>
 </root>
