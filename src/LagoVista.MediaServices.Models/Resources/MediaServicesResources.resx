@@ -255,4 +255,7 @@
   <data name="MediaLibrary_MediaResources" xml:space="preserve">
     <value>Resources</value>
   </data>
+  <data name="MediaResource_Icon" xml:space="preserve">
+    <value>Icon</value>
+  </data>
 </root>

@@ -31,7 +31,7 @@ namespace LagoVista.MediaServices.Models
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResource_Title, MediaServicesResources.Names.MediaResource_Help, 
         MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources),
         FactoryUrl: "/api/media/resource/factory", GetListUrl: "/api/media/library/{libraryid}/resources", GetUrl: "/api/media/resource/{id}", DeleteUrl: "/api/media/resource/{id}",
-        SaveUrl: "/api/media/resource")]
+        SaveUrl: "/api/media/resource", Icon: "icon-fo-image")]
     public class MediaResource : EntityBase, IValidateable, IDescriptionEntity, IFormDescriptor, IFormConditionalFields, ISummaryFactory
     {
 
@@ -52,8 +52,13 @@ namespace LagoVista.MediaServices.Models
         public string FileName { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_IsFileUpload, HelpResource: Resources.MediaServicesResources.Names.MediaResource_IsFileUpload_Help, FieldType: FieldTypes.CheckBox, ResourceType: typeof(MediaServicesResources))]
         public bool IsFileUpload { get; set; }
+       
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Link, HelpResource: MediaServicesResources.Names.MediaResource_Link_Help, FieldType: FieldTypes.WebLink, ResourceType: typeof(MediaServicesResources))]
         public string Link { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Icon, FieldType: FieldTypes.Icon, IsRequired: true, ResourceType: typeof(MediaServicesResources))]
+        public string Icon { get; set; } = "icon-fo-image";
+
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_ContentLength, FieldType: FieldTypes.Integer, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public long? ContentSize { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.MediaResources_MimeType, IsUserEditable: false, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
@@ -114,6 +119,7 @@ namespace LagoVista.MediaServices.Models
                 Description = Description,
                 IsPublic = IsPublic,
                 Key = Key,
+                Icon = Icon,
                 Name = Name,
                 ResourceType = ResourceType.Text,
                 MimeType = MimeType,
@@ -167,6 +173,7 @@ namespace LagoVista.MediaServices.Models
             {
                 nameof(Name),
                 nameof(Key),
+                nameof(Icon),
                 nameof(IsFileUpload),
                 nameof(FileName),
                 nameof(ResourceType),
@@ -209,7 +216,7 @@ namespace LagoVista.MediaServices.Models
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResources_Title, MediaServicesResources.Names.MediaResource_Help,
     MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.Summary, ResourceType: typeof(MediaServicesResources),
     FactoryUrl: "/api/media/resource/factory", GetListUrl: "/api/media/library/{libraryid}/resources", GetUrl: "/api/media/resource/{id}", DeleteUrl: "/api/media/resource/{id}",
-    SaveUrl: "/api/media/resource")]
+    SaveUrl: "/api/media/resource", Icon: "icon-fo-image")]
     public class MediaResourceSummary : ISummaryData
     {
         public string ResourceType { get; set; }
@@ -217,6 +224,8 @@ namespace LagoVista.MediaServices.Models
         public long? ContentSize { get; set; }
         public bool IsFileUpload { get; set; }
         public string Link { get; set; }
+
+        public string Icon { get; set; }
 
         public bool IsPublic { get; set; }
 
