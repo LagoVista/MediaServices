@@ -120,6 +120,38 @@ namespace LagoVista.MediaServices.Rest.Controllers
         }
 
         /// <summary>
+        /// Media Resources - Upload a file for a specific media resource.
+        /// </summary>
+        /// <param name="id">unique id of the resource.</param>
+        /// <param name="file">file to be uploaded.</param>
+        /// <returns></returns>
+        [HttpPost("/api/media/resource/public/upload")]
+        public async Task<InvokeResult<MediaResource>> UploadPublicMediaAsync(IFormFile file)
+        {
+            using (var strm = file.OpenReadStream())
+            {
+                var id = Guid.NewGuid().ToId();
+                return await _mediaServicesManager.AddResourceMediaAsync(id, strm, file.FileName, file.ContentType, OrgEntityHeader, UserEntityHeader, true, true);
+            }
+        }
+
+        /// <summary>
+        /// Media Resources - Upload a file for a specific media resource.
+        /// </summary>
+        /// <param name="id">unique id of the resource.</param>
+        /// <param name="file">file to be uploaded.</param>
+        /// <returns></returns>
+        [HttpPost("/api/media/resource/upload")]
+        public async Task<InvokeResult<MediaResource>> UploadMediaAsync(IFormFile file)
+        {
+            using (var strm = file.OpenReadStream())
+            {
+                var id = Guid.NewGuid().ToId();
+                return await _mediaServicesManager.AddResourceMediaAsync(id, strm, file.FileName, file.ContentType, OrgEntityHeader, UserEntityHeader, true, false);
+            }
+        }
+
+        /// <summary>
         /// Media Resource - Download a media resource file.
         /// </summary>
         /// <param name="id"></param>

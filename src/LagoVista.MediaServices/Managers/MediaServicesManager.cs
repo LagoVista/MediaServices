@@ -44,13 +44,14 @@ namespace LagoVista.MediaServices.Managers
             return InvokeResult<MediaResourceSummary>.Create(resource.CreateSummary());
         }
 
-        public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false)
+        public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false)
         {
             var mediaResource = new MediaResource();
             mediaResource.Id = id;
             mediaResource.CreationDate = DateTime.UtcNow.ToJSONString();
             mediaResource.LastUpdatedDate = mediaResource.CreationDate;
             mediaResource.CreatedBy = user;
+            mediaResource.IsPublic = isPublic;
             mediaResource.LastUpdatedBy = user;
             mediaResource.OwnerOrganization = org;
             if (saveResourceRecord)
