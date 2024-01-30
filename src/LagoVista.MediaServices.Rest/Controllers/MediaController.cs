@@ -12,6 +12,7 @@ using LagoVista.IoT.Logging.Loggers;
 using LagoVista.UserAdmin.Models.Users;
 using Microsoft.AspNetCore.Identity;
 using System.IO;
+using Microsoft.AspNetCore.Authorization;
 
 namespace LagoVista.MediaServices.Rest.Controllers
 {
@@ -154,12 +155,14 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// <summary>
         /// Media Resource - Download a media resource file.
         /// </summary>
+        /// <param name="orgid"></param>
         /// <param name="id"></param>
         /// <returns></returns>
-        [HttpGet("/api/media/resource/{id}/download")]
-        public async Task<IActionResult> DownloadMedia(string id)
+        [AllowAnonymous]
+        [HttpGet("/api/media/resource/{orgid}/{id}/download")]
+        public async Task<IActionResult> DownloadMedia(string orgid, string id)
         {
-            var response = await _mediaServicesManager.GetResourceMediaAsync(id, OrgEntityHeader, UserEntityHeader);
+            var response = await _mediaServicesManager.GetPublicResourceRecordAsync(orgid, id);
             var ms = new MemoryStream(response.ImageBytes);
             return File(ms, response.ContentType, response.FileName);
         }

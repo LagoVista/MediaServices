@@ -116,8 +116,11 @@ namespace LagoVista.MediaServices.Managers
 
         public async Task<MediaItemResponse> GetResourceMediaAsync(string id, EntityHeader org, EntityHeader user)
         {
-            await AuthorizeOrgAccessAsync(user, org.Id, typeof(MediaResource));
+            
             var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
+            if (!resource.IsPublic && org.Id != resource.OwnerOrganization.Id)
+                throw new NotAuthorizedException("Not authorized to download image resource.");
+
             var mediaItem = await _mediaRepo.GetMediaAsync(resource.StorageReferenceName, org.Id);
             if (!mediaItem.Successful)
             {
@@ -132,12 +135,19 @@ namespace LagoVista.MediaServices.Managers
             };
         }
 
-        public async Task<MediaItemResponse> GetMediaItemAsync(string orgId, string id)
+        public async Task<MediaItemResponse> GetPublicResourceRecordAsync(string orgId, string id)
         {
             var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
-            var mediaItem = await _mediaRepo.GetMediaAsync(id, orgId);
+            if(resource == null)
+            {
+                Console.WriteLine($"ERROR: Could not find media record for orgid: {orgId} - mediaid: {id}");
+                throw new RecordNotFoundException(nameof(MediaResource), id);
+            }
+
+            var mediaItem = await _mediaRepo.GetMediaAsync(resource.StorageReferenceName, orgId);
             if (!mediaItem.Successful)
             {
+                Console.WriteLine($"ERROR: Could not find media/image for orgid: {orgId} - mediaid: {id}");
                 throw new RecordNotFoundException(nameof(MediaResource), id);
             }
 
