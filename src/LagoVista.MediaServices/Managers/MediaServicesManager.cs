@@ -11,6 +11,7 @@ using LagoVista.MediaServices.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http;
 using System.Threading.Tasks;
 using static LagoVista.Core.Models.AuthorizeResult;
 
@@ -30,7 +31,7 @@ namespace LagoVista.MediaServices.Managers
 
         public async Task<InvokeResult<MediaResourceSummary>> AddMediaResourceRecordAsync(MediaResource resource, EntityHeader org, EntityHeader user)
         {
-            if(resource.MediaLibrary != null && String.IsNullOrEmpty(resource.MediaLibrary.Text))
+            if (resource.MediaLibrary != null && String.IsNullOrEmpty(resource.MediaLibrary.Text))
             {
                 var library = await _libraryRepo.GetMediaLibrary(resource.MediaLibrary.Id);
                 resource.MediaLibrary.Text = library.Name;
@@ -72,7 +73,7 @@ namespace LagoVista.MediaServices.Managers
             stream.Read(bytes, 0, (int)stream.Length);
             mediaResource.FileName = fileName;
             mediaResource.ContentSize = stream.Length;
-            
+
             var result = await _mediaRepo.AddMediaAsync(bytes, org.Id, mediaResource.StorageReferenceName, contentType);
             if (result.Successful)
             {
@@ -84,6 +85,16 @@ namespace LagoVista.MediaServices.Managers
             else
             {
                 return InvokeResult<MediaResource>.FromInvokeResult(result);
+            }
+        }
+
+        public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(Uri url, string name, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false)
+        {
+            using (var client = new HttpClient())
+            using (var response = await client.GetAsync(url))
+            using (var stream = await response.Content.ReadAsStreamAsync())
+            {
+                return await AddResourceMediaAsync(Guid.NewGuid().ToId(), stream, name, response.Content.Headers.ContentType.ToString(), org, user, saveResourceRecord, isPublic);
             }
         }
 
@@ -116,7 +127,7 @@ namespace LagoVista.MediaServices.Managers
 
         public async Task<MediaItemResponse> GetResourceMediaAsync(string id, EntityHeader org, EntityHeader user)
         {
-            
+
             var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
             if (!resource.IsPublic && org.Id != resource.OwnerOrganization.Id)
                 throw new NotAuthorizedException("Not authorized to download image resource.");
@@ -138,7 +149,7 @@ namespace LagoVista.MediaServices.Managers
         public async Task<MediaItemResponse> GetPublicResourceRecordAsync(string orgId, string id)
         {
             var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
-            if(resource == null)
+            if (resource == null)
             {
                 Console.WriteLine($"ERROR: Could not find media record for orgid: {orgId} - mediaid: {id}");
                 throw new RecordNotFoundException(nameof(MediaResource), id);
@@ -168,5 +179,7 @@ namespace LagoVista.MediaServices.Managers
 
             return InvokeResult<MediaResourceSummary>.Create(resource.CreateSummary());
         }
+
+
     }
 }

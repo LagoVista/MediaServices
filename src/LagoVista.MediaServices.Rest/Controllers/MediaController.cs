@@ -166,5 +166,11 @@ namespace LagoVista.MediaServices.Rest.Controllers
             var ms = new MemoryStream(response.ImageBytes);
             return File(ms, response.ContentType, response.FileName);
         }
+
+        [HttpPost("/api/media/resource/request")]
+        public async Task<InvokeResult<MediaResource>> UploadAsync([FromBody] MediaUploadRequest uploadRequest )
+        {
+            return await _mediaServicesManager.AddResourceMediaAsync(new Uri(uploadRequest.Uri), uploadRequest.FileName, OrgEntityHeader, UserEntityHeader, true, uploadRequest.IsPublic);
+        }
     }
 }
