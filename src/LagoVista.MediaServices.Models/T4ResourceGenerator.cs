@@ -1,4 +1,4 @@
-﻿/*1/13/2024 10:06:50 AM*/
+﻿/*6/7/2024 11:58:58 AM*/
 using System.Globalization;
 using System.Reflection;
 
@@ -123,6 +123,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:MediaLibrary_Title
 
 		public static string MediaLibrary_Title { get { return GetResourceString("MediaLibrary_Title"); } }
+//Resources:MediaServicesResources:MediaResource_Content
+
+		public static string MediaResource_Content { get { return GetResourceString("MediaResource_Content"); } }
 //Resources:MediaServicesResources:MediaResource_ContentLength
 
 		public static string MediaResource_ContentLength { get { return GetResourceString("MediaResource_ContentLength"); } }
@@ -159,6 +162,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:MediaResource_Title
 
 		public static string MediaResource_Title { get { return GetResourceString("MediaResource_Title"); } }
+//Resources:MediaServicesResources:MediaResource_WebLink
+
+		public static string MediaResource_WebLink { get { return GetResourceString("MediaResource_WebLink"); } }
 //Resources:MediaServicesResources:MediaResources_FileName
 
 		public static string MediaResources_FileName { get { return GetResourceString("MediaResources_FileName"); } }
@@ -174,6 +180,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:MediaResources_Title
 
 		public static string MediaResources_Title { get { return GetResourceString("MediaResources_Title"); } }
+//Resources:MediaServicesResources:MediaResourceType_Content
+
+		public static string MediaResourceType_Content { get { return GetResourceString("MediaResourceType_Content"); } }
 //Resources:MediaServicesResources:MediaResourceType_Manual
 
 		public static string MediaResourceType_Manual { get { return GetResourceString("MediaResourceType_Manual"); } }
@@ -195,6 +204,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:MediaResourceType_Video
 
 		public static string MediaResourceType_Video { get { return GetResourceString("MediaResourceType_Video"); } }
+//Resources:MediaServicesResources:MediaResourceType_WebLink
+
+		public static string MediaResourceType_WebLink { get { return GetResourceString("MediaResourceType_WebLink"); } }
 
 		public static class Names
 		{
@@ -221,6 +233,7 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string MediaLibrary_Help = "MediaLibrary_Help";
 			public const string MediaLibrary_MediaResources = "MediaLibrary_MediaResources";
 			public const string MediaLibrary_Title = "MediaLibrary_Title";
+			public const string MediaResource_Content = "MediaResource_Content";
 			public const string MediaResource_ContentLength = "MediaResource_ContentLength";
 			public const string MediaResource_Description = "MediaResource_Description";
 			public const string MediaResource_Help = "MediaResource_Help";
@@ -233,11 +246,13 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string MediaResource_ResourceType_Help = "MediaResource_ResourceType_Help";
 			public const string MediaResource_StorageRefName = "MediaResource_StorageRefName";
 			public const string MediaResource_Title = "MediaResource_Title";
+			public const string MediaResource_WebLink = "MediaResource_WebLink";
 			public const string MediaResources_FileName = "MediaResources_FileName";
 			public const string MediaResources_MimeType = "MediaResources_MimeType";
 			public const string MediaResources_ResourceType = "MediaResources_ResourceType";
 			public const string MediaResources_ResourceType_Select = "MediaResources_ResourceType_Select";
 			public const string MediaResources_Title = "MediaResources_Title";
+			public const string MediaResourceType_Content = "MediaResourceType_Content";
 			public const string MediaResourceType_Manual = "MediaResourceType_Manual";
 			public const string MediaResourceType_Other = "MediaResourceType_Other";
 			public const string MediaResourceType_PartsList = "MediaResourceType_PartsList";
@@ -245,6 +260,7 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string MediaResourceType_Specification = "MediaResourceType_Specification";
 			public const string MediaResourceType_UserGuide = "MediaResourceType_UserGuide";
 			public const string MediaResourceType_Video = "MediaResourceType_Video";
+			public const string MediaResourceType_WebLink = "MediaResourceType_WebLink";
 		}
 	}
 }

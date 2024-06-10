@@ -258,4 +258,16 @@
   <data name="MediaResource_Icon" xml:space="preserve">
     <value>Icon</value>
   </data>
+  <data name="MediaResourceType_Content" xml:space="preserve">
+    <value>Content</value>
+  </data>
+  <data name="MediaResourceType_WebLink" xml:space="preserve">
+    <value>Web Link</value>
+  </data>
+  <data name="MediaResource_Content" xml:space="preserve">
+    <value>Content</value>
+  </data>
+  <data name="MediaResource_WebLink" xml:space="preserve">
+    <value>Web Link</value>
+  </data>
 </root>

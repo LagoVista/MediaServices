@@ -26,6 +26,8 @@ namespace LagoVista.MediaServices.Models
         Video,
         [EnumLabel(MediaResource.DeviceResourceTypes_Other, MediaServicesResources.Names.MediaResourceType_Other, typeof(Resources.MediaServicesResources))]
         Other,
+        [EnumLabel(MediaResource.DeviceResourceTypes_Content, MediaServicesResources.Names.MediaResourceType_Content, typeof(Resources.MediaServicesResources))]
+        Content,
     }
 
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResource_Title, MediaServicesResources.Names.MediaResource_Help, 
@@ -42,6 +44,7 @@ namespace LagoVista.MediaServices.Models
         public const string DeviceResourceTypes_Picture = "picture";
         public const string DeviceResourceTypes_Video = "video";
         public const string DeviceResourceTypes_Other = "other";
+        public const string DeviceResourceTypes_Content = "content";
 
         public MediaResource()
         {
@@ -65,6 +68,9 @@ namespace LagoVista.MediaServices.Models
         public string MimeType { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.Common_Description, FieldType: FieldTypes.MultiLineText, ResourceType: typeof(MediaServicesResources))]
         public string Description { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Content, FieldType: FieldTypes.HtmlEditor, ResourceType: typeof(MediaServicesResources))]
+        public string Content { get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_MediaLibrary, FieldType: FieldTypes.Text, IsRequired: false, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public EntityHeader MediaLibrary { get; set; }
@@ -181,6 +187,7 @@ namespace LagoVista.MediaServices.Models
                 nameof(ContentSize),
                 nameof(MimeType),
                 nameof(Description),
+                nameof(Content),
             };
         }
 
@@ -188,9 +195,21 @@ namespace LagoVista.MediaServices.Models
         {
             return new FormConditionals()
             {
-                ConditionalFields = new List<string> { nameof(ContentSize), nameof(MimeType), nameof(Link) },
+                ConditionalFields = new List<string> { nameof(ContentSize), nameof(MimeType), nameof(Link), nameof(Content) },
                 Conditionals = new List<FormConditional>()
                 {
+                    new FormConditional()
+                    {
+                        Field = nameof(ResourceType),
+                        Value = DeviceResourceTypes_Content,
+                        VisibleFields = new List<string>() {nameof(Content)}
+                    },
+                    new FormConditional()
+                    {
+                        Field = nameof(IsFileUpload),
+                        Value = "true",
+                        VisibleFields = new List<string>() {nameof(ContentSize), nameof(MimeType)}
+                    },
                     new FormConditional()
                     {
                         Field = nameof(IsFileUpload),
@@ -224,13 +243,9 @@ namespace LagoVista.MediaServices.Models
         public long? ContentSize { get; set; }
         public bool IsFileUpload { get; set; }
         public string Link { get; set; }
-
         public string Icon { get; set; }
-
         public bool IsPublic { get; set; }
-
         public string Description { get; set; }
-
         public string Id { get; set; }
         public string Key { get; set; }
 
