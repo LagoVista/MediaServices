@@ -177,7 +177,7 @@ namespace LagoVista.MediaServices.Managers
             using (var client = new HttpClient())
             using (var response = await client.GetAsync(url))
             using (var stream = await response.Content.ReadAsStreamAsync())
-            {
+            {   
                 return await AddResourceMediaAsync(Guid.NewGuid().ToId(), stream, name, response.Content.Headers.ContentType.ToString(), org, user, saveResourceRecord, isPublic, license, url.ToString());
             }
         }
