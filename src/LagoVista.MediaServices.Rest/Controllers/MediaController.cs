@@ -153,6 +153,18 @@ namespace LagoVista.MediaServices.Rest.Controllers
         }
 
         /// <summary>
+        /// Media Resources - Upload a file for a specific media resource.
+        /// </summary>
+        /// <param name="id">unique id of the resource.</param>
+        /// <param name="file">file to be uploaded.</param>
+        /// <returns></returns>
+        [HttpPut("/api/media/resource/{id}/resize")]
+        public  Task<InvokeResult<MediaResource>> ResizeMediaAsync([FromBody] MediaResizeRequest request, string id)
+        {
+            return _mediaServicesManager.ResizeImageAsync(id, request.Width, request.Height, request.FileType, OrgEntityHeader, UserEntityHeader);
+        }
+
+        /// <summary>
         /// Media Resource - Download a media resource file.
         /// </summary>
         /// <param name="orgid"></param>

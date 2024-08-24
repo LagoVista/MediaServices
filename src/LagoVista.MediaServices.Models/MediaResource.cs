@@ -78,6 +78,10 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.MediaResources_ResourceType, WaterMark: MediaServicesResources.Names.MediaResources_ResourceType_Select, HelpResource: Resources.MediaServicesResources.Names.MediaResource_ResourceType_Help, IsRequired: true, EnumType: typeof(MediaResourceTypes), FieldType: FieldTypes.Picker, ResourceType: typeof(MediaServicesResources))]
         public EntityHeader<MediaResourceTypes> ResourceType { get; set; }
 
+        public int? Width { get; set; }
+
+        public int? Height { get; set; }
+
         public string StorageReferenceName { get; set; }
 
         public void SetContentType(string contentType)
@@ -104,6 +108,11 @@ namespace LagoVista.MediaServices.Models
             {
                 StorageReferenceName = $"{Id}.jpeg";
                 MimeType = "image/jpeg";
+            }
+            else if (contentType.ToLower().Contains("webp"))
+            {
+                StorageReferenceName = $"{Id}.webp";
+                MimeType = "image/webp";
             }
             else if (contentType.ToLower().Contains("pdf"))
             {

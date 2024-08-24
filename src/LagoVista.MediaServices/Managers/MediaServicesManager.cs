@@ -8,6 +8,10 @@ using LagoVista.Core.Validation;
 using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.Processing;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -45,23 +49,86 @@ namespace LagoVista.MediaServices.Managers
             return InvokeResult<MediaResourceSummary>.Create(resource.CreateSummary());
         }
 
-        //public static byte[] ScaleImage(byte[] imageBytes, int maxWidth, int maxHeight)
-        //{
-        //    var image = Image.Load(imageBytes);
+        public static byte[] ScaleImage(byte[] imageBytes, int maxWidth, int maxHeight, string fileType)
+        {
+            using (var image = Image.Load(imageBytes))
+            {
+                var ratioX = (double)maxWidth / image.Width;
+                var ratioY = (double)maxHeight / image.Height;
+                var ratio = Math.Min(ratioX, ratioY);
 
-        //    var ratioX = (double)maxWidth / image.Width;
-        //    var ratioY = (double)maxHeight / image.Height;
-        //    var ratio = Math.Min(ratioX, ratioY);
+                var newWidth = (int)(image.Width * ratio);
+                var newHeight = (int)(image.Height * ratio);
 
-        //    var newWidth = (int)(image.Width * ratio);
-        //    var newHeight = (int)(image.Height * ratio);
+                image.Mutate(x => x.Resize(newWidth, newHeight));
 
-        //    image.Mutate(x => x.Resize(newWidth, newHeight));
+                using (var ms = new MemoryStream())
+                {
+                    switch (fileType.ToLower())
+                    {
+                        case "png":
+                            image.Save(ms, new PngEncoder());
+                            break;
+                        case "jpg":
+                        case "jpeg":
+                            image.Save(ms, new PngEncoder());
+                            break;
+                        case "webp":
+                            image.Save(ms, new WebpEncoder());
+                            break;
+                    }
+                    return ms.ToArray();
+                }
+            }
+        }
 
-        //    using var ms = new MemoryStream();
-        //    image.Save(ms, new PngEncoder());
-        //    return ms.ToArray();
-        //}
+        public async Task<InvokeResult<MediaResource>> ResizeImageAsync(string id, int width, int height, string fileType, EntityHeader org, EntityHeader user)
+        {
+            if(String.IsNullOrEmpty(fileType))
+            {
+                return InvokeResult<MediaResource>.FromError("File Type is required");
+            }
+
+            if(width < 0 || width > 12000 || height < 0 || height > 12000)
+            {
+                return InvokeResult<MediaResource>.FromError($"Height and Width must be greater than 0 and less than 12000, provided: width={width}, height={height}.");
+            }
+
+            switch(fileType)
+            {
+                case "png":
+                case "jpg":
+                case "jpeg":
+                case "webp":
+                    break;
+                default:
+                    return InvokeResult<MediaResource>.FromError($"Only file types [png, jpg, jpeg, webp] are supported.");
+                    break;
+            }
+
+            var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
+            resource.SetContentType(fileType);
+
+            if (org.Id != resource.OwnerOrganization.Id)
+                throw new NotAuthorizedException("Not authorized to esize this image resource.");
+
+            var mediaItem = await _mediaRepo.GetMediaAsync(resource.StorageReferenceName, org.Id);
+            if (!mediaItem.Successful)
+            {
+                throw new RecordNotFoundException(nameof(MediaResource), id);
+            }
+
+            var newBuffer = ScaleImage(mediaItem.Result, width, height, fileType);
+
+            await _mediaRepo.UpdateMediaAsync(newBuffer, org.Id, resource.StorageReferenceName, resource.MimeType);
+
+            resource.Width = width;
+            resource.Height = height;
+
+            await _mediaRepo.UpdateMediaResourceRecordAsync(resource);
+
+            return InvokeResult<MediaResource>.Create(resource);
+        }
 
         public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false)
         {
@@ -134,6 +201,21 @@ namespace LagoVista.MediaServices.Managers
         {
             var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
             await AuthorizeAsync(resource, AuthorizeActions.Read, user, org);
+            if(!String.IsNullOrEmpty(resource.MimeType) && resource.MimeType.StartsWith("image"))
+            {
+                if(!resource.Width.HasValue)
+                {
+                    var media = await _mediaRepo.GetMediaAsync(resource.StorageReferenceName, org.Id);
+                    if(media.Successful)
+                    {
+                        var image = Image.Load(media.Result);
+                        resource.Width = image.Width;
+                        resource.Height = image.Height;
+                        await _mediaRepo.UpdateMediaResourceRecordAsync(resource);
+                    }
+                }
+            }
+
             return resource;
         }
 
@@ -145,7 +227,6 @@ namespace LagoVista.MediaServices.Managers
 
         public async Task<MediaItemResponse> GetResourceMediaAsync(string id, EntityHeader org, EntityHeader user)
         {
-
             var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
             if (!resource.IsPublic && org.Id != resource.OwnerOrganization.Id)
                 throw new NotAuthorizedException("Not authorized to download image resource.");

@@ -15,6 +15,7 @@ using LagoVista.CloudStorage;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using LagoVista.Core.Models.UIMetaData;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace LagoVista.MediaServices.CloudRepos
 {
@@ -115,7 +116,55 @@ namespace LagoVista.MediaServices.CloudRepos
             }
 
             return InvokeResult.Success;
+        }
 
+
+        public async Task<InvokeResult> UpdateMediaAsync(byte[] data, string orgId, string fileName, string contentType)
+        {
+            var result = await GetStorageContainerAsync(orgId);
+            if (!result.Successful)
+            {
+                return result.ToInvokeResult();
+            }
+
+            var container = result.Result;
+            var blob = container.GetBlobClient(fileName);
+
+            var numberRetries = 5;
+            var retryCount = 0;
+            var completed = false;
+            var stream = new MemoryStream(data);
+            while (retryCount++ < numberRetries && !completed)
+            {
+                try
+                {
+                    var header = new BlobHttpHeaders { ContentType = contentType };
+
+                    stream.Seek(0, SeekOrigin.Begin);
+                    var blobResult = await blob.UploadAsync(stream, new BlobUploadOptions { HttpHeaders = header });
+                    var statusCode = blobResult.GetRawResponse().Status;
+
+                    if (statusCode < 200 || statusCode > 299)
+                        throw new InvalidOperationException($"Invalid response Code {statusCode}");
+
+                    return InvokeResult.Success;
+                }
+                catch (Exception ex)
+                {
+                    if (retryCount == numberRetries)
+                    {
+                        _logger.AddException("MediaServicesRepo_AddItemAsync", ex);
+                        return InvokeResult.FromException("MediaServicesRepo_AddItemAsync", ex);
+                    }
+                    else
+                    {
+                        _logger.AddCustomEvent(LagoVista.Core.PlatformSupport.LogLevel.Warning, "MediaServicesRepo_AddItemAsync", "", ex.Message.ToKVP("exceptionMessage"), ex.GetType().Name.ToKVP("exceptionType"), retryCount.ToString().ToKVP("retryCount"));
+                    }
+                    await Task.Delay(retryCount * 250);
+                }
+            }
+
+            return InvokeResult.Success;
         }
 
         public Task AddOrUpdateMediaResourceAsync(MediaResource updated)
