@@ -27,6 +27,11 @@ namespace LagoVista.MediaServices.Interfaces
         IConnectionSettings MediaLibraryConnection { get; }
         IConnectionSettings MediaStorageConnection { get; }
 
+        string ImageSearchUri { get; }
+        string ImageSearchClientId { get; }
+        string ImageSearchClientSecret { get;  }
+        
+
         bool ShouldConsolidateCollections { get; }
     }
 }

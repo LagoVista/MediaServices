@@ -7,6 +7,7 @@ using LagoVista.MediaServices.Models.Resources;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Net.Mime;
 
 namespace LagoVista.MediaServices.Models
 {
@@ -34,7 +35,7 @@ namespace LagoVista.MediaServices.Models
         MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources),
         FactoryUrl: "/api/media/resource/factory", GetListUrl: "/api/media/library/{libraryid}/resources", GetUrl: "/api/media/resource/{id}", DeleteUrl: "/api/media/resource/{id}",
         SaveUrl: "/api/media/resource", Icon: "icon-fo-image")]
-    public class MediaResource : EntityBase, IValidateable, IDescriptionEntity, IFormDescriptor, IFormConditionalFields, ISummaryFactory
+    public class MediaResource : EntityBase, IValidateable, IDescriptionEntity, IFormDescriptor, IFormConditionalFields, ISummaryFactory, IFormDescriptorCol2
     {
 
         public const string DeviceResourceTypes_Manual = "manual";
@@ -78,9 +79,19 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.MediaResources_ResourceType, WaterMark: MediaServicesResources.Names.MediaResources_ResourceType_Select, HelpResource: Resources.MediaServicesResources.Names.MediaResource_ResourceType_Help, IsRequired: true, EnumType: typeof(MediaResourceTypes), FieldType: FieldTypes.Picker, ResourceType: typeof(MediaServicesResources))]
         public EntityHeader<MediaResourceTypes> ResourceType { get; set; }
 
+
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Width, FieldType: FieldTypes.Integer, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public int? Width { get; set; }
 
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Height, FieldType: FieldTypes.Integer, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public int? Height { get; set; }
+
+
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_License, FieldType: FieldTypes.HtmlEditor, IsUserEditable:false, ResourceType: typeof(MediaServicesResources))]
+        public string License { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_OriginalSource, FieldType: FieldTypes.WebLink, IsUserEditable:false, ResourceType: typeof(MediaServicesResources))]
+        public string OriginalUrl { get; set; }
 
         public string StorageReferenceName { get; set; }
 
@@ -192,11 +203,22 @@ namespace LagoVista.MediaServices.Models
                 nameof(IsFileUpload),
                 nameof(FileName),
                 nameof(ResourceType),
-                nameof(Link),
-                nameof(ContentSize),
-                nameof(MimeType),
                 nameof(Description),
                 nameof(Content),
+            };
+        }
+
+        public List<string> GetFormFieldsCol2()
+        {
+            return new List<string>()
+            {
+                nameof(ContentSize),
+                nameof(Width),
+                nameof(Height),
+                nameof(Link),                
+                nameof(MimeType),
+                nameof(License),
+                nameof(OriginalUrl),
             };
         }
 
@@ -239,6 +261,8 @@ namespace LagoVista.MediaServices.Models
         {
             return CreateSummary();
         }
+
+        
     }
 
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResources_Title, MediaServicesResources.Names.MediaResource_Help,

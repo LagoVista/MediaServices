@@ -13,6 +13,7 @@ namespace LagoVista.MediaServices
         {
             services.AddTransient<IMediaServicesManager, MediaServicesManager>();
             services.AddTransient<IMediaLibraryManager, MediaLibraryManager>();
+            services.AddTransient<IMediaSearchManager, MediaSearchManager>();
         }
     }
 }

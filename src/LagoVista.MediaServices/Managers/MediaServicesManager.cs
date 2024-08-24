@@ -82,7 +82,7 @@ namespace LagoVista.MediaServices.Managers
             }
         }
 
-        public async Task<InvokeResult<MediaResource>> ResizeImageAsync(string id, int width, int height, string fileType, EntityHeader org, EntityHeader user)
+        public async Task<InvokeResult<MediaResource>> ResizeImageAsync(string id, string fileName, int width, int height, string fileType, EntityHeader org, EntityHeader user)
         {
             if(String.IsNullOrEmpty(fileType))
             {
@@ -101,27 +101,26 @@ namespace LagoVista.MediaServices.Managers
                 case "jpeg":
                 case "webp":
                     break;
-                default:
-                    return InvokeResult<MediaResource>.FromError($"Only file types [png, jpg, jpeg, webp] are supported.");
-                    break;
+                default: return InvokeResult<MediaResource>.FromError($"Only file types [png, jpg, jpeg, webp] are supported.");
             }
 
             var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
-            resource.SetContentType(fileType);
-
             if (org.Id != resource.OwnerOrganization.Id)
                 throw new NotAuthorizedException("Not authorized to esize this image resource.");
 
             var mediaItem = await _mediaRepo.GetMediaAsync(resource.StorageReferenceName, org.Id);
             if (!mediaItem.Successful)
             {
-                throw new RecordNotFoundException(nameof(MediaResource), id);
+                throw new RecordNotFoundException("Media Contents", resource.StorageReferenceName);
             }
 
             var newBuffer = ScaleImage(mediaItem.Result, width, height, fileType);
-
+            resource.SetContentType(fileType);
+            resource.ContentSize = newBuffer.Length;
             await _mediaRepo.UpdateMediaAsync(newBuffer, org.Id, resource.StorageReferenceName, resource.MimeType);
 
+            var fi = new FileInfo(resource.FileName);
+            resource.FileName = $"{fileName}.{fileType}";
             resource.Width = width;
             resource.Height = height;
 
@@ -130,7 +129,7 @@ namespace LagoVista.MediaServices.Managers
             return InvokeResult<MediaResource>.Create(resource);
         }
 
-        public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false)
+        public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false, string license = "", string originalUrl = "")
         {
             var mediaResource = new MediaResource();
             mediaResource.Id = id;
@@ -173,13 +172,13 @@ namespace LagoVista.MediaServices.Managers
             }
         }
 
-        public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(Uri url, string name, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false)
+        public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(Uri url, string name, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false, string license = "")
         {
             using (var client = new HttpClient())
             using (var response = await client.GetAsync(url))
             using (var stream = await response.Content.ReadAsStreamAsync())
             {
-                return await AddResourceMediaAsync(Guid.NewGuid().ToId(), stream, name, response.Content.Headers.ContentType.ToString(), org, user, saveResourceRecord, isPublic);
+                return await AddResourceMediaAsync(Guid.NewGuid().ToId(), stream, name, response.Content.Headers.ContentType.ToString(), org, user, saveResourceRecord, isPublic, license, url.ToString());
             }
         }
 
@@ -257,8 +256,8 @@ namespace LagoVista.MediaServices.Managers
             var mediaItem = await _mediaRepo.GetMediaAsync(resource.StorageReferenceName, orgId);
             if (!mediaItem.Successful)
             {
-                Console.WriteLine($"ERROR: Could not find media/image for orgid: {orgId} - mediaid: {id}");
-                throw new RecordNotFoundException(nameof(MediaResource), id);
+                Console.WriteLine($"ERROR: Could not find media/image for orgid: {orgId} - mediaid: {resource.StorageReferenceName}");
+                throw new RecordNotFoundException("Media File Contents", resource.StorageReferenceName);
             }
 
             return new MediaItemResponse()

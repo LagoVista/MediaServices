@@ -270,4 +270,16 @@
   <data name="MediaResource_WebLink" xml:space="preserve">
     <value>Web Link</value>
   </data>
+  <data name="MediaResource_Height" xml:space="preserve">
+    <value>Height</value>
+  </data>
+  <data name="MediaResource_License" xml:space="preserve">
+    <value>License</value>
+  </data>
+  <data name="MediaResource_OriginalSource" xml:space="preserve">
+    <value>Original Source</value>
+  </data>
+  <data name="MediaResource_Width" xml:space="preserve">
+    <value>Width</value>
+  </data>
 </root>

@@ -1,4 +1,4 @@
-﻿/*6/7/2024 11:58:58 AM*/
+﻿/*8/24/2024 2:13:28 PM*/
 using System.Globalization;
 using System.Reflection;
 
@@ -132,6 +132,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:MediaResource_Description
 
 		public static string MediaResource_Description { get { return GetResourceString("MediaResource_Description"); } }
+//Resources:MediaServicesResources:MediaResource_Height
+
+		public static string MediaResource_Height { get { return GetResourceString("MediaResource_Height"); } }
 //Resources:MediaServicesResources:MediaResource_Help
 
 		public static string MediaResource_Help { get { return GetResourceString("MediaResource_Help"); } }
@@ -144,6 +147,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:MediaResource_IsFileUpload_Help
 
 		public static string MediaResource_IsFileUpload_Help { get { return GetResourceString("MediaResource_IsFileUpload_Help"); } }
+//Resources:MediaServicesResources:MediaResource_License
+
+		public static string MediaResource_License { get { return GetResourceString("MediaResource_License"); } }
 //Resources:MediaServicesResources:MediaResource_Link
 
 		public static string MediaResource_Link { get { return GetResourceString("MediaResource_Link"); } }
@@ -153,6 +159,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:MediaResource_MediaLibrary
 
 		public static string MediaResource_MediaLibrary { get { return GetResourceString("MediaResource_MediaLibrary"); } }
+//Resources:MediaServicesResources:MediaResource_OriginalSource
+
+		public static string MediaResource_OriginalSource { get { return GetResourceString("MediaResource_OriginalSource"); } }
 //Resources:MediaServicesResources:MediaResource_ResourceType_Help
 
 		public static string MediaResource_ResourceType_Help { get { return GetResourceString("MediaResource_ResourceType_Help"); } }
@@ -165,6 +174,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:MediaResource_WebLink
 
 		public static string MediaResource_WebLink { get { return GetResourceString("MediaResource_WebLink"); } }
+//Resources:MediaServicesResources:MediaResource_Width
+
+		public static string MediaResource_Width { get { return GetResourceString("MediaResource_Width"); } }
 //Resources:MediaServicesResources:MediaResources_FileName
 
 		public static string MediaResources_FileName { get { return GetResourceString("MediaResources_FileName"); } }
@@ -236,17 +248,21 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string MediaResource_Content = "MediaResource_Content";
 			public const string MediaResource_ContentLength = "MediaResource_ContentLength";
 			public const string MediaResource_Description = "MediaResource_Description";
+			public const string MediaResource_Height = "MediaResource_Height";
 			public const string MediaResource_Help = "MediaResource_Help";
 			public const string MediaResource_Icon = "MediaResource_Icon";
 			public const string MediaResource_IsFileUpload = "MediaResource_IsFileUpload";
 			public const string MediaResource_IsFileUpload_Help = "MediaResource_IsFileUpload_Help";
+			public const string MediaResource_License = "MediaResource_License";
 			public const string MediaResource_Link = "MediaResource_Link";
 			public const string MediaResource_Link_Help = "MediaResource_Link_Help";
 			public const string MediaResource_MediaLibrary = "MediaResource_MediaLibrary";
+			public const string MediaResource_OriginalSource = "MediaResource_OriginalSource";
 			public const string MediaResource_ResourceType_Help = "MediaResource_ResourceType_Help";
 			public const string MediaResource_StorageRefName = "MediaResource_StorageRefName";
 			public const string MediaResource_Title = "MediaResource_Title";
 			public const string MediaResource_WebLink = "MediaResource_WebLink";
+			public const string MediaResource_Width = "MediaResource_Width";
 			public const string MediaResources_FileName = "MediaResources_FileName";
 			public const string MediaResources_MimeType = "MediaResources_MimeType";
 			public const string MediaResources_ResourceType = "MediaResources_ResourceType";

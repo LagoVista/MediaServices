@@ -161,7 +161,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         [HttpPut("/api/media/resource/{id}/resize")]
         public  Task<InvokeResult<MediaResource>> ResizeMediaAsync([FromBody] MediaResizeRequest request, string id)
         {
-            return _mediaServicesManager.ResizeImageAsync(id, request.Width, request.Height, request.FileType, OrgEntityHeader, UserEntityHeader);
+            return _mediaServicesManager.ResizeImageAsync(id, request.FileName, request.Width, request.Height, request.FileType, OrgEntityHeader, UserEntityHeader);
         }
 
         /// <summary>
@@ -182,7 +182,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         [HttpPost("/api/media/resource/request")]
         public async Task<InvokeResult<MediaResource>> UploadAsync([FromBody] MediaUploadRequest uploadRequest )
         {
-            return await _mediaServicesManager.AddResourceMediaAsync(new Uri(uploadRequest.Uri), uploadRequest.FileName, OrgEntityHeader, UserEntityHeader, true, uploadRequest.IsPublic);
+            return await _mediaServicesManager.AddResourceMediaAsync(new Uri(uploadRequest.Uri), uploadRequest.FileName, OrgEntityHeader, UserEntityHeader, true, uploadRequest.IsPublic, uploadRequest.License);
         }
     }
 }
