@@ -2,22 +2,23 @@
 <package>
   <metadata>
     <id>LagoVista.MediaServices</id>
-    <version>3.0.2049.0900</version>
+    <version>3.0.2656.0615</version>
     <authors>Software Logistics, LLC</authors>
     <owners>Software Logistics, LLC</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <projectUrl>https://www.nuviot.com</projectUrl>
     <iconUrl>http://bytemaster.blob.core.windows.net/icons/LagoVistaIcon.png</iconUrl>
     <description>Provides business logic for working with Documents, Images and videos in the LagoVista IoT and Devices Framework</description>
-    <copyright>Copyright Software Logistics - 2022</copyright>
+    <copyright>Copyright Software Logistics - 2024</copyright>
     <tags>LagoVista HomeAutomation IoT</tags>
     <icon>LagoVistaIcon.png</icon>
-    <releaseNotes>Build Date: 12/26/2022 2:00:11 PM UTC</releaseNotes>
+    <releaseNotes>Build Date: 8/24/2024 10:15:47 AM UTC</releaseNotes>
     <repository url="https://www.github.com/lagovista" type="git" branch="master"></repository>
     <dependencies>
       <group targetFramework="netstandard2.1">
-        <dependency id="LagoVista.UserAdmin" version="3.0.2049.0900" />
-        <dependency id="LagoVista.MediaServices.Models" version="3.0.2049.0900" />
+        <dependency id="LagoVista.UserAdmin" version="3.0.2656.0615" />
+        <dependency id="SixLabors.ImageSharp" version="3.1.5" />
+        <dependency id="LagoVista.MediaServices.Models" version="3.0.2656.0615" />
       </group>
     </dependencies>
   </metadata>

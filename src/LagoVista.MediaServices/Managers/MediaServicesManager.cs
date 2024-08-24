@@ -45,6 +45,24 @@ namespace LagoVista.MediaServices.Managers
             return InvokeResult<MediaResourceSummary>.Create(resource.CreateSummary());
         }
 
+        //public static byte[] ScaleImage(byte[] imageBytes, int maxWidth, int maxHeight)
+        //{
+        //    var image = Image.Load(imageBytes);
+
+        //    var ratioX = (double)maxWidth / image.Width;
+        //    var ratioY = (double)maxHeight / image.Height;
+        //    var ratio = Math.Min(ratioX, ratioY);
+
+        //    var newWidth = (int)(image.Width * ratio);
+        //    var newHeight = (int)(image.Height * ratio);
+
+        //    image.Mutate(x => x.Resize(newWidth, newHeight));
+
+        //    using var ms = new MemoryStream();
+        //    image.Save(ms, new PngEncoder());
+        //    return ms.ToArray();
+        //}
+
         public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false)
         {
             var mediaResource = new MediaResource();
