@@ -17,12 +17,13 @@ namespace LagoVista.MediaServices.Interfaces
 
         Task<MediaItemResponse> GetResourceMediaAsync(string id, EntityHeader org, EntityHeader user);
         Task<InvokeResult<MediaResourceSummary>> AddMediaResourceRecordAsync(MediaResource resource, EntityHeader org, EntityHeader user);
-        
+       
         Task<InvokeResult<MediaResourceSummary>> UpdateMediaResourceRecordAsync(MediaResource resource, EntityHeader org, EntityHeader user);
         Task<MediaResource> GetMediaResourceRecordAsync(string id, EntityHeader org, EntityHeader user);
         Task<MediaItemResponse> GetPublicResourceRecordAsync(string ownerOrgId, string id);
         Task<InvokeResult> DeleteMediaResourceAsync(string id, EntityHeader org, EntityHeader user);
         Task<ListResponse<MediaResourceSummary>> GetMediaResourceSummariesAsync(string libraryId, string orgId, ListRequest listRequest, EntityHeader user);
         Task<InvokeResult<MediaResource>> ResizeImageAsync(string id, string fileName, int width, int height, string fileType, EntityHeader org, EntityHeader user);
+        Task<ListResponse<MediaResourceSummary>> GetResourcesForMediaTypeKeyLibrary(string mediaTypeKey, string orgId, ListRequest listRequest, EntityHeader user);
     }
 }

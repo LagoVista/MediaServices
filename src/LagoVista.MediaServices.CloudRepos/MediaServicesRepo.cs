@@ -234,6 +234,10 @@ namespace LagoVista.MediaServices.CloudRepos
             return base.QuerySummaryAsync<MediaResourceSummary, MediaResource>(qry => (qry.IsPublic == true || qry.OwnerOrganization.Id == orgId) && qry.MediaLibrary.Id == libraryId, med=>med.Name, listRequest);
         }
 
+        public Task<ListResponse<MediaResourceSummary>> GetResourcesForMediaTypeKeyLibrary(string orgId, string mediaTypeKey, ListRequest listRequest)
+        {
+            return base.QuerySummaryAsync<MediaResourceSummary, MediaResource>(qry => (qry.IsPublic == true || qry.OwnerOrganization.Id == orgId) && qry.MediaTypeKey == mediaTypeKey, med => med.Name, listRequest);
+        }
 
         public async Task DeleteMediaAsync(string blobReferenceName, string orgId)
         {

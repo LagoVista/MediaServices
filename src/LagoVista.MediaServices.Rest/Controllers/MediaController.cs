@@ -105,6 +105,18 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return _mediaServicesManager.GetMediaResourceSummariesAsync(libraryid, OrgEntityHeader.Id, GetListRequestFromHeader(), UserEntityHeader);
         }
 
+
+        /// <summary>
+        /// Media Resources - Get resources for librarys.
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("/api/media/mediatype/key/{mediatypekey}/resources")]
+        public Task<ListResponse<MediaResourceSummary>> GetForMediaTypeKey(string mediatypekey)
+        {
+            return _mediaServicesManager.GetResourcesForMediaTypeKeyLibrary(mediatypekey, OrgEntityHeader.Id, GetListRequestFromHeader(), UserEntityHeader);
+        }
+
+
         /// <summary>
         /// Media Resources - Upload a file for a specific media resource.
         /// </summary>

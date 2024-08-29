@@ -52,6 +52,8 @@ namespace LagoVista.MediaServices.Models
             IsFileUpload = true;
         }
 
+        public string MediaTypeKey { get; set; }
+
         [FormField(LabelResource: MediaServicesResources.Names.MediaResources_FileName, FieldType: FieldTypes.FileUpload, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public string FileName { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_IsFileUpload, HelpResource: Resources.MediaServicesResources.Names.MediaResource_IsFileUpload_Help, FieldType: FieldTypes.CheckBox, ResourceType: typeof(MediaServicesResources))]
@@ -152,6 +154,7 @@ namespace LagoVista.MediaServices.Models
                 ContentSize = ContentSize,
                 Link = Link,
                 IsFileUpload = IsFileUpload,
+                MediaTypeKey = MediaTypeKey,
             };
         }
 
@@ -281,6 +284,8 @@ namespace LagoVista.MediaServices.Models
         public string Description { get; set; }
         public string Id { get; set; }
         public string Key { get; set; }
+
+        public string MediaTypeKey { get; set; }
 
         // this looks ugly so we can standardized on inserting a media resource summary into other records rather
         // then just an entity header.

@@ -224,6 +224,13 @@ namespace LagoVista.MediaServices.Managers
             return await _mediaRepo.GetResourcesForLibrary(orgId, libraryId, listRequest);
         }
 
+        public async Task<ListResponse<MediaResourceSummary>> GetResourcesForMediaTypeKeyLibrary(string mediaTypeKey, string orgId, ListRequest listRequest, EntityHeader user)
+        {
+            await AuthorizeOrgAccessAsync(user, orgId, typeof(MediaResource));
+            return await _mediaRepo.GetResourcesForMediaTypeKeyLibrary(orgId, mediaTypeKey, listRequest);
+        }
+
+
         public async Task<MediaItemResponse> GetResourceMediaAsync(string id, EntityHeader org, EntityHeader user)
         {
             var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
