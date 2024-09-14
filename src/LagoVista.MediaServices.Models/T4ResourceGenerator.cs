@@ -1,4 +1,4 @@
-﻿/*8/24/2024 2:13:28 PM*/
+﻿/*9/14/2024 7:53:11 AM*/
 using System.Globalization;
 using System.Reflection;
 
@@ -192,6 +192,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:MediaResources_Title
 
 		public static string MediaResources_Title { get { return GetResourceString("MediaResources_Title"); } }
+//Resources:MediaServicesResources:MediaResourceType_CompressedFile
+
+		public static string MediaResourceType_CompressedFile { get { return GetResourceString("MediaResourceType_CompressedFile"); } }
 //Resources:MediaServicesResources:MediaResourceType_Content
 
 		public static string MediaResourceType_Content { get { return GetResourceString("MediaResourceType_Content"); } }
@@ -268,6 +271,7 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string MediaResources_ResourceType = "MediaResources_ResourceType";
 			public const string MediaResources_ResourceType_Select = "MediaResources_ResourceType_Select";
 			public const string MediaResources_Title = "MediaResources_Title";
+			public const string MediaResourceType_CompressedFile = "MediaResourceType_CompressedFile";
 			public const string MediaResourceType_Content = "MediaResourceType_Content";
 			public const string MediaResourceType_Manual = "MediaResourceType_Manual";
 			public const string MediaResourceType_Other = "MediaResourceType_Other";

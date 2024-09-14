@@ -29,6 +29,8 @@ namespace LagoVista.MediaServices.Models
         Other,
         [EnumLabel(MediaResource.DeviceResourceTypes_Content, MediaServicesResources.Names.MediaResourceType_Content, typeof(Resources.MediaServicesResources))]
         Content,
+        [EnumLabel(MediaResource.DeviceResourceTypes_CompressedFile, MediaServicesResources.Names.MediaResourceType_CompressedFile, typeof(Resources.MediaServicesResources))]
+        CompressedFile,
     }
 
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResource_Title, MediaServicesResources.Names.MediaResource_Help, 
@@ -46,6 +48,7 @@ namespace LagoVista.MediaServices.Models
         public const string DeviceResourceTypes_Video = "video";
         public const string DeviceResourceTypes_Other = "other";
         public const string DeviceResourceTypes_Content = "content";
+        public const string DeviceResourceTypes_CompressedFile = "zip";
 
         public MediaResource()
         {
@@ -89,7 +92,7 @@ namespace LagoVista.MediaServices.Models
         public int? Height { get; set; }
 
 
-        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_License, FieldType: FieldTypes.HtmlEditor, IsUserEditable:false, ResourceType: typeof(MediaServicesResources))]
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_License, FieldType: FieldTypes.WebLink, IsUserEditable:false, ResourceType: typeof(MediaServicesResources))]
         public string License { get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_OriginalSource, FieldType: FieldTypes.WebLink, IsUserEditable:false, ResourceType: typeof(MediaServicesResources))]
@@ -101,41 +104,55 @@ namespace LagoVista.MediaServices.Models
         {
             StorageReferenceName = $"{Id}.media";
             MimeType = "application/octet-stream";
+            ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Other);
 
             if (contentType.ToLower().Contains("gif"))
             {
+                ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Picture);
                 StorageReferenceName = $"{Id}.gif";
                 MimeType = "image/gif";
             }
             else if (contentType.ToLower().Contains("png"))
             {
+                ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Picture);
                 StorageReferenceName = $"{Id}.png";
                 MimeType = "image/png";
             }
             else if (contentType.ToLower().Contains("jpg"))
             {
+                ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Picture);
                 StorageReferenceName = $"{Id}.jpg";
                 MimeType = "image/jpeg";
             }
             else if (contentType.ToLower().Contains("jpeg"))
             {
+                ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Picture);
                 StorageReferenceName = $"{Id}.jpeg";
                 MimeType = "image/jpeg";
             }
             else if (contentType.ToLower().Contains("webp"))
             {
+                ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Picture);
                 StorageReferenceName = $"{Id}.webp";
                 MimeType = "image/webp";
             }
             else if (contentType.ToLower().Contains("pdf"))
             {
+                ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Other);
                 StorageReferenceName = $"{Id}.pdf";
                 MimeType = "application/pdf";
             }
             else if (contentType.ToLower().Contains("csv"))
             {
+                ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Other);
                 StorageReferenceName = $"{Id}.csv";
                 MimeType = "text/plain";
+            }
+            else if (contentType.ToLower().Contains("zip"))
+            {
+                ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.CompressedFile);
+                StorageReferenceName = $"{Id}.zip";
+                MimeType = "application/zip";
             }
         }
 

@@ -282,4 +282,7 @@
   <data name="MediaResource_Width" xml:space="preserve">
     <value>Width</value>
   </data>
+  <data name="MediaResourceType_CompressedFile" xml:space="preserve">
+    <value>Compressed File</value>
+  </data>
 </root>
