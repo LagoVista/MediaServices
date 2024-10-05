@@ -13,6 +13,9 @@ using LagoVista.UserAdmin.Models.Users;
 using Microsoft.AspNetCore.Identity;
 using System.IO;
 using Microsoft.AspNetCore.Authorization;
+using System.Diagnostics;
+using Microsoft.Net.Http.Headers;
+using System.Globalization;
 
 namespace LagoVista.MediaServices.Rest.Controllers
 {
@@ -186,8 +189,28 @@ namespace LagoVista.MediaServices.Rest.Controllers
         [HttpGet("/api/media/resource/{orgid}/{id}/download")]
         public async Task<IActionResult> DownloadMedia(string orgid, string id)
         {
-            var response = await _mediaServicesManager.GetPublicResourceRecordAsync(orgid, id);
+            var lastMod = String.Empty;
+            if (!String.IsNullOrEmpty(Request.Headers["If-Modified-Since"]))
+            {
+                CultureInfo provider = CultureInfo.InvariantCulture;
+                lastMod = DateTime.ParseExact(Request.Headers["If-Modified-Since"], "r", provider).ToJSONString();
+            }
+            var response = await _mediaServicesManager.GetPublicResourceRecordAsync(orgid, id, lastMod);
+            if (response.NotModified)
+            {
+                return StatusCode(304);
+            }
+
             var ms = new MemoryStream(response.ImageBytes);
+            var idx = 1;
+            foreach(var timing in response.Timings)
+            {
+                Response.Headers.Add($"x-{idx++}-{timing.Key}", $"{timing.Ms}ms");
+            }
+
+            Response.Headers[HeaderNames.CacheControl] = "public";
+            Response.Headers[HeaderNames.LastModified] = new[] { response.LastModified.ToDateTime().ToString("R") }; // Format RFC1123
+
             return File(ms, response.ContentType, response.FileName);
         }
 

@@ -14,6 +14,7 @@ using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -116,6 +117,8 @@ namespace LagoVista.MediaServices.Managers
 
             var newBuffer = ScaleImage(mediaItem.Result, width, height, fileType);
             resource.SetContentType(fileType);
+            resource.LastUpdatedDate = DateTime.UtcNow.ToJSONString();
+            resource.LastUpdatedBy = user;
             resource.ContentSize = newBuffer.Length;
             await _mediaRepo.UpdateMediaAsync(newBuffer, org.Id, resource.StorageReferenceName, resource.MimeType);
 
@@ -251,28 +254,42 @@ namespace LagoVista.MediaServices.Managers
             };
         }
 
-        public async Task<MediaItemResponse> GetPublicResourceRecordAsync(string orgId, string id)
+        public async Task<MediaItemResponse> GetPublicResourceRecordAsync(string orgId, string id, string lastModified = null)
         {
+            var response = new MediaItemResponse();
+
+            var stopWatch = Stopwatch.StartNew();
             var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
+            response.LastModified = resource.LastUpdatedDate;
             if (resource == null)
             {
                 Console.WriteLine($"ERROR: Could not find media record for orgid: {orgId} - mediaid: {id}");
                 throw new RecordNotFoundException(nameof(MediaResource), id);
             }
+            response.Timings.Add(new ResultTiming() { Key = "GetMediaResourceRecord", Ms = stopWatch.Elapsed.TotalMilliseconds });
 
+            if(resource.LastUpdatedDate == lastModified)
+            {
+                response.NotModified = true;
+            }
+
+            response.NotModified = false;
+
+            stopWatch.Restart();
             var mediaItem = await _mediaRepo.GetMediaAsync(resource.StorageReferenceName, orgId);
             if (!mediaItem.Successful)
             {
                 Console.WriteLine($"ERROR: Could not find media/image for orgid: {orgId} - mediaid: {resource.StorageReferenceName}");
                 throw new RecordNotFoundException("Media File Contents", resource.StorageReferenceName);
             }
+            response.Timings.AddRange(mediaItem.Timings);
+            response.Timings.Add(new ResultTiming() { Key = "GetMediaResourceRecord", Ms = stopWatch.Elapsed.TotalMilliseconds });
 
-            return new MediaItemResponse()
-            {
-                ContentType = resource.MimeType,
-                FileName = resource.FileName,
-                ImageBytes = mediaItem.Result
-            };
+            response.ContentType = resource.MimeType;
+            response.FileName = resource.FileName;
+            response.ImageBytes = mediaItem.Result;
+
+            return response;
         }
 
         public async Task<InvokeResult<MediaResourceSummary>> UpdateMediaResourceRecordAsync(MediaResource resource, EntityHeader org, EntityHeader user)

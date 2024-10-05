@@ -16,6 +16,8 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using LagoVista.Core.Models.UIMetaData;
 using static System.Net.Mime.MediaTypeNames;
+using Microsoft.Azure.Cosmos;
+using System.Diagnostics;
 
 namespace LagoVista.MediaServices.CloudRepos
 {
@@ -187,10 +189,14 @@ namespace LagoVista.MediaServices.CloudRepos
             return this.DeleteDocumentAsync(id);
         }
 
-
         public async Task<InvokeResult<byte[]>> GetMediaAsync(string blobReferenceName, string org)
         {
+            var sw = Stopwatch.StartNew();
+            var timings = new List<ResultTiming>();
+
             var result = await GetStorageContainerAsync(org);
+            timings.Add(new ResultTiming() { Key = "GetStorageContainer", Ms = sw.Elapsed.TotalMilliseconds });
+            sw.Restart();
             if (!result.Successful)
             {
                 return InvokeResult<byte[]>.FromInvokeResult(result.ToInvokeResult());
@@ -199,6 +205,8 @@ namespace LagoVista.MediaServices.CloudRepos
             var container = result.Result;
 
             var blobClient = container.GetBlobClient(blobReferenceName);
+            timings.Add(new ResultTiming() { Key = "GetBlockClient", Ms = sw.Elapsed.TotalMilliseconds });
+            sw.Restart();
 
             var numberRetries = 5;
             var retryCount = 0;
@@ -208,7 +216,9 @@ namespace LagoVista.MediaServices.CloudRepos
                 try
                 {
                     var content = await blobClient.DownloadContentAsync();
-                    return InvokeResult<byte[]>.Create(content.Value.Content.ToArray());
+                    var buffer = content.Value.Content.ToArray();
+                    timings.Add(new ResultTiming() { Key = "DownloadContentSize", Ms = sw.Elapsed.TotalMilliseconds });
+                    return InvokeResult<byte[]>.Create(buffer, timings);
                 }
                 catch (Exception ex)
                 {
