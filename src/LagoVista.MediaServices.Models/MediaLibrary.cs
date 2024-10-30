@@ -21,6 +21,9 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: Resources.MediaServicesResources.Names.MediaLibrary_MediaResources, FieldType: FieldTypes.Action, ResourceType: typeof(MediaServicesResources))]
         public string MediaResources { get; set; }
 
+
+        public EntityHeader Customer { get; set; }
+
         public MediaLibrarySummary CreateSummary()
         {
             return new MediaLibrarySummary()

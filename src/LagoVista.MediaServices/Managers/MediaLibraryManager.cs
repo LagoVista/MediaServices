@@ -48,6 +48,12 @@ namespace LagoVista.MediaServices.Managers
             return InvokeResult.Success;
         }
 
+        public async Task<ListResponse<MediaLibrarySummary>> GetMediaLibrariesForCustomerAsync(string orgId, string customerId, ListRequest listRequest, EntityHeader user)
+        {
+            await AuthorizeOrgAccessAsync(user, orgId, typeof(MediaLibrary));
+            return await _repo.GetMediaLibrariesForCustomerAsync(orgId, customerId, listRequest);
+        }
+
         public async Task<ListResponse<MediaLibrarySummary>> GetMediaLibrariesForOrgsAsync(string orgId, ListRequest listRequest, EntityHeader user)
         {
             await AuthorizeOrgAccessAsync(user, orgId, typeof(MediaLibrary));

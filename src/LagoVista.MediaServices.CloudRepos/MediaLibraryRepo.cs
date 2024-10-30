@@ -38,6 +38,11 @@ namespace LagoVista.MediaServices.CloudRepos
             return this.DeleteDocumentAsync(id);
         }
 
+        public Task<ListResponse<MediaLibrarySummary>> GetMediaLibrariesForCustomerAsync(string orgId, string customerId, ListRequest listRequest)
+        {
+            return base.QuerySummaryAsync<MediaLibrarySummary, MediaLibrary>(qry => qry.Customer.Id == customerId &&  qry.OwnerOrganization.Id == orgId, med => med.Name, listRequest);
+        }
+
         public Task<ListResponse<MediaLibrarySummary>> GetMediaLibrariesForOrgsAsync(string orgId, ListRequest listRequest)
         {
             return base.QuerySummaryAsync<MediaLibrarySummary, MediaLibrary>(qry => qry.IsPublic == true || qry.OwnerOrganization.Id == orgId, med=>med.Name, listRequest);

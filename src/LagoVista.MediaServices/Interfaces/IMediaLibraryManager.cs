@@ -15,7 +15,7 @@ namespace LagoVista.MediaServices.Interfaces
         Task<MediaLibrary> GetMediaLibraryAsync(string id, EntityHeader org, EntityHeader user);
 
         Task<DependentObjectCheckResult> CheckMediaLibraryInUseAsync(string id, EntityHeader org, EntityHeader user);
-
+        Task<ListResponse<MediaLibrarySummary>> GetMediaLibrariesForCustomerAsync(string orgId, string customerId, ListRequest listRequest, EntityHeader user);
         Task<ListResponse<MediaLibrarySummary>> GetMediaLibrariesForOrgsAsync(string orgId, ListRequest listRequest, EntityHeader user);
         Task<InvokeResult> UpdateMediaLibraryAsync(MediaLibrary mediaLibrary, EntityHeader org, EntityHeader user);
         Task<InvokeResult> DeleteMediaLibraryAsync(string id, EntityHeader org, EntityHeader user);

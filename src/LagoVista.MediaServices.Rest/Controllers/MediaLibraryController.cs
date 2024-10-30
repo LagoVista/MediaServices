@@ -66,6 +66,16 @@ namespace LagoVista.MediaServices.Rest.Controllers
         }
 
         /// <summary>
+        /// Medial Library - Get for Current Org
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("/api/customer/{customerid}/media/libraries")]
+        public Task<ListResponse<MediaLibrarySummary>> GetMediaLibrarysForOrg(string customerid)
+        {
+            return _mediaLibraryManager.GetMediaLibrariesForCustomerAsync(OrgEntityHeader.Id, customerid, GetListRequestFromHeader(), UserEntityHeader);
+        }
+
+        /// <summary>
         /// Medial Library - In Use
         /// </summary>
         /// <param name="id"></param>
