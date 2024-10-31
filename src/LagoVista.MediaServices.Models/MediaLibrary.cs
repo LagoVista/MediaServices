@@ -9,9 +9,9 @@ using System.Collections.Generic;
 namespace LagoVista.MediaServices.Models
 {
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaLibrary_Title, MediaServicesResources.Names.MediaLibrary_Help, MediaServicesResources.Names.MediaLibrary_Description, 
-        EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources),
+        EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources), Icon:"icon-pz-podcast",
         FactoryUrl: "/api/media/library/factory", GetListUrl: "/api/media/libraries", GetUrl: "/api/media/library/{id}", SaveUrl: "/api/media/library", DeleteUrl: "/api/media/library/{id}")]
-    public class MediaLibrary : EntityBase, IDescriptionEntity, IValidateable, IFormDescriptor, ISummaryFactory
+    public class MediaLibrary : EntityBase, IDescriptionEntity, IValidateable, IFormDescriptor, ISummaryFactory, IIconEntity
     {
         
         [FormField(LabelResource: Resources.MediaServicesResources.Names.Common_Description, FieldType: FieldTypes.MultiLineText, ResourceType: typeof(MediaServicesResources))]
@@ -21,6 +21,8 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: Resources.MediaServicesResources.Names.MediaLibrary_MediaResources, FieldType: FieldTypes.Action, ResourceType: typeof(MediaServicesResources))]
         public string MediaResources { get; set; }
 
+        [FormField(LabelResource: MediaServicesResources.Names.Common_Icon, FieldType: FieldTypes.Icon, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
+        public string Icon { get; set; } = "icon-px-podcast";
 
         public EntityHeader Customer { get; set; }
 
@@ -32,7 +34,8 @@ namespace LagoVista.MediaServices.Models
                 Id = Id,
                 IsPublic = IsPublic,
                 Key = Key,
-                Name = Name
+                Name = Name,
+                Icon = Icon
             };
         }
 
@@ -42,6 +45,7 @@ namespace LagoVista.MediaServices.Models
             {
                 nameof(Name),
                 nameof(Key),
+                nameof(Icon),
                 nameof(Description),
                 nameof(MediaResources)
             };
@@ -55,7 +59,7 @@ namespace LagoVista.MediaServices.Models
 
 
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaLibraries_Title, MediaServicesResources.Names.MediaLibrary_Help, MediaServicesResources.Names.MediaLibrary_Description,
-        EntityDescriptionAttribute.EntityTypes.Summary, ResourceType: typeof(MediaServicesResources),
+        EntityDescriptionAttribute.EntityTypes.Summary, ResourceType: typeof(MediaServicesResources), Icon: "icon-pz--podcast",
         FactoryUrl: "/api/media/library/factory", GetListUrl: "/api/media/libraries", GetUrl: "/api/media/library/{id}", SaveUrl: "/api/media/library", DeleteUrl: "/api/media/library/{id}")]
     public class MediaLibrarySummary : SummaryData
     {

@@ -285,4 +285,10 @@
   <data name="MediaResourceType_CompressedFile" xml:space="preserve">
     <value>Compressed File</value>
   </data>
+  <data name="Common_Icon" xml:space="preserve">
+    <value>Icon</value>
+  </data>
+  <data name="DeviceResourceTypes_Audio" xml:space="preserve">
+    <value>Audio</value>
+  </data>
 </root>

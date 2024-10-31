@@ -31,6 +31,8 @@ namespace LagoVista.MediaServices.Models
         Content,
         [EnumLabel(MediaResource.DeviceResourceTypes_CompressedFile, MediaServicesResources.Names.MediaResourceType_CompressedFile, typeof(Resources.MediaServicesResources))]
         CompressedFile,
+        [EnumLabel(MediaResource.DeviceResourceTypes_Audio, MediaServicesResources.Names.DeviceResourceTypes_Audio, typeof(Resources.MediaServicesResources))]
+        Audio,
     }
 
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResource_Title, MediaServicesResources.Names.MediaResource_Help, 
@@ -46,6 +48,7 @@ namespace LagoVista.MediaServices.Models
         public const string DeviceResourceTypes_PartsList = "partslist";
         public const string DeviceResourceTypes_Picture = "picture";
         public const string DeviceResourceTypes_Video = "video";
+        public const string DeviceResourceTypes_Audio = "audio";
         public const string DeviceResourceTypes_Other = "other";
         public const string DeviceResourceTypes_Content = "content";
         public const string DeviceResourceTypes_CompressedFile = "zip";

@@ -1,4 +1,4 @@
-﻿/*9/14/2024 7:53:11 AM*/
+﻿/*10/31/2024 6:10:34 AM*/
 using System.Globalization;
 using System.Reflection;
 
@@ -63,6 +63,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:Common_Description
 
 		public static string Common_Description { get { return GetResourceString("Common_Description"); } }
+//Resources:MediaServicesResources:Common_Icon
+
+		public static string Common_Icon { get { return GetResourceString("Common_Icon"); } }
 //Resources:MediaServicesResources:Common_IsPublic
 
 		public static string Common_IsPublic { get { return GetResourceString("Common_IsPublic"); } }
@@ -108,6 +111,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:Common_ValidationErrors
 
 		public static string Common_ValidationErrors { get { return GetResourceString("Common_ValidationErrors"); } }
+//Resources:MediaServicesResources:DeviceResourceTypes_Audio
+
+		public static string DeviceResourceTypes_Audio { get { return GetResourceString("DeviceResourceTypes_Audio"); } }
 //Resources:MediaServicesResources:MediaLibraries_Title
 
 		public static string MediaLibraries_Title { get { return GetResourceString("MediaLibraries_Title"); } }
@@ -228,6 +234,7 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string Common_CreatedBy = "Common_CreatedBy";
 			public const string Common_CreationDate = "Common_CreationDate";
 			public const string Common_Description = "Common_Description";
+			public const string Common_Icon = "Common_Icon";
 			public const string Common_IsPublic = "Common_IsPublic";
 			public const string Common_IsRequired = "Common_IsRequired";
 			public const string Common_IsValid = "Common_IsValid";
@@ -243,6 +250,7 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string Common_Resources = "Common_Resources";
 			public const string Common_UniqueId = "Common_UniqueId";
 			public const string Common_ValidationErrors = "Common_ValidationErrors";
+			public const string DeviceResourceTypes_Audio = "DeviceResourceTypes_Audio";
 			public const string MediaLibraries_Title = "MediaLibraries_Title";
 			public const string MediaLibrary_Description = "MediaLibrary_Description";
 			public const string MediaLibrary_Help = "MediaLibrary_Help";
