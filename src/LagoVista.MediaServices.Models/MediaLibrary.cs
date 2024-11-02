@@ -9,7 +9,7 @@ using System.Collections.Generic;
 namespace LagoVista.MediaServices.Models
 {
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaLibrary_Title, MediaServicesResources.Names.MediaLibrary_Help, MediaServicesResources.Names.MediaLibrary_Description, 
-        EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources), Icon:"icon-pz-podcast",
+        EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources), Icon: "icon-pz-podcast",
         FactoryUrl: "/api/media/library/factory", GetListUrl: "/api/media/libraries", GetUrl: "/api/media/library/{id}", SaveUrl: "/api/media/library", DeleteUrl: "/api/media/library/{id}")]
     public class MediaLibrary : EntityBase, IDescriptionEntity, IValidateable, IFormDescriptor, ISummaryFactory, IIconEntity
     {
@@ -22,7 +22,7 @@ namespace LagoVista.MediaServices.Models
         public string MediaResources { get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.Common_Icon, FieldType: FieldTypes.Icon, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
-        public string Icon { get; set; } = "icon-px-podcast";
+        public string Icon { get; set; } = "icon-pz-podcast";
 
         public EntityHeader Customer { get; set; }
 
@@ -59,7 +59,7 @@ namespace LagoVista.MediaServices.Models
 
 
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaLibraries_Title, MediaServicesResources.Names.MediaLibrary_Help, MediaServicesResources.Names.MediaLibrary_Description,
-        EntityDescriptionAttribute.EntityTypes.Summary, ResourceType: typeof(MediaServicesResources), Icon: "icon-pz--podcast",
+        EntityDescriptionAttribute.EntityTypes.Summary, ResourceType: typeof(MediaServicesResources), Icon: "icon-pz-podcast",
         FactoryUrl: "/api/media/library/factory", GetListUrl: "/api/media/libraries", GetUrl: "/api/media/library/{id}", SaveUrl: "/api/media/library", DeleteUrl: "/api/media/library/{id}")]
     public class MediaLibrarySummary : SummaryData
     {

@@ -3,6 +3,7 @@ using LagoVista.Core.Interfaces;
 using LagoVista.Core.Models;
 using LagoVista.Core.Models.UIMetaData;
 using LagoVista.Core.Validation;
+using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Models.Resources;
 using Newtonsoft.Json;
 using System;
@@ -157,6 +158,30 @@ namespace LagoVista.MediaServices.Models
                 StorageReferenceName = $"{Id}.zip";
                 MimeType = "application/zip";
             }
+            else if (contentType.ToLower().Contains("mp3"))
+            {
+                ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Audio);
+                StorageReferenceName = $"{Id}.mp3";
+                MimeType = "audio/mpeg";
+            }
+            else if (contentType.ToLower().Contains("mp4"))
+            {
+                ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Audio);
+                StorageReferenceName = $"{Id}.mp4";
+                MimeType = "audio/mp4";
+            }
+            else if (contentType.ToLower().Contains("ogg"))
+            {
+                ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Audio);
+                StorageReferenceName = $"{Id}.ogg";
+                MimeType = "audio/ogg";
+            }
+            else if (contentType.ToLower().Contains("wav"))
+            {
+                ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Audio);
+                StorageReferenceName = $"{Id}.wav";
+                MimeType = "audio/wav";
+            }
         }
 
         public MediaResourceSummary CreateSummary()
@@ -249,7 +274,7 @@ namespace LagoVista.MediaServices.Models
         {
             return new FormConditionals()
             {
-                ConditionalFields = new List<string> { nameof(ContentSize), nameof(MimeType), nameof(Link), nameof(Content) },
+                ConditionalFields = new List<string> { nameof(ContentSize), nameof(MimeType), nameof(Link), nameof(Content), nameof(Width), nameof(Height) },
                 Conditionals = new List<FormConditional>()
                 {
                     new FormConditional()
@@ -263,6 +288,12 @@ namespace LagoVista.MediaServices.Models
                         Field = nameof(IsFileUpload),
                         Value = "true",
                         VisibleFields = new List<string>() {nameof(ContentSize), nameof(MimeType)}
+                    },
+                    new FormConditional()
+                    {
+                        Field = nameof(ResourceType),
+                        Value = nameof(MediaResourceTypes.Picture),
+                        VisibleFields = new List<string>() {nameof(Height), nameof(Width)}
                     },
                     new FormConditional()
                     {

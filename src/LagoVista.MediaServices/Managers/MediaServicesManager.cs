@@ -152,8 +152,11 @@ namespace LagoVista.MediaServices.Managers
 
             // Also sets the blob reference name.
             mediaResource.SetContentType(contentType);
+            if (mediaResource.MimeType == "application/octet-stream")
+                mediaResource.SetContentType(fileName);
 
-            mediaResource.ResourceType = EntityHeader<MediaResourceTypes>.Create(mediaResource.MimeType.StartsWith("image") ? MediaResourceTypes.Picture : MediaResourceTypes.Other);
+            if(mediaResource.ResourceType.Value == MediaResourceTypes.Other)
+                mediaResource.ResourceType = EntityHeader<MediaResourceTypes>.Create(mediaResource.MimeType.StartsWith("image") ? MediaResourceTypes.Picture : MediaResourceTypes.Other);
 
             var bytes = new byte[stream.Length];
             stream.Position = 0;
