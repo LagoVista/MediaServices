@@ -13,6 +13,8 @@ namespace LagoVista.MediaServices.Interfaces
     {
         Task<InvokeResult<MediaResource>> AddResourceMediaAsync(string id, Stream media, string name, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false, string license = "", string url = "");
 
+        Task<InvokeResult<MediaResourceSummary>> GenerateAudioAsync(TextToSpeechRequest request, EntityHeader org, EntityHeader user);
+
         Task<InvokeResult<MediaResource>> AddResourceMediaAsync(Uri url, string name,  EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false, string license = "");
 
         Task<MediaItemResponse> GetResourceMediaAsync(string id, EntityHeader org, EntityHeader user);

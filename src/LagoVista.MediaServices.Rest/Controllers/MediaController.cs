@@ -98,6 +98,12 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return _mediaServicesManager.UpdateMediaResourceRecordAsync(resource, OrgEntityHeader, UserEntityHeader);
         }
 
+        [HttpPost("/api/media/resource/texttospeech")]
+        public Task<InvokeResult<MediaResourceSummary>> AddTextToSpeechAsync([FromBody] TextToSpeechRequest tts)
+        {
+            return _mediaServicesManager.GenerateAudioAsync(tts, OrgEntityHeader, UserEntityHeader);
+        }
+
         /// <summary>
         /// Media Resources - Get resources for library.
         /// </summary>

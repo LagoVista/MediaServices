@@ -26,12 +26,14 @@ namespace LagoVista.MediaServices.Managers
     {
         IMediaServicesRepo _mediaRepo;
         IMediaLibraryRepo _libraryRepo;
+        ITextToSpeechService _textSpeechService;
 
-        public MediaServicesManager(IMediaServicesRepo mediaRepo, IMediaLibraryRepo repo, IAdminLogger logger, IAppConfig appConfig, IDependencyManager depmanager, ISecurity security) :
+        public MediaServicesManager(IMediaServicesRepo mediaRepo, IMediaLibraryRepo libraryRepo,ITextToSpeechService textToSpeechService, IAdminLogger logger, IAppConfig appConfig, IDependencyManager depmanager, ISecurity security) :
             base(logger, appConfig, depmanager, security)
         {
-            _mediaRepo = mediaRepo;
-            _libraryRepo = repo;
+            _mediaRepo = mediaRepo ?? throw new ArgumentNullException(nameof(mediaRepo));
+            _libraryRepo = libraryRepo ?? throw new ArgumentNullException(nameof(libraryRepo));
+            _textSpeechService = textToSpeechService ?? throw new ArgumentNullException(nameof(textToSpeechService));
         }
 
         public async Task<InvokeResult<MediaResourceSummary>> AddMediaResourceRecordAsync(MediaResource resource, EntityHeader org, EntityHeader user)
@@ -305,6 +307,43 @@ namespace LagoVista.MediaServices.Managers
             return InvokeResult<MediaResourceSummary>.Create(resource.CreateSummary());
         }
 
+        public async Task<InvokeResult<MediaResourceSummary>> GenerateAudioAsync(TextToSpeechRequest request, EntityHeader org, EntityHeader user)
+        {
+            var response = await _textSpeechService.GenerateAudio(request);
 
+            if (response.Successful)
+            {
+                var resourceId = Guid.NewGuid().ToId();
+
+                var mediaResource = new MediaResource()
+                {
+                    Id = resourceId,
+                    Name = request.Name,
+                    Key = request.Key,
+                    OwnerOrganization = org,
+                    CreationDate = DateTime.UtcNow.ToJSONString(),
+                    LastUpdatedDate = DateTime.UtcNow.ToJSONString(),
+                    CreatedBy = user,
+                    LastUpdatedBy = user,
+                    IsPublic = false,
+                    ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Audio),
+                    MimeType = "audio/mpeg",
+                    FileName = $"{request.Name}.mp3",
+                    ContentSize = response.Result.Length,
+                    StorageReferenceName = $"{resourceId}.mp3",
+                    MediaLibrary = request.Library,
+                    TextGenerationRequest = request                   
+                };
+
+                await _mediaRepo.AddMediaAsync(response.Result, org.Id, mediaResource.StorageReferenceName, mediaResource.MimeType);
+                await _mediaRepo.AddMediaResourceRecordAsync(mediaResource);
+
+                return InvokeResult<MediaResourceSummary>.Create(mediaResource.CreateSummary());
+            }
+            else
+            {
+                return InvokeResult<MediaResourceSummary>.FromInvokeResult(response.ToInvokeResult());
+            }
+        }
     }
 }

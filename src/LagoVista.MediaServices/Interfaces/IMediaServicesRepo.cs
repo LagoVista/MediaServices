@@ -30,8 +30,8 @@ namespace LagoVista.MediaServices.Interfaces
 
         string ImageSearchUri { get; }
         string ImageSearchClientId { get; }
-        string ImageSearchClientSecret { get;  }
-        
+        string ImageSearchClientSecret { get;  }        
+        string GoogleTextToSpeechAPIKey { get; }
 
         bool ShouldConsolidateCollections { get; }
     }

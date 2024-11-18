@@ -184,6 +184,8 @@ namespace LagoVista.MediaServices.Models
             }
         }
 
+        public TextToSpeechRequest TextGenerationRequest { get; set; }
+
         public MediaResourceSummary CreateSummary()
         {
             return new MediaResourceSummary()

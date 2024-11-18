@@ -48,5 +48,7 @@ namespace LagoVista.MediaServices.MediaTests
         public bool ShouldConsolidateCollections => true;
 
         public string ImageSearchUri => "https://https://api.openverse.org";
+
+        public string GoogleTextToSpeechAPIKey { get; }
     }
 }
