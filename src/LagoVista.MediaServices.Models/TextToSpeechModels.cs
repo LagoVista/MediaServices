@@ -45,7 +45,7 @@ namespace LagoVista.MediaServices.Models
         public string AudioEncoding { get; set; } = "MP3";
     }
 
-    public class Response
+    public class GoogleTextSpeechResponse
     {
         [JsonProperty("audioContent")]
         public string B64AudioContent { get; set; }
@@ -63,4 +63,23 @@ namespace LagoVista.MediaServices.Models
         public string Gender { get; set; }
         public string Voice { get; set; }
     }
+
+    public class GoogleTextToSpeechVoicesResponse
+    {
+        [JsonProperty("voices")]
+        public List<GoogleTextToSpeechVoiceResponse> Voices { get; set; }
+    }
+
+    public class GoogleTextToSpeechVoiceResponse
+    {
+        [JsonProperty("languageCodes")]
+        public List<string> LanguageCodes { get; set; }
+
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonProperty("ssmlGender")]
+        public string SSMLGender { get; set; }
+    }
+
 }

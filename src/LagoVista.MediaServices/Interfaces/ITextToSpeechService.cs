@@ -10,6 +10,8 @@ namespace LagoVista.MediaServices.Interfaces
 {
     public interface ITextToSpeechService
     {
-        Task<InvokeResult<byte[]>> GenerateAudio(TextToSpeechRequest request);        
+        Task<InvokeResult<byte[]>> GenerateAudio(TextToSpeechRequest request);
+
+        Task<InvokeResult<List<EntityHeader>>> GetVoicesForLanguageAsync(string languageCode);
     }
 }

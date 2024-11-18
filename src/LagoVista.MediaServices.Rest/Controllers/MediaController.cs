@@ -16,6 +16,8 @@ using Microsoft.AspNetCore.Authorization;
 using System.Diagnostics;
 using Microsoft.Net.Http.Headers;
 using System.Globalization;
+using LagoVista.Core.Models;
+using System.Collections.Generic;
 
 namespace LagoVista.MediaServices.Rest.Controllers
 {
@@ -102,6 +104,33 @@ namespace LagoVista.MediaServices.Rest.Controllers
         public Task<InvokeResult<MediaResourceSummary>> AddTextToSpeechAsync([FromBody] TextToSpeechRequest tts)
         {
             return _mediaServicesManager.GenerateAudioAsync(tts, OrgEntityHeader, UserEntityHeader);
+        }
+
+        [HttpPost("/api/media/resource/{id}/texttospeech")]
+        public Task<InvokeResult<MediaResourceSummary>> AddTextToSpeechAsync([FromBody] TextToSpeechRequest tts, string id)
+        {
+            return _mediaServicesManager.UpdateAudioAsync(id, tts, OrgEntityHeader, UserEntityHeader);
+        }
+
+        [HttpGet("/api/media/resource/texttospeech/voices/{languageCode}")]
+        public Task<InvokeResult<List<EntityHeader>>> GetVoicesForLanguageAsync(string languagecode)
+        {
+            return _mediaServicesManager.GetVoicesAsync(languagecode, OrgEntityHeader, UserEntityHeader);
+        }
+
+        [HttpGet("/api/media/resource/texttospeech/preview")]
+        public async Task<IActionResult> PreviewAudioAsync(string text, string language, string voice, string gender)
+        {
+            var tts = new TextToSpeechRequest()
+            {
+                Text = text,
+                Language = language,
+                Gender = gender, 
+                Voice = voice
+            };
+
+            var result = await _mediaServicesManager.PreviewAudioAsync(tts, OrgEntityHeader, UserEntityHeader);
+            return File(result, "audio/mpeg", "preview.mp3");
         }
 
         /// <summary>
@@ -219,6 +248,9 @@ namespace LagoVista.MediaServices.Rest.Controllers
 
             return File(ms, response.ContentType, response.FileName);
         }
+
+
+
 
         [HttpPost("/api/media/resource/request")]
         public async Task<InvokeResult<MediaResource>> UploadAsync([FromBody] MediaUploadRequest uploadRequest )

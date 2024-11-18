@@ -1,9 +1,11 @@
-﻿using LagoVista.Core.Validation;
+﻿using LagoVista.Core.Models;
+using LagoVista.Core.Validation;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,8 +25,6 @@ namespace LagoVista.MediaServices.Services
 
         public async Task<InvokeResult<byte[]>> GenerateAudio(TextToSpeechRequest request)
         {
-            
-
             var url = "https://texttospeech.googleapis.com/v1/text:synthesize";
             var client = new HttpClient();
             client.DefaultRequestHeaders.Add("X-Goog-Api-Key", _settings.GoogleTextToSpeechAPIKey);
@@ -37,18 +37,29 @@ namespace LagoVista.MediaServices.Services
             googleRequest.Voice.LanguageCode = request.Language;
             googleRequest.Voice.Name = request.Voice;
 
-
-            Console.WriteLine(JsonConvert.SerializeObject(googleRequest));
-
             var response = await client.PostAsJsonAsync(url, googleRequest);
             if (!response.IsSuccessStatusCode)
                 return InvokeResult<byte[]>.FromError($"Could not request audio file: {response.ReasonPhrase}");
 
-            var responseContent = await response.Content.ReadAsAsync<Response>();
+            var responseContent = await response.Content.ReadAsAsync<GoogleTextSpeechResponse>();
 
             var buffer = System.Convert.FromBase64String(responseContent.B64AudioContent);
             return InvokeResult<byte[]>.Create(buffer);
         }
 
+        public async Task<InvokeResult<List<EntityHeader>>> GetVoicesForLanguageAsync(string languageCode)
+        {
+            var url = "https://texttospeech.googleapis.com/v1/voices";
+            var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("X-Goog-Api-Key", _settings.GoogleTextToSpeechAPIKey);
+
+            var response = await client.GetAsync(url);
+            if (!response.IsSuccessStatusCode)
+                return InvokeResult<List<EntityHeader>>.FromError($"Could not get voices: {response.ReasonPhrase}");
+
+            var responseContent = await response.Content.ReadAsAsync<GoogleTextToSpeechVoicesResponse>();
+            var voices = responseContent.Voices.Where(vc => vc.LanguageCodes.Contains(languageCode)).Select(vc => EntityHeader.Create(vc.Name, vc.SSMLGender, vc.Name)).ToList();
+            return InvokeResult<List<EntityHeader>>.Create(voices);
+        }
     }
 }

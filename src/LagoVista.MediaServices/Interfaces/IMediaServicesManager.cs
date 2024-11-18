@@ -15,6 +15,12 @@ namespace LagoVista.MediaServices.Interfaces
 
         Task<InvokeResult<MediaResourceSummary>> GenerateAudioAsync(TextToSpeechRequest request, EntityHeader org, EntityHeader user);
 
+        Task<InvokeResult<MediaResourceSummary>> UpdateAudioAsync(string resourceId, TextToSpeechRequest request, EntityHeader org, EntityHeader user);
+
+        Task<InvokeResult<List<EntityHeader>>> GetVoicesAsync(string languageCode, EntityHeader org, EntityHeader user);
+
+        Task<Stream> PreviewAudioAsync(TextToSpeechRequest request, EntityHeader org, EntityHeader user);
+
         Task<InvokeResult<MediaResource>> AddResourceMediaAsync(Uri url, string name,  EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false, string license = "");
 
         Task<MediaItemResponse> GetResourceMediaAsync(string id, EntityHeader org, EntityHeader user);

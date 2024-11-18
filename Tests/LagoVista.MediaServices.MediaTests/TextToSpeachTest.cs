@@ -1,6 +1,7 @@
 ﻿using LagoVista.Core.Interfaces;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
+using Microsoft.Azure.Cosmos.Serialization.HybridRow;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using System;
@@ -22,7 +23,7 @@ namespace LagoVista.MediaServices.MediaTests
 
             var tts = new TextToSpeechRequest();
             tts.Text = "Hi there, let's see how this works.  At some point we can upload some SAML, but not today.";
-            tts.Ssml = "";
+            tts.Ssml = null;
             tts.Gender = "MALE";
             tts.Language = "en-US";
             tts.Voice = "en-US-Casual-K";
@@ -32,6 +33,20 @@ namespace LagoVista.MediaServices.MediaTests
             Assert.IsTrue(result.Successful);
 
             System.IO.File.WriteAllBytes(@$"X:\Output{DateTime.Now.Ticks}.mp3", result.Result);
+        }
+
+        [TestMethod]
+        public async Task GetAvailableVoices()
+        {
+            var textService = new LagoVista.MediaServices.Services.TextToSpeechService(new Settings());
+            var response = await textService.GetVoicesForLanguageAsync("en-US");
+
+            Assert.IsTrue(response.Successful, response.ErrorMessage);
+
+            foreach (var voice in response.Result)
+            {
+                Console.WriteLine($"Voice: {voice.Text} - {voice.Id}");
+            }
         }
     }
 

@@ -345,5 +345,40 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<MediaResourceSummary>.FromInvokeResult(response.ToInvokeResult());
             }
         }
+
+        public async Task<InvokeResult<MediaResourceSummary>> UpdateAudioAsync(string resourceId, TextToSpeechRequest request, EntityHeader org, EntityHeader user)
+        {
+            var response = await _textSpeechService.GenerateAudio(request);
+            if (response.Successful)
+            {
+                var resource = await _mediaRepo.GetMediaResourceRecordAsync(resourceId);
+                if (resource.OwnerOrganization.Id != org.Id)
+                    throw new NotAuthorizedException("Org mismatch");
+
+                await _mediaRepo.UpdateMediaAsync(response.Result, org.Id, resource.StorageReferenceName, resource.MimeType);
+
+                resource.LastUpdatedDate = DateTime.UtcNow.ToJSONString();
+                resource.LastUpdatedBy = user;
+                return InvokeResult<MediaResourceSummary>.Create(resource.CreateSummary());
+            }
+            else
+            {
+                return InvokeResult<MediaResourceSummary>.FromInvokeResult(response.ToInvokeResult());
+            }
+        }
+
+        public Task<InvokeResult<List<EntityHeader>>> GetVoicesAsync(string languageCode, EntityHeader org, EntityHeader user)
+        {
+            return _textSpeechService.GetVoicesForLanguageAsync(languageCode);
+        }
+
+        public async Task<Stream> PreviewAudioAsync(TextToSpeechRequest request, EntityHeader org, EntityHeader user)
+        {
+             var result = await _textSpeechService.GenerateAudio(request);
+            if (result.Successful)
+                return new MemoryStream(result.Result);
+
+            throw new Exception($"Could not get preview: {result.ErrorMessage}");;
+        }
     }
 }
