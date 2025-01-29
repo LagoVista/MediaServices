@@ -176,11 +176,23 @@ namespace LagoVista.MediaServices.Models
                 StorageReferenceName = $"{Id}.ogg";
                 MimeType = "audio/ogg";
             }
+            else if (contentType.ToLower().Contains("m4a"))
+            {
+                ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Audio);
+                StorageReferenceName = $"{Id}.m4a";
+                MimeType = "audio/m4a";
+            }
             else if (contentType.ToLower().Contains("wav"))
             {
                 ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Audio);
                 StorageReferenceName = $"{Id}.wav";
                 MimeType = "audio/wav";
+            }
+            else 
+            {
+                ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Audio);
+                StorageReferenceName = $"{Id}.bin";
+                MimeType = "octet/stream";
             }
         }
 

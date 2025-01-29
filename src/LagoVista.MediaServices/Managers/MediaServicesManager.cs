@@ -307,6 +307,29 @@ namespace LagoVista.MediaServices.Managers
             return InvokeResult<MediaResourceSummary>.Create(resource.CreateSummary());
         }
 
+        public async Task<InvokeResult<MediaResourceSummary>> UpdateGeneratedAudioAsync(string requestId, TextToSpeechRequest request, EntityHeader org, EntityHeader user)
+        {
+            var mediaResource = await _mediaRepo.GetMediaResourceRecordAsync(requestId);
+            var response = await _textSpeechService.GenerateAudio(request);
+
+            if (response.Successful)
+            {
+                mediaResource.Name = request.Name;
+                mediaResource.LastUpdatedDate = DateTime.UtcNow.ToJSONString();
+                mediaResource.LastUpdatedBy = user;
+                mediaResource.TextGenerationRequest = request;
+
+                await _mediaRepo.UpdateMediaAsync(response.Result, org.Id, mediaResource.StorageReferenceName, mediaResource.MimeType);
+                await _mediaRepo.UpdateMediaResourceRecordAsync(mediaResource);
+
+                return InvokeResult<MediaResourceSummary>.Create(mediaResource.CreateSummary());
+            }
+            else
+            {
+                return InvokeResult<MediaResourceSummary>.FromInvokeResult(response.ToInvokeResult());
+            }
+        }
+        
         public async Task<InvokeResult<MediaResourceSummary>> GenerateAudioAsync(TextToSpeechRequest request, EntityHeader org, EntityHeader user)
         {
             var response = await _textSpeechService.GenerateAudio(request);
