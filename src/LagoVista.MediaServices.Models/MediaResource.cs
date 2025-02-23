@@ -214,6 +214,7 @@ namespace LagoVista.MediaServices.Models
                 Link = Link,
                 IsFileUpload = IsFileUpload,
                 MediaTypeKey = MediaTypeKey,
+                IsDeleted = IsDeleted,
             };
         }
 
@@ -337,25 +338,20 @@ namespace LagoVista.MediaServices.Models
     MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.Summary, ResourceType: typeof(MediaServicesResources),
     FactoryUrl: "/api/media/resource/factory", GetListUrl: "/api/media/library/{libraryid}/resources", GetUrl: "/api/media/resource/{id}", DeleteUrl: "/api/media/resource/{id}",
     SaveUrl: "/api/media/resource", Icon: "icon-fo-image")]
-    public class MediaResourceSummary : ISummaryData
+    public class MediaResourceSummary : SummaryData
     {
         public string ResourceType { get; set; }
         public string MimeType { get; set; }
         public long? ContentSize { get; set; }
         public bool IsFileUpload { get; set; }
         public string Link { get; set; }
-        public string Icon { get; set; }
-        public bool IsPublic { get; set; }
-        public string Description { get; set; }
-        public string Id { get; set; }
-        public string Key { get; set; }
 
         public string MediaTypeKey { get; set; }
 
         // this looks ugly so we can standardized on inserting a media resource summary into other records rather
         // then just an entity header.
         private string _name;
-        public string Name
+        public new string Name
         {
             get {
                 if (String.IsNullOrEmpty(_name))
