@@ -214,7 +214,7 @@ namespace LagoVista.MediaServices.Models
                 Link = Link,
                 IsFileUpload = IsFileUpload,
                 MediaTypeKey = MediaTypeKey,
-                IsDeleted = IsDeleted,
+                IsDeleted = IsDeleted ?? false,
             };
         }
 
