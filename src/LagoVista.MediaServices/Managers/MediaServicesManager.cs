@@ -44,7 +44,6 @@ namespace LagoVista.MediaServices.Managers
                 resource.MediaLibrary.Text = library.Name;
             }
 
-
             resource.SetContentType(resource.FileName);
 
             await AuthorizeAsync(resource, AuthorizeActions.Create, user, org);
