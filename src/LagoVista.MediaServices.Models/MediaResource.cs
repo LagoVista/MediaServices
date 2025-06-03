@@ -206,22 +206,25 @@ namespace LagoVista.MediaServices.Models
 
         public MediaResourceSummary CreateSummary()
         {
-            return new MediaResourceSummary()
+            var summary = new MediaResourceSummary()
             {
-                Id = Id,
                 Description = Description,
-                IsPublic = IsPublic,
-                Key = Key,
-                Icon = Icon,
-                Name = Name,
                 ResourceType = ResourceType.Text,
                 MimeType = MimeType,
                 ContentSize = ContentSize,
-                Link = Link,
+                Link = Link,            
                 IsFileUpload = IsFileUpload,
                 MediaTypeKey = MediaTypeKey,
-                IsDeleted = IsDeleted ?? false,
             };
+
+            summary.Populate(this);
+
+            if(String.IsNullOrEmpty(summary.Link))
+            {
+                summary.Link = $"/api/media/resource/${this.OwnerOrganization.Id}/${this.Id}/download";
+            }
+
+            return summary;
         }
 
         [CustomValidator]

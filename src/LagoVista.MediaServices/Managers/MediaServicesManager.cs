@@ -27,6 +27,7 @@ namespace LagoVista.MediaServices.Managers
         IMediaServicesRepo _mediaRepo;
         IMediaLibraryRepo _libraryRepo;
         ITextToSpeechService _textSpeechService;
+        IAppConfig _appConfig;
 
         public MediaServicesManager(IMediaServicesRepo mediaRepo, IMediaLibraryRepo libraryRepo,ITextToSpeechService textToSpeechService, IAdminLogger logger, IAppConfig appConfig, IDependencyManager depmanager, ISecurity security) :
             base(logger, appConfig, depmanager, security)
@@ -34,6 +35,13 @@ namespace LagoVista.MediaServices.Managers
             _mediaRepo = mediaRepo ?? throw new ArgumentNullException(nameof(mediaRepo));
             _libraryRepo = libraryRepo ?? throw new ArgumentNullException(nameof(libraryRepo));
             _textSpeechService = textToSpeechService ?? throw new ArgumentNullException(nameof(textToSpeechService));
+            _appConfig = appConfig ?? throw new ArgumentNullException(nameof(appConfig)); 
+        }
+
+        private void Prepend(MediaResourceSummary summary)
+        {
+            if(!String.IsNullOrEmpty(summary.Link))
+                summary.Link = $"{_appConfig.WebAddress.TrimEnd('/')}/{summary.Link.TrimStart('/')}";  
         }
 
         public async Task<InvokeResult<MediaResourceSummary>> AddMediaResourceRecordAsync(MediaResource resource, EntityHeader org, EntityHeader user)
@@ -50,8 +58,9 @@ namespace LagoVista.MediaServices.Managers
             ValidationCheck(resource, Actions.Create);
 
             await _mediaRepo.AddMediaResourceRecordAsync(resource);
-
-            return InvokeResult<MediaResourceSummary>.Create(resource.CreateSummary());
+            var summary = resource.CreateSummary();
+            Prepend(summary);
+            return InvokeResult<MediaResourceSummary>.Create(summary);
         }
 
         public static byte[] ScaleImage(byte[] imageBytes, int maxWidth, int maxHeight, string fileType)
@@ -231,13 +240,24 @@ namespace LagoVista.MediaServices.Managers
         public async Task<ListResponse<MediaResourceSummary>> GetMediaResourceSummariesAsync(string libraryId, string orgId, ListRequest listRequest, EntityHeader user)
         {
             await AuthorizeOrgAccessAsync(user, orgId, typeof(MediaResource));
-            return await _mediaRepo.GetResourcesForLibrary(orgId, libraryId, listRequest);
+            var results = await _mediaRepo.GetResourcesForLibrary(orgId, libraryId, listRequest);
+            foreach (var res in results.Model)
+            {
+                Prepend(res);
+            }
+            return results;
         }
 
         public async Task<ListResponse<MediaResourceSummary>> GetResourcesForMediaTypeKeyLibrary(string mediaTypeKey, string orgId, ListRequest listRequest, EntityHeader user)
         {
             await AuthorizeOrgAccessAsync(user, orgId, typeof(MediaResource));
-            return await _mediaRepo.GetResourcesForMediaTypeKeyLibrary(orgId, mediaTypeKey, listRequest);
+            var results = await _mediaRepo.GetResourcesForMediaTypeKeyLibrary(orgId, mediaTypeKey, listRequest);
+            foreach (var res in results.Model)
+            {
+                Prepend(res);
+            }
+
+            return results;
         }
 
 
@@ -323,8 +343,9 @@ namespace LagoVista.MediaServices.Managers
 
                 await _mediaRepo.UpdateMediaAsync(response.Result, org.Id, mediaResource.StorageReferenceName, mediaResource.MimeType);
                 await _mediaRepo.UpdateMediaResourceRecordAsync(mediaResource);
-
-                return InvokeResult<MediaResourceSummary>.Create(mediaResource.CreateSummary());
+                var summary = mediaResource.CreateSummary();
+                Prepend(summary);
+                return InvokeResult<MediaResourceSummary>.Create(summary);
             }
             else
             {
@@ -362,8 +383,9 @@ namespace LagoVista.MediaServices.Managers
 
                 await _mediaRepo.AddMediaAsync(response.Result, org.Id, mediaResource.StorageReferenceName, mediaResource.MimeType);
                 await _mediaRepo.AddMediaResourceRecordAsync(mediaResource);
-
-                return InvokeResult<MediaResourceSummary>.Create(mediaResource.CreateSummary());
+                var summary = mediaResource.CreateSummary();
+                Prepend(summary);
+                return InvokeResult<MediaResourceSummary>.Create(summary);
             }
             else
             {
@@ -384,7 +406,9 @@ namespace LagoVista.MediaServices.Managers
 
                 resource.LastUpdatedDate = DateTime.UtcNow.ToJSONString();
                 resource.LastUpdatedBy = user;
-                return InvokeResult<MediaResourceSummary>.Create(resource.CreateSummary());
+
+                var summary = resource.CreateSummary();
+                return InvokeResult<MediaResourceSummary>.Create(summary);
             }
             else
             {
