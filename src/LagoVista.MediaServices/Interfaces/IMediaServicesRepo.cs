@@ -21,6 +21,7 @@ namespace LagoVista.MediaServices.Interfaces
         Task UpdateMediaResourceRecordAsync(MediaResource updated);
 
         Task AddOrUpdateMediaResourceAsync(MediaResource record);
+        Task<InvokeResult<string>> AddToContainerAsync(byte[] data, string containerName, string fileName, string contentType, bool isPublic);
     }
 
     public interface IMediaServicesConnectionSettings

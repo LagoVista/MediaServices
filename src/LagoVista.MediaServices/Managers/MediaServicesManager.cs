@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Net.Mime;
 using System.Threading.Tasks;
 using static LagoVista.Core.Models.AuthorizeResult;
 
@@ -188,6 +189,35 @@ namespace LagoVista.MediaServices.Managers
             else
             {
                 return InvokeResult<MediaResource>.FromInvokeResult(result);
+            }
+        }
+
+        public async Task<InvokeResult<ImageDetails>> AddImageAsPngAsync(Stream stream, string containerName, bool isPublic, int width, int height)
+        {
+            var fileName = $"{Guid.NewGuid().ToId()}.png";
+
+            var imageDetails = new ImageDetails()
+            {
+                Id = Guid.NewGuid().ToId(),
+                Width = width,
+                Height = height
+            };
+
+            var bytes = new byte[stream.Length];
+            stream.Position = 0;
+            stream.Read(bytes, 0, (int)stream.Length);
+
+            var newBuffer = ScaleImage(bytes, width, height, "png");
+
+            var result = await _mediaRepo.AddToContainerAsync(newBuffer, "profile", fileName, "image/png", isPublic);
+            if (result.Successful)
+            {
+                imageDetails.ImageUrl = result.Result;
+                return InvokeResult<ImageDetails>.Create(imageDetails);
+            }
+            else
+            {
+                return InvokeResult<ImageDetails>.FromInvokeResult(result.ToInvokeResult());
             }
         }
 

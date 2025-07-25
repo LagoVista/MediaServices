@@ -18,6 +18,7 @@ using LagoVista.Core.Models.UIMetaData;
 using static System.Net.Mime.MediaTypeNames;
 using Microsoft.Azure.Cosmos;
 using System.Diagnostics;
+using System.Security.Cryptography;
 
 namespace LagoVista.MediaServices.CloudRepos
 {
@@ -41,18 +42,18 @@ namespace LagoVista.MediaServices.CloudRepos
             return new BlobServiceClient(connectionString);
         }
 
-        private async Task<InvokeResult<BlobContainerClient>> GetStorageContainerAsync(string orgId)
+        private async Task<InvokeResult<BlobContainerClient>> GetStorageContainerAsync(string suffix, string prefix = "dtresource-", bool isPublic = false)
         {
             var client = CreateBlobClient(_blobConnectionSettings);
 
-            var containerName = $"dtresource-{orgId}".ToLower();
+            var containerName = $"{prefix}{suffix}".ToLower();
 
             var containerClient = client.GetBlobContainerClient(containerName);
 
-
             try
             {
-                await containerClient.CreateIfNotExistsAsync();
+                var accessType = isPublic ? PublicAccessType.BlobContainer : PublicAccessType.None;
+                await containerClient.CreateIfNotExistsAsync(accessType);
                 return InvokeResult<BlobContainerClient>.Create(containerClient);
             }
             catch (ArgumentException ex)
@@ -83,6 +84,8 @@ namespace LagoVista.MediaServices.CloudRepos
             var container = result.Result;
             var blob = container.GetBlobClient(fileName);
 
+            var sw = Stopwatch.StartNew();
+
             var numberRetries = 5;
             var retryCount = 0;
             var completed = false;
@@ -99,6 +102,12 @@ namespace LagoVista.MediaServices.CloudRepos
 
                     if (statusCode < 200 || statusCode > 299)
                         throw new InvalidOperationException($"Invalid response Code {statusCode}");
+
+
+                    var elapsedMs = sw.Elapsed.TotalMilliseconds;
+
+                    _logger.AddCustomEvent(LogLevel.Message, "MediaServicesRepo_AddItemAsync", $"Uploaded file {fileName} in {elapsedMs}ms, attempts {retryCount};", elapsedMs.ToString().ToKVP("ms"), contentType.ToKVP("contentType"), retryCount.ToString().ToKVP("retryCount"));
+
 
                     return InvokeResult.Success;
                 }
@@ -120,6 +129,61 @@ namespace LagoVista.MediaServices.CloudRepos
             return InvokeResult.Success;
         }
 
+        public async Task<InvokeResult<string>> AddToContainerAsync(byte[] data, string containerName, string fileName, string contentType, bool isPublic)
+        {
+            var client = CreateBlobClient(_blobConnectionSettings);
+
+            var result = await GetStorageContainerAsync(containerName, string.Empty, isPublic);
+            if (!result.Successful)
+            {
+                return InvokeResult<string>.FromInvokeResult(result.ToInvokeResult());
+            }
+
+            var container = result.Result;
+            var blob = container.GetBlobClient(fileName);
+
+            var sw = Stopwatch.StartNew();
+
+            var numberRetries = 5;
+            var retryCount = 0;
+            var completed = false;
+            var stream = new MemoryStream(data);
+            while (retryCount++ < numberRetries && !completed)
+            {
+                try
+                {
+                    var header = new BlobHttpHeaders { ContentType = contentType };
+
+                    stream.Seek(0, SeekOrigin.Begin);
+                    var blobResult = await blob.UploadAsync(stream, new BlobUploadOptions { HttpHeaders = header });
+                    var statusCode = blobResult.GetRawResponse().Status;
+
+                    if (statusCode < 200 || statusCode > 299)
+                        throw new InvalidOperationException($"Invalid response Code {statusCode}");
+
+                    var elapsedMs = sw.Elapsed.TotalMilliseconds;
+
+                    _logger.AddCustomEvent(LogLevel.Message, "MediaServicesRepo_AddToContainerAsync", $"Uploaded file {fileName} in {elapsedMs}ms, attempts {retryCount};", elapsedMs.ToString().ToKVP("ms"), contentType.ToKVP("contentType"), retryCount.ToString().ToKVP("retryCount"));
+                    var fileUrl = $"https://{_blobConnectionSettings.AccountId}.blob.core.windows.net/{containerName}/{fileName}";
+                    return InvokeResult<string>.Create(fileUrl);
+                }
+                catch (Exception ex)
+                {
+                    if (retryCount == numberRetries)
+                    {
+                        _logger.AddException("MediaServicesRepo_AddToContainerAsync", ex);
+                        return InvokeResult<string>.FromException("MediaServicesRepo_AddToContainerAsync", ex);
+                    }
+                    else
+                    {
+                        _logger.AddCustomEvent(LogLevel.Warning, "MediaServicesRepo_AddToContainerAsync", "", ex.Message.ToKVP("exceptionMessage"), ex.GetType().Name.ToKVP("exceptionType"), retryCount.ToString().ToKVP("retryCount"));
+                    }
+                    await Task.Delay(retryCount * 250);
+                }
+            }
+
+            return InvokeResult<string>.FromError("too many attempts");
+        }
 
         public async Task<InvokeResult> UpdateMediaAsync(byte[] data, string orgId, string fileName, string contentType)
         {
