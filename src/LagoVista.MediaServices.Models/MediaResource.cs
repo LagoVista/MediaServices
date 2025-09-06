@@ -233,6 +233,9 @@ namespace LagoVista.MediaServices.Models
                 IsFileUpload = IsFileUpload,
                 MediaTypeKey = MediaTypeKey,
                 DownloadPath = DownloadPath,
+                Category = Category?.Text,
+                CategoryId = Category?.Id,
+                CategoryKey = Category?.Key,
             };
 
             summary.Populate(this);
