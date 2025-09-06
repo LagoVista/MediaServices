@@ -43,7 +43,7 @@ namespace LagoVista.MediaServices.Models
         MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources),
         FactoryUrl: "/api/media/resource/factory", GetListUrl: "/api/media/library/{libraryid}/resources", GetUrl: "/api/media/resource/{id}", DeleteUrl: "/api/media/resource/{id}",
         SaveUrl: "/api/media/resource", Icon: "icon-fo-image")]
-    public class MediaResource : EntityBase, IValidateable, IDescriptionEntity, IFormDescriptor, IFormConditionalFields, ISummaryFactory, IFormDescriptorAdvanced
+    public class MediaResource : EntityBase, IValidateable, IDescriptionEntity, IFormDescriptor, IFormConditionalFields, ISummaryFactory, IFormDescriptorAdvanced, IDiscussable
     {
 
         public const string DeviceResourceTypes_Manual = "manual";
@@ -220,11 +220,12 @@ namespace LagoVista.MediaServices.Models
 
         public TextToSpeechRequest TextGenerationRequest { get; set; }
 
+        public List<Discussion> Discussions { get; set; } = new List<Discussion>();
+
         public MediaResourceSummary CreateSummary()
         {
             var summary = new MediaResourceSummary()
             {
-                Name = Name,
                 Description = Description,
                 ResourceType = ResourceType.Text,
                 MimeType = MimeType,
@@ -233,9 +234,6 @@ namespace LagoVista.MediaServices.Models
                 IsFileUpload = IsFileUpload,
                 MediaTypeKey = MediaTypeKey,
                 DownloadPath = DownloadPath,
-                Category = Category?.Text,
-                CategoryId = Category?.Id,
-                CategoryKey = Category?.Key,
             };
 
             summary.Populate(this);
