@@ -13,6 +13,8 @@ namespace LagoVista.MediaServices.Models
         public string ImageTimestamp { get; set; }
         public bool NotModified { get; set; } = false;
         public string LastModified { get; set; }
+        public string AiGenerated { get; set; }
+        public string AiResponseId { get; set; }
         public List<ResultTiming> Timings { get; set; } = new List<ResultTiming>();
     }
 }

@@ -1,4 +1,5 @@
-﻿using LagoVista.Core.Attributes;
+﻿using LagoVista.Core;
+using LagoVista.Core.Attributes;
 using LagoVista.Core.Interfaces;
 using LagoVista.Core.Models;
 using LagoVista.Core.Models.UIMetaData;
@@ -9,6 +10,7 @@ using Newtonsoft.Json;
 using RingCentral;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Mime;
 
 namespace LagoVista.MediaServices.Models
@@ -41,7 +43,7 @@ namespace LagoVista.MediaServices.Models
         MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources),
         FactoryUrl: "/api/media/resource/factory", GetListUrl: "/api/media/library/{libraryid}/resources", GetUrl: "/api/media/resource/{id}", DeleteUrl: "/api/media/resource/{id}",
         SaveUrl: "/api/media/resource", Icon: "icon-fo-image")]
-    public class MediaResource : EntityBase, IValidateable, IDescriptionEntity, IFormDescriptor, IFormConditionalFields, ISummaryFactory, IFormDescriptorCol2
+    public class MediaResource : EntityBase, IValidateable, IDescriptionEntity, IFormDescriptor, IFormConditionalFields, ISummaryFactory, IFormDescriptorAdvanced
     {
 
         public const string DeviceResourceTypes_Manual = "manual";
@@ -54,6 +56,8 @@ namespace LagoVista.MediaServices.Models
         public const string DeviceResourceTypes_Other = "other";
         public const string DeviceResourceTypes_Content = "content";
         public const string DeviceResourceTypes_CompressedFile = "zip";
+
+        public const string DetailsRow = "detailsrow";
 
         public MediaResource()
         {
@@ -73,9 +77,9 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Icon, FieldType: FieldTypes.Icon, IsRequired: true, ResourceType: typeof(MediaServicesResources))]
         public string Icon { get; set; } = "icon-fo-image";
 
-        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_ContentLength, FieldType: FieldTypes.Integer, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_ContentLength, ParentRowName: DetailsRow, ParentRowIndex:1, FieldType: FieldTypes.Integer, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public long? ContentSize { get; set; }
-        [FormField(LabelResource: MediaServicesResources.Names.MediaResources_MimeType, IsUserEditable: false, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResources_MimeType, ParentRowName:DetailsRow, ParentRowIndex: 2, IsUserEditable: false, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
         public string MimeType { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.Common_Description, FieldType: FieldTypes.MultiLineText, ResourceType: typeof(MediaServicesResources))]
         public string Description { get; set; }
@@ -90,10 +94,10 @@ namespace LagoVista.MediaServices.Models
         public EntityHeader<MediaResourceTypes> ResourceType { get; set; }
 
 
-        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Width, FieldType: FieldTypes.Integer, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Width, ParentRowName: DetailsRow, ParentRowIndex: 3, FieldType: FieldTypes.Integer, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public int? Width { get; set; }
 
-        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Height, FieldType: FieldTypes.Integer, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Height, ParentRowName: DetailsRow, ParentRowIndex: 4, FieldType: FieldTypes.Integer, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public int? Height { get; set; }
 
 
@@ -103,12 +107,18 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_OriginalSource, FieldType: FieldTypes.WebLink, IsUserEditable:false, ResourceType: typeof(MediaServicesResources))]
         public string OriginalUrl { get; set; }
 
+        public string DownloadPath { get => $"/api/media/resource/{OwnerOrganization.Id}/{Id}/download"; }
+
         public string StorageReferenceName { get; set; }
+
+        public string ResponseId { get => History.FirstOrDefault()?.ResponseId ?? String.Empty; }
+        public string OriginalPrompt { get => History.FirstOrDefault()?.OriginalPrompt ?? String.Empty; }
+        public string RevisedPrompt { get => History.FirstOrDefault()?.RevisedPrompt ?? String.Empty; }
 
         public void SetContentType(string contentType, string id = "")
         {
             if (String.IsNullOrEmpty(id))
-                id = Id;
+                id = Guid.NewGuid().ToId();
 
             StorageReferenceName = $"{id}.media";
             MimeType = "application/octet-stream";
@@ -214,6 +224,7 @@ namespace LagoVista.MediaServices.Models
         {
             var summary = new MediaResourceSummary()
             {
+                Name = Name,
                 Description = Description,
                 ResourceType = ResourceType.Text,
                 MimeType = MimeType,
@@ -221,6 +232,7 @@ namespace LagoVista.MediaServices.Models
                 Link = Link,            
                 IsFileUpload = IsFileUpload,
                 MediaTypeKey = MediaTypeKey,
+                DownloadPath = DownloadPath,
             };
 
             summary.Populate(this);
@@ -274,29 +286,16 @@ namespace LagoVista.MediaServices.Models
         public List<string> GetFormFields()
         {
             return new List<string>()
-            {
-                nameof(Name),
+            {   nameof(Name),
                 nameof(Key),
                 nameof(Icon),
+                nameof(Category),
                 nameof(IsFileUpload),
-                nameof(FileName),
                 nameof(ResourceType),
+                DetailsRow,
                 nameof(Description),
                 nameof(Content),
-            };
-        }
-
-        public List<string> GetFormFieldsCol2()
-        {
-            return new List<string>()
-            {
-                nameof(ContentSize),
-                nameof(Width),
-                nameof(Height),
-                nameof(Link),                
-                nameof(MimeType),
-                nameof(License),
-                nameof(OriginalUrl),
+                nameof(Link),
             };
         }
 
@@ -346,7 +345,22 @@ namespace LagoVista.MediaServices.Models
             return CreateSummary();
         }
 
-        
+        public List<string> GetAdvancedFields()
+        {
+            return new List<string>()
+            {
+                nameof(Name),
+                nameof(Key),
+                nameof(Icon),
+                nameof(IsFileUpload),
+                nameof(ResourceType),
+                nameof(Description),
+                nameof(Content),
+                nameof(Link),
+                nameof(License),
+                nameof(OriginalUrl),
+            };
+        }
     }
 
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResources_Title, MediaServicesResources.Names.MediaResource_Help,
@@ -360,7 +374,7 @@ namespace LagoVista.MediaServices.Models
         public long? ContentSize { get; set; }
         public bool IsFileUpload { get; set; }
         public string Link { get; set; }
-
+        public string DownloadPath { get; set; }
         public string MediaTypeKey { get; set; }
 
         // this looks ugly so we can standardized on inserting a media resource summary into other records rather
@@ -385,10 +399,15 @@ namespace LagoVista.MediaServices.Models
 
     public class MediaResourceHistory
     {
+        public EntityHeader CreatedBy { get; set; }
+        public string CreationDate { get; set; }
         public string ResponseId { get; set; }
         public string LinkUrl { get; set; }
         public string OriginalPrompt { get; set; }
-        public string ProcessedPrompt { get; set; }
+        public string RevisedPrompt { get; set; }
         public string StorageReferenceName { get; set; }
+        public long? ContentSize { get; set; }
+        public int? Width { get; set; }
+        public int? Height { get; set; }
     }
 }

@@ -238,6 +238,12 @@ namespace LagoVista.MediaServices.Rest.Controllers
                 lastMod = DateTime.ParseExact(Request.Headers["If-Modified-Since"], "r", provider).ToJSONString();
             }
             var response = await _mediaServicesManager.GetPublicResourceRecordAsync(orgid, id, lastMod);
+            if (!String.IsNullOrEmpty(response.AiResponseId)) 
+            {
+                Response.Headers["x-ai-responseid"] = response.AiResponseId;
+                Response.Headers["x-ai-generated"] = "true";
+            }
+
             if (response.NotModified)
             {
                 return StatusCode(304);

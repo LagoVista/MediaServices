@@ -8,6 +8,7 @@ using LagoVista.Core.Validation;
 using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
+using OpenTelemetry.Resources;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.Formats.Webp;
@@ -146,7 +147,8 @@ namespace LagoVista.MediaServices.Managers
             return InvokeResult<MediaResource>.Create(resource);
         }
 
-        public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false, string license = "", string originalUrl = "")
+        public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false, 
+            string license = "", string url = "", string responseId = "", string originalPrompt = "", string revisedPrompt = "", string entityTypeName = "", string entityFieldName = "", string size = "")
         {
             var mediaResource = new MediaResource();
             mediaResource.Id = id;
@@ -161,6 +163,14 @@ namespace LagoVista.MediaServices.Managers
                 mediaResource.Name = "Auto Inserted";
                 mediaResource.Key = "autoinserted";
             }
+
+            if (!String.IsNullOrEmpty(entityTypeName) && !String.IsNullOrEmpty(entityFieldName))
+            {
+                var categoryKey = $"{entityTypeName.ToLower()}{entityFieldName.ToLower()}";
+                var categoryName = $"{entityTypeName} {entityFieldName}";
+                mediaResource.Category = EntityHeader.Create(categoryKey, categoryKey, categoryName);
+            }
+
 
             await AuthorizeAsync(user, org, "addDeviceTypeResource", $"{{mediaItemId:'{id}'}}");
 
@@ -178,6 +188,42 @@ namespace LagoVista.MediaServices.Managers
             mediaResource.FileName = fileName;
             mediaResource.ContentSize = stream.Length;
 
+            if (!String.IsNullOrEmpty(size))
+            {
+                var part = size.Split('x');
+                if (part.Length != 2)
+                    return InvokeResult<MediaResource>.FromError($"Invalid Size: {size}");
+
+                if (int.TryParse(part[0], out int w))
+                {
+                    mediaResource.Width = w;
+                }
+                else
+                    return InvokeResult<MediaResource>.FromError($"Invalid Width on Size: {size}");
+
+                if (int.TryParse(part[1], out int h))
+                {
+                    mediaResource.Height = h;
+                }
+                else
+                    return InvokeResult<MediaResource>.FromError($"Invalid Heigth on Size: {size}");
+            }
+
+            var history = new MediaResourceHistory()
+            {
+                StorageReferenceName = mediaResource.StorageReferenceName,
+                OriginalPrompt = originalPrompt,
+                RevisedPrompt = revisedPrompt,
+                ResponseId = responseId,
+                CreatedBy = user,
+                CreationDate = mediaResource.LastUpdatedDate,
+                ContentSize = mediaResource.ContentSize,
+                Width = mediaResource.Width,
+                Height = mediaResource.Height,
+            };
+
+            mediaResource.History.Insert(0, history);
+
             var result = await _mediaRepo.AddMediaAsync(bytes, org.Id, mediaResource.StorageReferenceName, contentType);
             if (result.Successful)
             {
@@ -191,6 +237,81 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<MediaResource>.FromInvokeResult(result);
             }
         }
+
+        public async Task<InvokeResult<MediaResource>> AddResourceMediaRevisionAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false, string license = "", string url = ""
+            , string responseId = "", string originalPrompt = "", string revisedPrompt = "", string size = "")
+        {
+            var mediaResource = await _mediaRepo.GetMediaResourceRecordAsync(id);
+            await AuthorizeAsync(mediaResource, AuthorizeActions.Update, user, org);
+            
+            mediaResource.LastUpdatedDate = DateTime.UtcNow.ToJSONString();
+            mediaResource.LastUpdatedBy = user;
+
+            mediaResource.SetContentType(contentType);
+            if (mediaResource.MimeType == "application/octet-stream")
+                mediaResource.SetContentType(fileName);
+            if (mediaResource.ResourceType.Value == MediaResourceTypes.Other)
+                mediaResource.ResourceType = EntityHeader<MediaResourceTypes>.Create(mediaResource.MimeType.StartsWith("image") ? MediaResourceTypes.Picture : MediaResourceTypes.Other);
+
+            var bytes = new byte[stream.Length];
+            stream.Position = 0;
+            stream.Read(bytes, 0, (int)stream.Length);
+            mediaResource.FileName = fileName;
+            mediaResource.ContentSize = stream.Length;
+
+            if (!String.IsNullOrEmpty(size))
+            {
+                var part = size.Split('x');
+                if(part.Length != 2)
+                    return InvokeResult<MediaResource>.FromError($"Invalid Size: {size}");
+              
+                if(int.TryParse(part[0], out int w))
+                {
+                    mediaResource.Width = w;
+                }
+                else
+                    return InvokeResult<MediaResource>.FromError($"Invalid Width on Size: {size}");
+
+                if (int.TryParse(part[1], out int h))
+                {
+                    mediaResource.Height = h;
+                }
+                else
+                    return InvokeResult<MediaResource>.FromError($"Invalid Heigth on Size: {size}");
+            }
+
+            var history = new MediaResourceHistory()
+            {
+                StorageReferenceName = mediaResource.StorageReferenceName,
+                OriginalPrompt = originalPrompt,
+                RevisedPrompt = revisedPrompt,
+                ResponseId = responseId,
+                CreatedBy = user,
+                CreationDate = mediaResource.LastUpdatedDate,
+                ContentSize = mediaResource.ContentSize,
+                Width = mediaResource.Width,
+                Height = mediaResource.Height,
+                
+            };
+
+            mediaResource.History.Insert(0, history);
+
+            var result = await _mediaRepo.AddMediaAsync(bytes, org.Id, mediaResource.StorageReferenceName, contentType);
+            if(result.Successful)
+            {
+                if(saveResourceRecord)
+                {
+                    await _mediaRepo.UpdateMediaResourceRecordAsync(mediaResource);
+                }
+          
+                return InvokeResult<MediaResource>.Create(mediaResource);
+            }
+            else
+            {
+                return InvokeResult<MediaResource>.FromInvokeResult(result.ToInvokeResult());
+            }
+        }
+
 
         public async Task<InvokeResult<ImageDetails>> AddImageAsPngAsync(Stream stream, string containerName, bool isPublic, int width, int height)
         {
@@ -342,6 +463,7 @@ namespace LagoVista.MediaServices.Managers
             response.Timings.AddRange(mediaItem.Timings);
             response.Timings.Add(new ResultTiming() { Key = "GetMediaResourceRecord", Ms = stopWatch.Elapsed.TotalMilliseconds });
 
+            response.AiResponseId = resource.ResponseId;
             response.ContentType = resource.MimeType;
             response.FileName = resource.FileName;
             response.ImageBytes = mediaItem.Result;
