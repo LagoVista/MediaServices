@@ -209,7 +209,7 @@ namespace LagoVista.MediaServices.Managers
 
             var newBuffer = ScaleImage(bytes, width, height, "png");
 
-            var result = await _mediaRepo.AddToContainerAsync(newBuffer, "profile", fileName, "image/png", isPublic);
+            var result = await _mediaRepo.AddToContainerAsync(newBuffer, containerName, fileName, "image/png", isPublic);
             if (result.Successful)
             {
                 imageDetails.ImageUrl = result.Result;

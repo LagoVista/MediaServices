@@ -6,6 +6,7 @@ using LagoVista.Core.Validation;
 using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Models.Resources;
 using Newtonsoft.Json;
+using RingCentral;
 using System;
 using System.Collections.Generic;
 using System.Net.Mime;
@@ -104,103 +105,108 @@ namespace LagoVista.MediaServices.Models
 
         public string StorageReferenceName { get; set; }
 
-        public void SetContentType(string contentType)
+        public void SetContentType(string contentType, string id = "")
         {
-            StorageReferenceName = $"{Id}.media";
+            if (String.IsNullOrEmpty(id))
+                id = Id;
+
+            StorageReferenceName = $"{id}.media";
             MimeType = "application/octet-stream";
             ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Other);
 
             if (contentType.ToLower().Contains("gif"))
             {
                 ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Picture);
-                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{Id}.gif";
+                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{id}.gif";
                 MimeType = "image/gif";
             }
             else if (contentType.ToLower().Contains("png"))
             {
                 ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Picture);
-                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{Id}.png";
+                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{id}.png";
                 MimeType = "image/png";
             }
             else if (contentType.ToLower().Contains("jpg"))
             {
                 ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Picture);
-                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{Id}.jpg";
+                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{id}.jpg";
                 MimeType = "image/jpeg";
             }
             else if (contentType.ToLower().Contains("jpeg"))
             {
                 ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Picture);
-                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{Id}.jpeg";
+                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{id}.jpeg";
                 MimeType = "image/jpeg";
             }
             else if (contentType.ToLower().Contains("webp"))
             {
                 ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Picture);
-                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{Id}.webp";
+                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{id}.webp";
                 MimeType = "image/webp";
             }
             else if (contentType.ToLower().Contains("pdf"))
             {
                 ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Other);
-                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{Id}.pdf";
+                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{id}.pdf";
                 MimeType = "application/pdf";
             }
             else if (contentType.ToLower().Contains("csv"))
             {
                 ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Other);
-                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{Id}.csv";
+                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{id}.csv";
                 MimeType = "text/plain";
             }
             else if (contentType.ToLower().Contains("zip"))
             {
                 ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.CompressedFile);
-                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{Id}.zip";
+                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{id}.zip";
                 MimeType = "application/zip";
             }
             else if (contentType.ToLower().Contains("mp3"))
             {
                 ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Audio);
-                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{Id}.mp3";
+                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{id}.mp3";
                 MimeType = "audio/mpeg";
             }
             else if (contentType.ToLower().Contains("mpeg"))
             {
                 ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Audio);
-                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{Id}.mp3";
+                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{id}.mp3";
                 MimeType = "audio/mpeg";
             }
             else if (contentType.ToLower().Contains("mp4"))
             {
                 ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Audio);
-                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{Id}.mp4";
+                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{id}.mp4";
                 MimeType = "audio/mp4";
             }
             else if (contentType.ToLower().Contains("ogg"))
             {
                 ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Audio);
-                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{Id}.ogg";
+                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{id}.ogg";
                 MimeType = "audio/ogg";
             }
             else if (contentType.ToLower().Contains("m4a"))
             {
                 ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Audio);
-                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{Id}.m4a";
+                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{id}.m4a";
                 MimeType = "audio/m4a";
             }
             else if (contentType.ToLower().Contains("wav"))
             {
                 ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Audio);
-                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{Id}.wav";
+                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{id}.wav";
                 MimeType = "audio/wav";
             }
             else 
             {
                 ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Audio);
-                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{Id}.bin";
+                if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{id}.bin";
                 MimeType = "octet/stream";
             }
         }
+
+        public List<MediaResourceHistory> History { get; set; } = new List<MediaResourceHistory>();
 
         public TextToSpeechRequest TextGenerationRequest { get; set; }
 
@@ -375,5 +381,14 @@ namespace LagoVista.MediaServices.Models
         {
             get; set;
         }
+    }
+
+    public class MediaResourceHistory
+    {
+        public string ResponseId { get; set; }
+        public string LinkUrl { get; set; }
+        public string OriginalPrompt { get; set; }
+        public string ProcessedPrompt { get; set; }
+        public string StorageReferenceName { get; set; }
     }
 }
