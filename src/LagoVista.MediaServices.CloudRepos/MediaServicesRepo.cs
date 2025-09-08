@@ -243,9 +243,38 @@ namespace LagoVista.MediaServices.CloudRepos
             return this.UpsertDocumentAsync(updated);
         }
 
-        public Task<MediaResource> GetMediaResourceRecordAsync(string id)
+        public async Task<MediaResource> GetMediaResourceRecordAsync(string id)
         {
-            return this.GetDocumentAsync(id);
+            var record = await this.GetDocumentAsync(id);
+            if (string.IsNullOrEmpty(record.CurrentRevision) && record.IsFileUpload)
+            {
+                var timeStamp = DateTime.UtcNow.ToJSONString();
+                if (record.History.Count > 0)
+                {
+                    record.CurrentRevision = record.History[0].Id;
+                }
+                else
+                {
+                    var history = new MediaResourceHistory()
+                    {
+                        CreatedBy = record.CreatedBy,
+                        CreationDate = timeStamp,
+                        ContentSize = record.ContentSize,
+                        Height = record.Height,
+                        Name = $"Revision 1",
+                        Width = record.Width,
+                        Id = Guid.NewGuid().ToId(),
+                        StorageReferenceName = record.StorageReferenceName
+                    };
+
+                    record.CurrentRevision = history.Id;
+                    record.History.Add(history);
+                }
+                record.LastUpdatedDate = timeStamp;
+                await UpsertDocumentAsync(record);
+            }
+
+            return record;
         }
 
         public Task DeleteMediaRecordAsync(string id)
@@ -303,9 +332,9 @@ namespace LagoVista.MediaServices.CloudRepos
             return InvokeResult<byte[]>.FromError("Could not load media.");
         }
 
-        public  Task<ListResponse<MediaResourceSummary>> GetResourcesForLibrary(string orgId, string libraryId, ListRequest listRequest)
+        public Task<ListResponse<MediaResourceSummary>> GetResourcesForLibraryAsync(string orgId, string libraryId, ListRequest listRequest)
         {
-            return base.QuerySummaryAsync<MediaResourceSummary, MediaResource>(qry => (qry.IsPublic == true || qry.OwnerOrganization.Id == orgId) && qry.MediaLibrary.Id == libraryId, med=>med.Name, listRequest);
+            return base.QuerySummaryAsync<MediaResourceSummary, MediaResource>(qry => (qry.IsPublic == true || qry.OwnerOrganization.Id == orgId) && qry.MediaLibrary.Id == libraryId, med => med.Name, listRequest);
         }
 
         public Task<ListResponse<MediaResourceSummary>> GetResourcesForMediaTypeKeyLibrary(string orgId, string mediaTypeKey, ListRequest listRequest)
@@ -334,7 +363,7 @@ namespace LagoVista.MediaServices.CloudRepos
                 {
                     await blobClient.DeleteAsync();
                     completed = true;
-                } 
+                }
                 catch (Exception ex)
                 {
                     if (retryCount == numberRetries)
@@ -353,6 +382,11 @@ namespace LagoVista.MediaServices.CloudRepos
                     await Task.Delay(retryCount * 250);
                 }
             }
+        }
+
+        public Task<ListResponse<MediaResourceSummary>> GetResourcesAsync(string orgId, ListRequest listRequest)
+        {
+            return QuerySummaryAsync<MediaResourceSummary, MediaResource>(qry => qry.OwnerOrganization.Id == orgId, qry => qry.Name, listRequest);
         }
     }
 }

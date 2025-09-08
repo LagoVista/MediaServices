@@ -41,11 +41,11 @@ namespace LagoVista.MediaServices.Models
 
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResource_Title, MediaServicesResources.Names.MediaResource_Help, 
         MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources),
+        EditUIUrl: "/contentmanagement/mediaresource/{id}", ListUIUrl: "/contentmanagement/mediaresources", CreateUIUrl: "/contentmanagement/mediaresource/add",
         FactoryUrl: "/api/media/resource/factory", GetListUrl: "/api/media/library/{libraryid}/resources", GetUrl: "/api/media/resource/{id}", DeleteUrl: "/api/media/resource/{id}",
         SaveUrl: "/api/media/resource", Icon: "icon-fo-image")]
     public class MediaResource : EntityBase, IValidateable, IDescriptionEntity, IFormDescriptor, IFormConditionalFields, ISummaryFactory, IFormDescriptorAdvanced, IDiscussable
     {
-
         public const string DeviceResourceTypes_Manual = "manual";
         public const string DeviceResourceTypes_UserGuide = "userguide";
         public const string DeviceResourceTypes_Specification = "specification";
@@ -100,6 +100,7 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Height, ParentRowName: DetailsRow, ParentRowIndex: 4, FieldType: FieldTypes.Integer, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public int? Height { get; set; }
 
+        public string CurrentRevision { get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_License, FieldType: FieldTypes.WebLink, IsUserEditable:false, ResourceType: typeof(MediaServicesResources))]
         public string License { get; set; }
@@ -216,6 +217,20 @@ namespace LagoVista.MediaServices.Models
             }
         }
 
+        public string GetCurrentStorageReferenceName()
+        {
+            if(String.IsNullOrEmpty(CurrentRevision))
+            {
+                var revision = History.FirstOrDefault(rev => rev.Id == CurrentRevision);
+                if (revision != null)
+                    throw new Exception($"Could not find content revision with id {CurrentRevision} on resource {Id}");
+
+                return revision.StorageReferenceName;
+            }
+
+            return StorageReferenceName;
+        }
+
         public List<MediaResourceHistory> History { get; set; } = new List<MediaResourceHistory>();
 
         public TextToSpeechRequest TextGenerationRequest { get; set; }
@@ -230,7 +245,8 @@ namespace LagoVista.MediaServices.Models
                 ResourceType = ResourceType.Text,
                 MimeType = MimeType,
                 ContentSize = ContentSize,
-                Link = Link,            
+                Link = Link,
+                Name = Name,
                 IsFileUpload = IsFileUpload,
                 MediaTypeKey = MediaTypeKey,
                 DownloadPath = DownloadPath,
@@ -240,7 +256,7 @@ namespace LagoVista.MediaServices.Models
 
             if(String.IsNullOrEmpty(summary.Link))
             {
-                summary.Link = $"/api/media/resource/${this.OwnerOrganization.Id}/${this.Id}/download";
+                summary.Link = $"/api/media/resource/{this.OwnerOrganization.Id}/{this.Id}/download";
             }
 
             return summary;
@@ -399,7 +415,9 @@ namespace LagoVista.MediaServices.Models
     }
 
     public class MediaResourceHistory
-    {
+    { 
+        public string Id { get; set; } = Guid.NewGuid().ToId(); 
+        public string Name { get; set; }
         public EntityHeader CreatedBy { get; set; }
         public string CreationDate { get; set; }
         public string ResponseId { get; set; }

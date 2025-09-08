@@ -8,7 +8,8 @@ namespace LagoVista.MediaServices.Interfaces
     public interface IMediaLibraryRepo
     { 
         Task AddMediaLibraryAsync(MediaLibrary mediaLibrary);
-        Task<MediaLibrary> GetMediaLibrary(string id);
+        Task<MediaLibrary> GetMediaLibraryAsync(string id);
+        Task<MediaLibrary> GetMediaLibraryByKeyAsync(string orgId, string id);
         Task<ListResponse<MediaLibrarySummary>> GetMediaLibrariesForOrgsAsync(string orgId, ListRequest listRequest);
         Task<ListResponse<MediaLibrarySummary>> GetMediaLibrariesForCustomerAsync(string orgId, string customerId, ListRequest listRequest);
         Task<bool> QueryKeyInUseAsync(string key, string orgId);

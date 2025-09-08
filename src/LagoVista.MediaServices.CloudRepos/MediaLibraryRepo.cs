@@ -7,6 +7,7 @@ using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 
 namespace LagoVista.MediaServices.CloudRepos
@@ -48,9 +49,15 @@ namespace LagoVista.MediaServices.CloudRepos
             return base.QuerySummaryAsync<MediaLibrarySummary, MediaLibrary>(qry => qry.IsPublic == true || qry.OwnerOrganization.Id == orgId, med=>med.Name, listRequest);
         }
 
-        public Task<MediaLibrary> GetMediaLibrary(string id)
+        public Task<MediaLibrary> GetMediaLibraryAsync(string id)
         {
             return this.GetDocumentAsync(id);
+        }
+
+        public async Task<MediaLibrary> GetMediaLibraryByKeyAsync(string orgId, string key)
+        {
+            var items = await base.QueryAsync(attr => (attr.OwnerOrganization.Id == orgId) && attr.Key == key);
+            return items.FirstOrDefault();
         }
 
         public async Task<bool> QueryKeyInUseAsync(string key, string orgId)

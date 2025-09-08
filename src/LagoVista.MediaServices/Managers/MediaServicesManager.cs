@@ -8,6 +8,7 @@ using LagoVista.Core.Validation;
 using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
+using Newtonsoft.Json.Converters;
 using OpenTelemetry.Resources;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
@@ -15,8 +16,10 @@ using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Mime;
 using System.Threading.Tasks;
@@ -50,7 +53,7 @@ namespace LagoVista.MediaServices.Managers
         {
             if (resource.MediaLibrary != null && String.IsNullOrEmpty(resource.MediaLibrary.Text))
             {
-                var library = await _libraryRepo.GetMediaLibrary(resource.MediaLibrary.Id);
+                var library = await _libraryRepo.GetMediaLibraryAsync(resource.MediaLibrary.Id);
                 resource.MediaLibrary.Text = library.Name;
             }
 
@@ -121,13 +124,14 @@ namespace LagoVista.MediaServices.Managers
             }
 
             var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
+
             if (org.Id != resource.OwnerOrganization.Id)
                 throw new NotAuthorizedException("Not authorized to esize this image resource.");
 
-            var mediaItem = await _mediaRepo.GetMediaAsync(resource.StorageReferenceName, org.Id);
+            var mediaItem = await _mediaRepo.GetMediaAsync(resource.GetCurrentStorageReferenceName(), org.Id);
             if (!mediaItem.Successful)
             {
-                throw new RecordNotFoundException("Media Contents", resource.StorageReferenceName);
+                throw new RecordNotFoundException("Media Contents", resource.GetCurrentStorageReferenceName());
             }
 
             var newBuffer = ScaleImage(mediaItem.Result, width, height, fileType);
@@ -135,7 +139,7 @@ namespace LagoVista.MediaServices.Managers
             resource.LastUpdatedDate = DateTime.UtcNow.ToJSONString();
             resource.LastUpdatedBy = user;
             resource.ContentSize = newBuffer.Length;
-            await _mediaRepo.UpdateMediaAsync(newBuffer, org.Id, resource.StorageReferenceName, resource.MimeType);
+            await _mediaRepo.UpdateMediaAsync(newBuffer, org.Id, resource.GetCurrentStorageReferenceName(), resource.MimeType);
 
             var fi = new FileInfo(resource.FileName);
             resource.FileName = $"{fileName}.{fileType}";
@@ -148,11 +152,13 @@ namespace LagoVista.MediaServices.Managers
         }
 
         public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false, 
-            string license = "", string url = "", string responseId = "", string originalPrompt = "", string revisedPrompt = "", string entityTypeName = "", string entityFieldName = "", string size = "")
+            string license = "", string url = "", string responseId = "", string originalPrompt = "", string revisedPrompt = "", string entityTypeName = "", string entityFieldName = "", string size = "", string resourceName = "")
         {
+            var timeStamp = DateTime.UtcNow.ToJSONString();
+
             var mediaResource = new MediaResource();
             mediaResource.Id = id;
-            mediaResource.CreationDate = DateTime.UtcNow.ToJSONString();
+            mediaResource.CreationDate = timeStamp;
             mediaResource.LastUpdatedDate = mediaResource.CreationDate;
             mediaResource.CreatedBy = user;
             mediaResource.IsPublic = isPublic;
@@ -160,8 +166,8 @@ namespace LagoVista.MediaServices.Managers
             mediaResource.OwnerOrganization = org;
             if (saveResourceRecord)
             {
-                mediaResource.Name = "Auto Inserted";
-                mediaResource.Key = "autoinserted";
+                mediaResource.Name = String.IsNullOrEmpty(resourceName) ? $"Auto Inserted {DateTime.UtcNow.ToString()}" : resourceName;
+                mediaResource.Key = $"autoinserted{DateTime.UtcNow.Ticks}";
             }
 
             if (!String.IsNullOrEmpty(entityTypeName) && !String.IsNullOrEmpty(entityFieldName))
@@ -169,6 +175,21 @@ namespace LagoVista.MediaServices.Managers
                 var categoryKey = $"{entityTypeName.ToLower()}{entityFieldName.ToLower()}";
                 var categoryName = $"{entityTypeName} {entityFieldName}";
                 mediaResource.Category = EntityHeader.Create(categoryKey, categoryKey, categoryName);
+                var library = await _libraryRepo.GetMediaLibraryByKeyAsync(org.Id, entityTypeName.ToLower());
+                if (library == null)
+                {
+                    library = new MediaLibrary();
+                    library.OwnerOrganization = org;
+                    library.CreatedBy = user;
+                    library.LastUpdatedBy = user;
+                    library.CreationDate = timeStamp;
+                    library.LastUpdatedDate = timeStamp;
+                    library.Name = $"{entityTypeName} Images";
+                    library.Key = $"{entityTypeName.ToLower()}";
+                    await _libraryRepo.AddMediaLibraryAsync(library);
+                }
+
+                mediaResource.MediaLibrary = library.ToEntityHeader();
             }
 
 
@@ -216,12 +237,14 @@ namespace LagoVista.MediaServices.Managers
                 RevisedPrompt = revisedPrompt,
                 ResponseId = responseId,
                 CreatedBy = user,
+                Name = "Revision 1",
                 CreationDate = mediaResource.LastUpdatedDate,
                 ContentSize = mediaResource.ContentSize,
                 Width = mediaResource.Width,
                 Height = mediaResource.Height,
             };
 
+            mediaResource.CurrentRevision = history.Id;
             mediaResource.History.Insert(0, history);
 
             var result = await _mediaRepo.AddMediaAsync(bytes, org.Id, mediaResource.StorageReferenceName, contentType);
@@ -289,11 +312,13 @@ namespace LagoVista.MediaServices.Managers
                 CreatedBy = user,
                 CreationDate = mediaResource.LastUpdatedDate,
                 ContentSize = mediaResource.ContentSize,
+                Name = $"Revision {mediaResource.History.Count + 1}",
                 Width = mediaResource.Width,
                 Height = mediaResource.Height,
                 
             };
 
+            mediaResource.CurrentRevision = history.Id;
             mediaResource.History.Insert(0, history);
 
             var result = await _mediaRepo.AddMediaAsync(bytes, org.Id, mediaResource.StorageReferenceName, contentType);
@@ -358,9 +383,13 @@ namespace LagoVista.MediaServices.Managers
             await AuthorizeAsync(record, AuthorizeActions.Delete, user, org);
 
             await _mediaRepo.DeleteMediaRecordAsync(id);
+
             if (record.IsFileUpload)
             {
-                await _mediaRepo.DeleteMediaAsync(record.StorageReferenceName, org.Id);
+                foreach(var history in record.History)
+                {
+                    await _mediaRepo.DeleteMediaAsync(history.StorageReferenceName, org.Id);
+                }
             }
 
             return InvokeResult.Success;
@@ -374,7 +403,7 @@ namespace LagoVista.MediaServices.Managers
             {
                 if(!resource.Width.HasValue)
                 {
-                    var media = await _mediaRepo.GetMediaAsync(resource.StorageReferenceName, org.Id);
+                    var media = await _mediaRepo.GetMediaAsync(resource.GetCurrentStorageReferenceName(), org.Id);
                     if(media.Successful)
                     {
                         var image = Image.Load(media.Result);
@@ -391,7 +420,18 @@ namespace LagoVista.MediaServices.Managers
         public async Task<ListResponse<MediaResourceSummary>> GetMediaResourceSummariesAsync(string libraryId, string orgId, ListRequest listRequest, EntityHeader user)
         {
             await AuthorizeOrgAccessAsync(user, orgId, typeof(MediaResource));
-            var results = await _mediaRepo.GetResourcesForLibrary(orgId, libraryId, listRequest);
+            var results = await _mediaRepo.GetResourcesForLibraryAsync(orgId, libraryId, listRequest);
+            foreach (var res in results.Model)
+            {
+                Prepend(res);
+            }
+            return results;
+        }
+
+        public async Task<ListResponse<MediaResourceSummary>> GetMediaResourceSummariesAsync(ListRequest listRequest, EntityHeader org, EntityHeader user)
+        {
+            await AuthorizeOrgAccessAsync(user, org, typeof(MediaResource));
+            var results = await _mediaRepo.GetResourcesAsync(org.Id, listRequest);
             foreach (var res in results.Model)
             {
                 Prepend(res);
@@ -418,7 +458,7 @@ namespace LagoVista.MediaServices.Managers
             if (!resource.IsPublic && org.Id != resource.OwnerOrganization.Id)
                 throw new NotAuthorizedException("Not authorized to download image resource.");
 
-            var mediaItem = await _mediaRepo.GetMediaAsync(resource.StorageReferenceName, org.Id);
+            var mediaItem = await _mediaRepo.GetMediaAsync(resource.GetCurrentStorageReferenceName(), org.Id);
             if (!mediaItem.Successful)
             {
                 throw new RecordNotFoundException(nameof(MediaResource), id);
@@ -438,32 +478,75 @@ namespace LagoVista.MediaServices.Managers
 
             var stopWatch = Stopwatch.StartNew();
             var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
-            response.LastModified = resource.LastUpdatedDate;
             if (resource == null)
             {
                 Console.WriteLine($"ERROR: Could not find media record for orgid: {orgId} - mediaid: {id}");
                 throw new RecordNotFoundException(nameof(MediaResource), id);
             }
+
+            response.LastModified = resource.LastUpdatedDate;
             response.Timings.Add(new ResultTiming() { Key = "GetMediaResourceRecord", Ms = stopWatch.Elapsed.TotalMilliseconds });
 
-            if(resource.LastUpdatedDate == lastModified)
-            {
-                response.NotModified = true;
-            }
-
+            var entityLastUpdated = resource.LastUpdatedDate.ToDateTime();
+            var rountedLastupdate = entityLastUpdated.Subtract(TimeSpan.FromMilliseconds(entityLastUpdated.Millisecond)).ToJSONString();
             response.NotModified = false;
 
+            Console.WriteLine($"====>>> CHECKING {rountedLastupdate} - {lastModified} <<<====");
+            if (rountedLastupdate == lastModified)
+            {
+                response.NotModified = true;
+                Console.WriteLine("HIT ====>>> same!");
+            }
+
+
             stopWatch.Restart();
-            var mediaItem = await _mediaRepo.GetMediaAsync(resource.StorageReferenceName, orgId);
+            var mediaItem = await _mediaRepo.GetMediaAsync(resource.GetCurrentStorageReferenceName(), orgId);
             if (!mediaItem.Successful)
             {
                 Console.WriteLine($"ERROR: Could not find media/image for orgid: {orgId} - mediaid: {resource.StorageReferenceName}");
-                throw new RecordNotFoundException("Media File Contents", resource.StorageReferenceName);
+                throw new RecordNotFoundException("Media File Contents", resource.GetCurrentStorageReferenceName());
             }
             response.Timings.AddRange(mediaItem.Timings);
             response.Timings.Add(new ResultTiming() { Key = "GetMediaResourceRecord", Ms = stopWatch.Elapsed.TotalMilliseconds });
 
             response.AiResponseId = resource.ResponseId;
+            response.ContentType = resource.MimeType;
+            response.FileName = resource.FileName;
+            response.ImageBytes = mediaItem.Result;
+
+            return response;
+        }
+
+
+        public async Task<MediaItemResponse> GetMediaRevisionAsync(string id, string revisionId, EntityHeader org, EntityHeader user)
+        {
+            var response = new MediaItemResponse();
+
+            var stopWatch = Stopwatch.StartNew();
+            var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
+
+            if (resource == null)
+            {
+                Console.WriteLine($"ERROR: Could not find media record formediaid: {id}");
+                throw new RecordNotFoundException(nameof(MediaResource), id);
+            }
+            response.Timings.Add(new ResultTiming() { Key = "GetMediaResourceRecord", Ms = stopWatch.Elapsed.TotalMilliseconds });
+            stopWatch.Restart();
+
+            var revision = resource.History.FirstOrDefault(rev=> rev.Id == revisionId); 
+
+            await AuthorizeAsync(resource, AuthorizeActions.Read, user, org);
+     
+            var mediaItem = await _mediaRepo.GetMediaAsync(revision.StorageReferenceName, org.Id);
+            if (!mediaItem.Successful)
+            {
+                Console.WriteLine($"ERROR: Could not find media/image for orgid: {org.Id} - mediaid: {resource.StorageReferenceName}");
+                throw new RecordNotFoundException("Media File Contents", resource.GetCurrentStorageReferenceName());
+            }
+            response.Timings.AddRange(mediaItem.Timings);
+            response.Timings.Add(new ResultTiming() { Key = "GetMediaResourceRecord", Ms = stopWatch.Elapsed.TotalMilliseconds });
+
+            response.AiResponseId = revision.ResponseId;
             response.ContentType = resource.MimeType;
             response.FileName = resource.FileName;
             response.ImageBytes = mediaItem.Result;
@@ -493,7 +576,7 @@ namespace LagoVista.MediaServices.Managers
                 mediaResource.LastUpdatedBy = user;
                 mediaResource.TextGenerationRequest = request;
 
-                await _mediaRepo.UpdateMediaAsync(response.Result, org.Id, mediaResource.StorageReferenceName, mediaResource.MimeType);
+                await _mediaRepo.UpdateMediaAsync(response.Result, org.Id, mediaResource.GetCurrentStorageReferenceName(), mediaResource.MimeType);
                 await _mediaRepo.UpdateMediaResourceRecordAsync(mediaResource);
                 var summary = mediaResource.CreateSummary();
                 Prepend(summary);
@@ -533,7 +616,7 @@ namespace LagoVista.MediaServices.Managers
                     TextGenerationRequest = request                   
                 };
 
-                await _mediaRepo.AddMediaAsync(response.Result, org.Id, mediaResource.StorageReferenceName, mediaResource.MimeType);
+                await _mediaRepo.AddMediaAsync(response.Result, org.Id, mediaResource.GetCurrentStorageReferenceName(), mediaResource.MimeType);
                 await _mediaRepo.AddMediaResourceRecordAsync(mediaResource);
                 var summary = mediaResource.CreateSummary();
                 Prepend(summary);
@@ -554,7 +637,7 @@ namespace LagoVista.MediaServices.Managers
                 if (resource.OwnerOrganization.Id != org.Id)
                     throw new NotAuthorizedException("Org mismatch");
 
-                await _mediaRepo.UpdateMediaAsync(response.Result, org.Id, resource.StorageReferenceName, resource.MimeType);
+                await _mediaRepo.UpdateMediaAsync(response.Result, org.Id, resource.GetCurrentStorageReferenceName(), resource.MimeType);
 
                 resource.LastUpdatedDate = DateTime.UtcNow.ToJSONString();
                 resource.LastUpdatedBy = user;

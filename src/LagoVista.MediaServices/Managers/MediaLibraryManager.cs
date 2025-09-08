@@ -34,14 +34,14 @@ namespace LagoVista.MediaServices.Managers
 
         public async Task<DependentObjectCheckResult> CheckMediaLibraryInUseAsync(string id, EntityHeader org, EntityHeader user)
         {
-            var mediaLibrary = await _repo.GetMediaLibrary(id);
+            var mediaLibrary = await _repo.GetMediaLibraryAsync(id);
             await AuthorizeAsync(mediaLibrary, AuthorizeActions.Read, user, org);
             return await base.CheckForDepenenciesAsync(mediaLibrary);
         }
 
         public async Task<InvokeResult> DeleteMediaLibraryAsync(string id, EntityHeader org, EntityHeader user)
         {
-            var mediaLibrary = await _repo.GetMediaLibrary(id);
+            var mediaLibrary = await _repo.GetMediaLibraryAsync(id);
             await ConfirmNoDepenenciesAsync(mediaLibrary);
             await AuthorizeAsync(mediaLibrary, AuthorizeActions.Delete, user, org);
             await _repo.DeleteStateMachineAsync(id);
@@ -62,7 +62,7 @@ namespace LagoVista.MediaServices.Managers
 
         public async Task<MediaLibrary> GetMediaLibraryAsync(string id, EntityHeader org, EntityHeader user)
         {
-            var mediaLibrary = await _repo.GetMediaLibrary(id);
+            var mediaLibrary = await _repo.GetMediaLibraryAsync(id);
             await AuthorizeAsync(mediaLibrary, AuthorizeActions.Read, user, org);
             return mediaLibrary;
         }

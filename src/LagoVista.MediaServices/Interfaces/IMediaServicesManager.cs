@@ -12,7 +12,7 @@ namespace LagoVista.MediaServices.Interfaces
     public interface IMediaServicesManager
     {
         Task<InvokeResult<MediaResource>> AddResourceMediaAsync(string id, Stream media, string name, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false, string license = "", string url = "", string responseId = "",
-            string originalPrompt = "", string revisedPrompt = "", string entityTypeName = "", string entityTypeFieldName = "", string size = "");
+            string originalPrompt = "", string revisedPrompt = "", string entityTypeName = "", string entityTypeFieldName = "", string size = "", string resourceName = "");
         Task<InvokeResult<MediaResource>> AddResourceMediaRevisionAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false, string license = "", string Url = "", string responseId = "", 
             string originalPrompt = "", string revisedPrompt = "",string size = "");
 
@@ -34,8 +34,10 @@ namespace LagoVista.MediaServices.Interfaces
         Task<InvokeResult<MediaResourceSummary>> UpdateMediaResourceRecordAsync(MediaResource resource, EntityHeader org, EntityHeader user);
         Task<MediaResource> GetMediaResourceRecordAsync(string id, EntityHeader org, EntityHeader user);
         Task<MediaItemResponse> GetPublicResourceRecordAsync(string ownerOrgId, string id, string lastModified = null);
+        Task<MediaItemResponse> GetMediaRevisionAsync(string id, string revisionId, EntityHeader org, EntityHeader user);
         Task<InvokeResult> DeleteMediaResourceAsync(string id, EntityHeader org, EntityHeader user);
         Task<ListResponse<MediaResourceSummary>> GetMediaResourceSummariesAsync(string libraryId, string orgId, ListRequest listRequest, EntityHeader user);
+        Task<ListResponse<MediaResourceSummary>> GetMediaResourceSummariesAsync(ListRequest listRequest, EntityHeader org, EntityHeader user);
         Task<InvokeResult<MediaResource>> ResizeImageAsync(string id, string fileName, int width, int height, string fileType, EntityHeader org, EntityHeader user);
         Task<ListResponse<MediaResourceSummary>> GetResourcesForMediaTypeKeyLibrary(string mediaTypeKey, string orgId, ListRequest listRequest, EntityHeader user);
         Task<InvokeResult<ImageDetails>> AddImageAsPngAsync(Stream stream, string containerName, bool isPublic, int width, int height);

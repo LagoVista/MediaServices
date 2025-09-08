@@ -16,7 +16,8 @@ namespace LagoVista.MediaServices.Interfaces
         Task DeleteMediaAsync(string blobReferenceName, string orgId);
 
         Task AddMediaResourceRecordAsync(MediaResource resource);
-        Task<ListResponse<MediaResourceSummary>> GetResourcesForLibrary(string orgId, string libraryId, ListRequest listRequest);
+        Task<ListResponse<MediaResourceSummary>> GetResourcesAsync(string orgId, ListRequest listRequest);
+        Task<ListResponse<MediaResourceSummary>> GetResourcesForLibraryAsync(string orgId, string libraryId, ListRequest listRequest);
         Task<ListResponse<MediaResourceSummary>> GetResourcesForMediaTypeKeyLibrary(string orgId, string mediaTypeKey, ListRequest listRequest);
         Task UpdateMediaResourceRecordAsync(MediaResource updated);
 

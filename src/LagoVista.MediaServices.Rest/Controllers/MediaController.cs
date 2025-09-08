@@ -161,6 +161,12 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return _mediaServicesManager.GetResourcesForMediaTypeKeyLibrary(mediatypekey, OrgEntityHeader.Id, GetListRequestFromHeader(), UserEntityHeader);
         }
 
+        [HttpGet("/api/media/resources")]
+        public Task<ListResponse<MediaResourceSummary>> GetAllMediaResources()
+        {
+            return _mediaServicesManager.GetMediaResourceSummariesAsync(GetListRequestFromHeader(), OrgEntityHeader, UserEntityHeader);
+        }
+
 
         /// <summary>
         /// Media Resources - Upload a file for a specific media resource.
@@ -175,6 +181,30 @@ namespace LagoVista.MediaServices.Rest.Controllers
             {
                 return await _mediaServicesManager.AddResourceMediaAsync(id, strm, file.FileName, file.ContentType, OrgEntityHeader, UserEntityHeader, saveresource);
             }
+        }
+
+        /// <summary>
+        /// Media Resources - Upload a file for a specific media resource.
+        /// </summary>
+        /// <param name="id">unique id of the resource.</param>
+        /// <param name="file">file to be uploaded.</param>
+        /// <returns></returns>
+        [HttpPut("/api/media/resources/{id}")]
+        public async Task<InvokeResult<MediaResource>> AddMediaRevision(string id, IFormFile file)
+        {
+            using (var strm = file.OpenReadStream())
+            {
+                return await _mediaServicesManager.AddResourceMediaRevisionAsync(id, strm, file.FileName, file.ContentType, OrgEntityHeader, UserEntityHeader);
+            }
+        }
+
+
+        [HttpGet("/api/media/resource/{id}/revision/{revisionid}/set")]
+        public async Task<InvokeResult<MediaResourceSummary>> SetRevision(string id, string revisionid)
+        {
+            var resource = await _mediaServicesManager.GetMediaResourceRecordAsync(id, OrgEntityHeader, UserEntityHeader);
+            resource.CurrentRevision = revisionid;
+            return await _mediaServicesManager.UpdateMediaResourceRecordAsync(resource, OrgEntityHeader, UserEntityHeader);
         }
 
         /// <summary>
@@ -235,8 +265,15 @@ namespace LagoVista.MediaServices.Rest.Controllers
             if (!String.IsNullOrEmpty(Request.Headers["If-Modified-Since"]))
             {
                 CultureInfo provider = CultureInfo.InvariantCulture;
-                lastMod = DateTime.ParseExact(Request.Headers["If-Modified-Since"], "r", provider).ToJSONString();
+                lastMod = DateTime.ParseExact(Request.Headers["If-Modified-Since"], "r", provider, DateTimeStyles.AssumeUniversal).ToJSONString();
+                Console.WriteLine($"LAST MOD====>>>>>{lastMod}<<<<<====DOM TSAL");
             }
+            else
+            {
+                Console.WriteLine($"NO LAST MOD====>>>>>{lastMod}<<<<<====DOM TSAL ON");
+
+            }
+
             var response = await _mediaServicesManager.GetPublicResourceRecordAsync(orgid, id, lastMod);
             if (!String.IsNullOrEmpty(response.AiResponseId)) 
             {
@@ -246,7 +283,12 @@ namespace LagoVista.MediaServices.Rest.Controllers
 
             if (response.NotModified)
             {
+                Console.WriteLine(">>>>YUP   IT WAS NOT MODIFIED, SO RETURN STATUS CODE 304...right!");
                 return StatusCode(304);
+            }
+            else
+            {
+                Console.WriteLine(">>>>NOPE   IT WAS NOT CACHED, SO RETURN STATUS CODE 304...right!");
             }
 
             var ms = new MemoryStream(response.ImageBytes);
@@ -256,7 +298,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
                 Response.Headers.Add($"x-{idx++}-{timing.Key}", $"{timing.Ms}ms");
             }
 
-            Response.Headers[HeaderNames.CacheControl] = "public";
+            Response.Headers[HeaderNames.CacheControl] = "no-cache"; // lets us make a request to the server to check the last modified date, but will cache locally.
             Response.Headers[HeaderNames.LastModified] = new[] { response.LastModified.ToDateTime().ToString("R") }; // Format RFC1123
 
             return File(ms, response.ContentType, response.FileName);
@@ -264,6 +306,19 @@ namespace LagoVista.MediaServices.Rest.Controllers
 
 
 
+        [HttpGet("/api/media/resource/{id}/download/{revisionid}")]
+        public async Task<IActionResult> DownloadMediaRevision(string id, string revisionid)
+        {
+            var response = await _mediaServicesManager.GetMediaRevisionAsync(id, revisionid, OrgEntityHeader, UserEntityHeader);
+            var ms = new MemoryStream(response.ImageBytes);
+            var idx = 1;
+            foreach (var timing in response.Timings)
+            {
+                Response.Headers.Add($"x-{idx++}-{timing.Key}", $"{timing.Ms}ms");
+            }
+
+            return File(ms, response.ContentType, response.FileName);
+        }
 
         [HttpPost("/api/media/resource/request")]
         public async Task<InvokeResult<MediaResource>> UploadAsync([FromBody] MediaUploadRequest uploadRequest )
