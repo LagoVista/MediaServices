@@ -204,6 +204,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
         {
             var resource = await _mediaServicesManager.GetMediaResourceRecordAsync(id, OrgEntityHeader, UserEntityHeader);
             resource.CurrentRevision = revisionid;
+            resource.LastUpdatedDate = DateTime.UtcNow.ToJSONString();
+            resource.LastUpdatedBy = UserEntityHeader;
             return await _mediaServicesManager.UpdateMediaResourceRecordAsync(resource, OrgEntityHeader, UserEntityHeader);
         }
 
@@ -239,6 +241,11 @@ namespace LagoVista.MediaServices.Rest.Controllers
             }
         }
 
+        [HttpGet("/api/media/resource/{id}/clone")]
+        public Task<InvokeResult<MediaResource>> Clone(string id, string entityTypeName, string entityFieldName, string resourceName)
+        {
+           return _mediaServicesManager.CloneMediaResourceAsync(id, entityTypeName, entityFieldName, resourceName, OrgEntityHeader, UserEntityHeader);
+        }
         /// <summary>
         /// Media Resources - Upload a file for a specific media resource.
         /// </summary>
@@ -266,12 +273,6 @@ namespace LagoVista.MediaServices.Rest.Controllers
             {
                 CultureInfo provider = CultureInfo.InvariantCulture;
                 lastMod = DateTime.ParseExact(Request.Headers["If-Modified-Since"], "r", provider, DateTimeStyles.AssumeUniversal).ToJSONString();
-                Console.WriteLine($"LAST MOD====>>>>>{lastMod}<<<<<====DOM TSAL");
-            }
-            else
-            {
-                Console.WriteLine($"NO LAST MOD====>>>>>{lastMod}<<<<<====DOM TSAL ON");
-
             }
 
             var response = await _mediaServicesManager.GetPublicResourceRecordAsync(orgid, id, lastMod);
@@ -283,12 +284,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
 
             if (response.NotModified)
             {
-                Console.WriteLine(">>>>YUP   IT WAS NOT MODIFIED, SO RETURN STATUS CODE 304...right!");
                 return StatusCode(304);
-            }
-            else
-            {
-                Console.WriteLine(">>>>NOPE   IT WAS NOT CACHED, SO RETURN STATUS CODE 304...right!");
             }
 
             var ms = new MemoryStream(response.ImageBytes);

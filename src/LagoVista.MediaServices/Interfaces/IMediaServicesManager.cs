@@ -41,5 +41,6 @@ namespace LagoVista.MediaServices.Interfaces
         Task<InvokeResult<MediaResource>> ResizeImageAsync(string id, string fileName, int width, int height, string fileType, EntityHeader org, EntityHeader user);
         Task<ListResponse<MediaResourceSummary>> GetResourcesForMediaTypeKeyLibrary(string mediaTypeKey, string orgId, ListRequest listRequest, EntityHeader user);
         Task<InvokeResult<ImageDetails>> AddImageAsPngAsync(Stream stream, string containerName, bool isPublic, int width, int height);
+        Task<InvokeResult<MediaResource>> CloneMediaResourceAsync(string id, string entityName, string entityFieldName, string resourceName, EntityHeader orgEntityHeader, EntityHeader userEntityHeader);
     }
 }

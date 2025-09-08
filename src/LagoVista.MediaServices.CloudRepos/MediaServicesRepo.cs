@@ -310,19 +310,23 @@ namespace LagoVista.MediaServices.CloudRepos
                 {
                     var content = await blobClient.DownloadContentAsync();
                     var buffer = content.Value.Content.ToArray();
-                    timings.Add(new ResultTiming() { Key = "DownloadContentSize", Ms = sw.Elapsed.TotalMilliseconds });
+                    var ms = sw.Elapsed.TotalMilliseconds;
+                    timings.Add(new ResultTiming() { Key = "DownloadContentSize", Ms = ms });
+
+                    _logger.Trace($"[MediaServicesRepo_GetMediaAsync] Downloaded Image: {blobReferenceName} in {ms} ms", ms.ToString().ToKVP("totalMs"), retryCount.ToString().ToKVP("retryCount"));
+
                     return InvokeResult<byte[]>.Create(buffer, timings);
                 }
                 catch (Exception ex)
                 {
                     if (retryCount == numberRetries)
                     {
-                        _logger.AddException("MediaServicesRepo_AddItemAsync", ex);
-                        return InvokeResult<byte[]>.FromException("MediaServicesRepo_AddItemAsync", ex);
+                        _logger.AddException("[MediaServicesRepo_AddItemAsync]", ex);
+                        return InvokeResult<byte[]>.FromException("[MediaServicesRepo_AddItemAsync]", ex);
                     }
                     else
                     {
-                        _logger.AddCustomEvent(LagoVista.Core.PlatformSupport.LogLevel.Warning, "MediaServicesRepo_GetMediaAsync", "", ex.Message.ToKVP("exceptionMessage"), ex.GetType().Name.ToKVP("exceptionType"), retryCount.ToString().ToKVP("retryCount"));
+                        _logger.AddCustomEvent(LagoVista.Core.PlatformSupport.LogLevel.Warning, "[MediaServicesRepo_GetMediaAsync]", "", ex.Message.ToKVP("exceptionMessage"), ex.GetType().Name.ToKVP("exceptionType"), retryCount.ToString().ToKVP("retryCount"));
                     }
 
                     await Task.Delay(retryCount * 250);

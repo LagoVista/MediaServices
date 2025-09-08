@@ -116,6 +116,15 @@ namespace LagoVista.MediaServices.Models
         public string OriginalPrompt { get => History.FirstOrDefault()?.OriginalPrompt ?? String.Empty; }
         public string RevisedPrompt { get => History.FirstOrDefault()?.RevisedPrompt ?? String.Empty; }
 
+        public void RegenerateStorageReferenceName()
+        { 
+            var parts = StorageReferenceName.Split('.');
+            if (parts.Length == 2)
+                StorageReferenceName = $"{Guid.NewGuid().ToId()}.{parts[1]}";
+            else
+                StorageReferenceName = $"{Guid.NewGuid().ToId()}.media";
+        }
+
         public void SetContentType(string contentType, string id = "")
         {
             if (String.IsNullOrEmpty(id))
@@ -219,11 +228,13 @@ namespace LagoVista.MediaServices.Models
 
         public string GetCurrentStorageReferenceName()
         {
-            if(String.IsNullOrEmpty(CurrentRevision))
+            if(!String.IsNullOrEmpty(CurrentRevision))
             {
                 var revision = History.FirstOrDefault(rev => rev.Id == CurrentRevision);
-                if (revision != null)
+                if (revision == null)
                     throw new Exception($"Could not find content revision with id {CurrentRevision} on resource {Id}");
+
+                Console.WriteLine($"RETURING CURRENT REVISION: {CurrentRevision}");
 
                 return revision.StorageReferenceName;
             }
@@ -428,5 +439,8 @@ namespace LagoVista.MediaServices.Models
         public long? ContentSize { get; set; }
         public int? Width { get; set; }
         public int? Height { get; set; }
+        public string Notes { get; set; }
+        public TextToSpeechRequest TextGenerationRequest { get; set; }
+
     }
 }
