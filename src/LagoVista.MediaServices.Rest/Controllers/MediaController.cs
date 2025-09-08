@@ -244,7 +244,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         [HttpGet("/api/media/resource/{id}/clone")]
         public Task<InvokeResult<MediaResource>> Clone(string id, string entityTypeName, string entityFieldName, string resourceName)
         {
-           return _mediaServicesManager.CloneMediaResourceAsync(id, entityTypeName, entityFieldName, resourceName, OrgEntityHeader, UserEntityHeader);
+            return _mediaServicesManager.CloneMediaResourceAsync(id, entityTypeName, entityFieldName, resourceName, OrgEntityHeader, UserEntityHeader);
         }
         /// <summary>
         /// Media Resources - Upload a file for a specific media resource.
