@@ -291,7 +291,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
             var idx = 1;
             foreach(var timing in response.Timings)
             {
-                Response.Headers.Add($"x-{idx++}-{timing.Key}", $"{timing.Ms}ms");
+                Response.Headers.Append($"x-{idx++}-{timing.Key}", $"{timing.Ms}ms");
             }
 
             Response.Headers[HeaderNames.CacheControl] = "no-cache"; // lets us make a request to the server to check the last modified date, but will cache locally.
@@ -310,7 +310,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
             var idx = 1;
             foreach (var timing in response.Timings)
             {
-                Response.Headers.Add($"x-{idx++}-{timing.Key}", $"{timing.Ms}ms");
+                Response.Headers.Append($"x-{idx++}-{timing.Key}", $"{timing.Ms}ms");
             }
 
             return File(ms, response.ContentType, response.FileName);
