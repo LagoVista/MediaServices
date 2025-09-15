@@ -31,14 +31,16 @@ namespace LagoVista.MediaServices.Managers
         IMediaLibraryRepo _libraryRepo;
         ITextToSpeechService _textSpeechService;
         IAppConfig _appConfig;
+        ICategoryManager _categoryManager;
 
-        public MediaServicesManager(IMediaServicesRepo mediaRepo, IMediaLibraryRepo libraryRepo,ITextToSpeechService textToSpeechService, IAdminLogger logger, IAppConfig appConfig, IDependencyManager depmanager, ISecurity security) :
+        public MediaServicesManager(IMediaServicesRepo mediaRepo, ICategoryManager categoryManager, IMediaLibraryRepo libraryRepo,ITextToSpeechService textToSpeechService, IAdminLogger logger, IAppConfig appConfig, IDependencyManager depmanager, ISecurity security) :
             base(logger, appConfig, depmanager, security)
         {
             _mediaRepo = mediaRepo ?? throw new ArgumentNullException(nameof(mediaRepo));
             _libraryRepo = libraryRepo ?? throw new ArgumentNullException(nameof(libraryRepo));
             _textSpeechService = textToSpeechService ?? throw new ArgumentNullException(nameof(textToSpeechService));
-            _appConfig = appConfig ?? throw new ArgumentNullException(nameof(appConfig)); 
+            _appConfig = appConfig ?? throw new ArgumentNullException(nameof(appConfig));
+            _categoryManager = categoryManager ?? throw new ArgumentNullException(nameof(categoryManager));
         }
 
         private void GenerateDownloadLink(MediaResourceSummary summary)
@@ -187,6 +189,33 @@ namespace LagoVista.MediaServices.Managers
             return library;
         }
 
+        public async Task<EntityHeader> CreateCategoryIfNecssary(string categoryKey, string categoryName, string timeStamp, EntityHeader org, EntityHeader user)
+        {
+            var category = EntityHeader.Create(categoryKey, categoryKey, categoryName);
+
+            var categories = await _categoryManager.GetCategoriesAsync(nameof(MediaResource).ToLower(), ListRequest.CreateForAll(), org, user);
+            var existingCategory = categories.Model.FirstOrDefault(ctg => ctg.Name == categoryKey);
+            if (existingCategory == null)
+            {
+                var newCategory = new Category()
+                {
+                    CreationDate = timeStamp,
+                    LastUpdatedDate = timeStamp,
+                    LastUpdatedBy = user,
+                    Name = category.Text,
+                    Key = category.Key,
+                    CreatedBy = user,
+                    OwnerOrganization = org,
+                    CategoryType = nameof(MediaResource).ToLower(),
+                    Category = category,
+                };
+
+                await _categoryManager.AddCategoryAsync(newCategory, org, user);
+            }
+
+            return category;
+        }
+
         public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false, 
             string license = "", string url = "", string responseId = "", string originalPrompt = "", string revisedPrompt = "", string entityTypeName = "", string entityFieldName = "", string size = "", string resourceName = "")
         {
@@ -210,8 +239,8 @@ namespace LagoVista.MediaServices.Managers
             {
                 var categoryKey = $"{entityTypeName.ToLower()}{entityFieldName.ToLower()}";
                 var categoryName = $"{entityTypeName} {entityFieldName}";
-                mediaResource.Category = EntityHeader.Create(categoryKey, categoryKey, categoryName);
                 mediaResource.MediaLibrary = (await CreateOrGetLibraryIfNecessary(entityTypeName, timeStamp, org, user)).ToEntityHeader();
+                mediaResource.Category = await CreateCategoryIfNecssary(categoryKey, categoryName, timeStamp, org, user);
             }
 
             await AuthorizeAsync(user, org, "addDeviceTypeResource", $"{{mediaItemId:'{id}'}}");
@@ -749,8 +778,8 @@ namespace LagoVista.MediaServices.Managers
             {
                 var categoryKey = $"{entityTypeName.ToLower()}{entityFieldName.ToLower()}";
                 var categoryName = $"{entityTypeName} {entityFieldName}";
-                mediaResource.Category = EntityHeader.Create(categoryKey, categoryKey, categoryName);
                 mediaResource.MediaLibrary = (await CreateOrGetLibraryIfNecessary(entityTypeName, timeStamp, orgEntityHeader, userEntityHeader)).ToEntityHeader();
+                mediaResource.Category = await CreateCategoryIfNecssary(categoryKey, categoryName, timeStamp, orgEntityHeader, userEntityHeader);
             }
 
             await _mediaRepo.AddMediaResourceRecordAsync(mediaResource);

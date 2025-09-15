@@ -2,23 +2,23 @@
 <package>
   <metadata>
     <id>LagoVista.MediaServices.Rest</id>
-    <version>3.0.2049.0900</version>
+    <version>3.0.3043.1717</version>
     <authors>Software Logistics, LLC</authors>
     <owners>Software Logistics, LLC</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <projectUrl>https://www.nuviot.com</projectUrl>
     <iconUrl>http://bytemaster.blob.core.windows.net/icons/LagoVistaIcon.png</iconUrl>
     <description>Provides a ASP.NET Core Rest interface for working with Documents, Images and other media.</description>
-    <copyright>Copyright Software Logistics - 2022</copyright>
+    <copyright>Copyright Software Logistics - 2025</copyright>
     <tags>LagoVista HomeAutomation IoT</tags>
     <icon>LagoVistaIcon.png</icon>
-    <releaseNotes>Build Date: 12/26/2022 2:00:11 PM UTC</releaseNotes>
+    <releaseNotes>Build Date: 9/15/2025 9:17:04 PM UTC</releaseNotes>
     <repository url="https://www.github.com/lagovista" type="git" branch="master"></repository>
     <dependencies>
       <group targetFramework="net6.0">
-        <dependency id="LagoVista.IoT.Web.Common" version="3.0.2049.0900" />
-        <dependency id="LagoVista.MediaServices.Models" version="3.0.2049.0900" />
-        <dependency id="LagoVista.MediaServices" version="3.0.2049.0900" />
+        <dependency id="LagoVista.IoT.Web.Common" version="3.0.3043.1717" />
+        <dependency id="LagoVista.MediaServices.Models" version="3.0.3043.1717" />
+        <dependency id="LagoVista.MediaServices" version="3.0.3043.1717" />
       </group>
     </dependencies>
   </metadata>

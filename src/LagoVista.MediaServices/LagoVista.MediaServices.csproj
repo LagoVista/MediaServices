@@ -4,7 +4,7 @@
     <TargetFramework>netstandard2.1</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="LagoVista.UserAdmin" Version="3.0.3036.0823" />
+    <PackageReference Include="LagoVista.UserAdmin" Version="3.0.3043.1717" />
     <PackageReference Include="SixLabors.ImageSharp" Version="2.1.11" />
   </ItemGroup>
   <ItemGroup>
