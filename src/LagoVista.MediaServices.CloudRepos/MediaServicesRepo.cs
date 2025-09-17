@@ -4,21 +4,16 @@ using LagoVista.Core.Validation;
 using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Interfaces;
 using System;
-using System.Linq;
 using LagoVista.Core;
 using System.IO;
 using System.Threading.Tasks;
 using LagoVista.CloudStorage.DocumentDB;
 using LagoVista.MediaServices.Models;
 using System.Collections.Generic;
-using LagoVista.CloudStorage;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using LagoVista.Core.Models.UIMetaData;
-using static System.Net.Mime.MediaTypeNames;
-using Microsoft.Azure.Cosmos;
 using System.Diagnostics;
-using System.Security.Cryptography;
 
 namespace LagoVista.MediaServices.CloudRepos
 {
