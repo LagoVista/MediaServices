@@ -194,7 +194,7 @@ namespace LagoVista.MediaServices.Managers
             var category = EntityHeader.Create(categoryKey, categoryKey, categoryName);
 
             var categories = await _categoryManager.GetCategoriesAsync(nameof(MediaResource).ToLower(), ListRequest.CreateForAll(), org, user);
-            var existingCategory = categories.Model.FirstOrDefault(ctg => ctg.Name == categoryKey);
+            var existingCategory = categories.Model.FirstOrDefault(ctg => ctg.Key == categoryKey);
             if (existingCategory == null)
             {
                 var newCategory = new Category()
