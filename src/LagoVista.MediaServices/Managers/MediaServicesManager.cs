@@ -191,12 +191,19 @@ namespace LagoVista.MediaServices.Managers
 
         public async Task<EntityHeader> CreateCategoryIfNecssary(string categoryKey, string categoryName, string timeStamp, EntityHeader org, EntityHeader user)
         {
+            Console.WriteLine("=========>>>> Create Category If Necessary!");
+
             var category = EntityHeader.Create(categoryKey, categoryKey, categoryName);
 
             var categories = await _categoryManager.GetCategoriesAsync(nameof(MediaResource).ToLower(), ListRequest.CreateForAll(), org, user);
+            Console.WriteLine($"=========>>>> Found [{categories.Model.Count()}] records for {nameof(MediaResource).ToLower()} ");
+
+
             var existingCategory = categories.Model.FirstOrDefault(ctg => ctg.Key == categoryKey);
             if (existingCategory == null)
             {
+                Console.WriteLine($"=========>>>> Did not find match for [{categoryKey}]");
+
                 var newCategory = new Category()
                 {
                     CreationDate = timeStamp,
@@ -211,6 +218,9 @@ namespace LagoVista.MediaServices.Managers
                 };
 
                 await _categoryManager.AddCategoryAsync(newCategory, org, user);
+
+                Console.WriteLine($"=========>>>> Did not find match for [{categoryKey}]");
+
             }
 
             return category;
