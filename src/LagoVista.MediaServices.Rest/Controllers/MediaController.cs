@@ -18,6 +18,7 @@ using Microsoft.Net.Http.Headers;
 using System.Globalization;
 using LagoVista.Core.Models;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Routing.Constraints;
 
 namespace LagoVista.MediaServices.Rest.Controllers
 {
@@ -234,10 +235,20 @@ namespace LagoVista.MediaServices.Rest.Controllers
         [HttpPost("/api/media/resource/upload")]
         public async Task<InvokeResult<MediaResource>> UploadMediaAsync(IFormFile file)
         {
+            var fileName = file.FileName;
+            var contentType = file.ContentType;
+
+            if (Request.Form.ContainsKey("filename"))
+                fileName = Request.Form["filename"];
+
+            if (Request.Form.ContainsKey("contenttype"))
+                contentType = Request.Form["contenttype"];
+
+
             using (var strm = file.OpenReadStream())
             {
                 var id = Guid.NewGuid().ToId();
-                return await _mediaServicesManager.AddResourceMediaAsync(id, strm, file.FileName, file.ContentType, OrgEntityHeader, UserEntityHeader, true, false);
+                return await _mediaServicesManager.AddResourceMediaAsync(id, strm, fileName, contentType, OrgEntityHeader, UserEntityHeader, true, false);
             }
         }
 

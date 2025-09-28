@@ -241,7 +241,7 @@ namespace LagoVista.MediaServices.Managers
             mediaResource.OwnerOrganization = org;
             if (saveResourceRecord)
             {
-                mediaResource.Name = String.IsNullOrEmpty(resourceName) ? $"Auto Inserted {DateTime.UtcNow.ToString()}" : resourceName;
+                mediaResource.Name = string.IsNullOrEmpty(fileName) ? (String.IsNullOrEmpty(resourceName) ? $"Auto Inserted {DateTime.UtcNow.ToString()}" : resourceName) : fileName;
                 mediaResource.Key = $"autoinserted{DateTime.UtcNow.Ticks}";
             }
 
