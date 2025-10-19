@@ -2,7 +2,7 @@
 <package>
   <metadata>
     <id>LagoVista.MediaServices</id>
-    <version>3.0.3043.1717</version>
+    <version>3.0.3077.1333</version>
     <authors>Software Logistics, LLC</authors>
     <owners>Software Logistics, LLC</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
@@ -12,13 +12,13 @@
     <copyright>Copyright Software Logistics - 2025</copyright>
     <tags>LagoVista HomeAutomation IoT</tags>
     <icon>LagoVistaIcon.png</icon>
-    <releaseNotes>Build Date: 9/15/2025 9:17:04 PM UTC</releaseNotes>
+    <releaseNotes>Build Date: 10/19/2025 5:33:34 PM UTC</releaseNotes>
     <repository url="https://www.github.com/lagovista" type="git" branch="master"></repository>
     <dependencies>
       <group targetFramework="netstandard2.1">
-        <dependency id="LagoVista.UserAdmin" version="3.0.3043.1717" />
+        <dependency id="LagoVista.UserAdmin" version="3.0.3077.1333" />
         <dependency id="SixLabors.ImageSharp" version="2.1.11" />
-        <dependency id="LagoVista.MediaServices.Models" version="3.0.3043.1717" />
+        <dependency id="LagoVista.MediaServices.Models" version="3.0.3077.1333" />
       </group>
     </dependencies>
   </metadata>
