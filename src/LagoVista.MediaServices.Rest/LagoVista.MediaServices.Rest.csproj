@@ -10,7 +10,7 @@
     <DocumentationFile>bin\Release\netstandard2.0\LagoVista.MediaServices.Rest.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="LagoVista.IoT.Web.Common" Version="3.0.3077.1333" />
+    <PackageReference Include="LagoVista.IoT.Web.Common" Version="3.0.3097.0925" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LagoVista.MediaServices.Models\LagoVista.MediaServices.Models.csproj" />
