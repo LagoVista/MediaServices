@@ -13,7 +13,6 @@ namespace LagoVista.MediaServices.Models
     {
         //[DomainDescription(Name: "Device Admin", Description: "Models for working with and creating device configurations.  This includes things such as actions, attributes and state machines.")]
         public const string MediaServices = "MediaServices";
-
         [DomainDescription(MediaServices)]
         public static DomainDescription MediaServicesDescription
         {
@@ -21,7 +20,7 @@ namespace LagoVista.MediaServices.Models
             {
                 return new DomainDescription()
                 {
-                    Description = "A set of classes that can be using for managing media.",
+                    Description = "Tools and services for managing digital media across the system.",
                     DomainType = DomainDescription.DomainTypes.BusinessObject,
                     Name = "Media Services",
                     CurrentVersion = new Core.Models.VersionInfo()
