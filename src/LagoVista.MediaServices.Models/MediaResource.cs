@@ -85,8 +85,6 @@ namespace LagoVista.MediaServices.Models
         public long? ContentSize { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.MediaResources_MimeType, ParentRowName:DetailsRow, ParentRowIndex: 2, IsUserEditable: false, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]
         public string MimeType { get; set; }
-        [FormField(LabelResource: MediaServicesResources.Names.Common_Description, FieldType: FieldTypes.MultiLineText, ResourceType: typeof(MediaServicesResources))]
-        public string Description { get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Content, FieldType: FieldTypes.HtmlEditor, ResourceType: typeof(MediaServicesResources))]
         public string Content { get; set; }

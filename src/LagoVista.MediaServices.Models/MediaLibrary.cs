@@ -19,9 +19,6 @@ namespace LagoVista.MediaServices.Models
     public class MediaLibrary : EntityBase, IDescriptionEntity, IValidateable, IFormDescriptor, ISummaryFactory, IIconEntity
     {
         
-        [FormField(LabelResource: Resources.MediaServicesResources.Names.Common_Description, FieldType: FieldTypes.MultiLineText, ResourceType: typeof(MediaServicesResources))]
-        public String Description { get; set; }
-
         [FormField(LabelResource: Resources.MediaServicesResources.Names.MediaLibrary_MediaResources, FieldType: FieldTypes.Action, ResourceType: typeof(MediaServicesResources))]
         public string MediaResources { get; set; }
 
