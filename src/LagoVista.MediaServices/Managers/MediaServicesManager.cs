@@ -551,7 +551,7 @@ namespace LagoVista.MediaServices.Managers
             response.LastModified = resource.LastUpdatedDate;
             response.Timings.Add(new ResultTiming() { Key = "GetMediaResourceRecord", Ms = stopWatch.Elapsed.TotalMilliseconds });
 
-            var entityLastUpdated = resource.LastUpdatedDate.ToDateTime();
+            var entityLastUpdated = resource.LastUpdatedDate.ToDateTimeUtc();
             var rountedLastupdate = entityLastUpdated.Subtract(TimeSpan.FromMilliseconds(entityLastUpdated.Millisecond)).ToJSONString();
             response.NotModified = false;
 
