@@ -247,7 +247,7 @@ namespace LagoVista.MediaServices.CloudRepos
             var record = await this.GetDocumentAsync(id);
             if (string.IsNullOrEmpty(record.CurrentRevision) && record.IsFileUpload)
             {
-                var timeStamp = DateTime.UtcNow.ToJSONString();
+                var timeStamp = UtcTimestamp.Now;
                 if (record.History.Count > 0)
                 {
                     record.CurrentRevision = record.History[0].Id;

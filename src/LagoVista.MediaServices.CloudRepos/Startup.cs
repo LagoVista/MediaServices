@@ -1,10 +1,9 @@
-// --- BEGIN CODE INDEX META (do not edit) ---
-// ContentHash: decb13ceff9c283ead33a42713877685545c17490e2425f6b7ffceee79df3cdb
-// IndexVersion: 2
-// --- END CODE INDEX META ---
-using LagoVista.Core.Interfaces;
-using LagoVista.IoT.Logging;
+using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Interfaces;
+using LagoVista.MediaServices.Models;
+using LagoVista.Models;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using System.Resources;
 
 [assembly: NeutralResourcesLanguage("en")]
@@ -17,6 +16,20 @@ namespace LagoVista.MediaServices.CloudRepos
         {
             services.AddTransient<IMediaServicesRepo, MediaServicesRepo>();
             services.AddTransient<IMediaLibraryRepo, MediaLibraryRepo>();
+        }
+    }
+}
+
+
+namespace LagoVista.DependencyInjection
+{
+    public static class MediaModule
+    {
+        public static void AddMediaModule(this IServiceCollection services, IConfigurationRoot configRoot, IAdminLogger logger)
+        {
+            LagoVista.MediaServices.CloudRepos.Startup.ConfigureServices(services);
+            LagoVista.MediaServices.Startup.ConfigureServices(services);
+            services.AddMetaDataHelper<MediaLibrary>();
         }
     }
 }

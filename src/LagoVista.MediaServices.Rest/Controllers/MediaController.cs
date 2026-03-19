@@ -209,7 +209,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         {
             var resource = await _mediaServicesManager.GetMediaResourceRecordAsync(id, OrgEntityHeader, UserEntityHeader);
             resource.CurrentRevision = revisionid;
-            resource.LastUpdatedDate = DateTime.UtcNow.ToJSONString();
+            resource.LastUpdatedDate = UtcTimestamp.Now;
             resource.LastUpdatedBy = UserEntityHeader;
             return await _mediaServicesManager.UpdateMediaResourceRecordAsync(resource, OrgEntityHeader, UserEntityHeader);
         }

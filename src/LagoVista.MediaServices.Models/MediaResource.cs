@@ -78,9 +78,6 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Link, HelpResource: MediaServicesResources.Names.MediaResource_Link_Help, FieldType: FieldTypes.WebLink, ResourceType: typeof(MediaServicesResources))]
         public string Link { get; set; }
 
-        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Icon, FieldType: FieldTypes.Icon, IsRequired: true, ResourceType: typeof(MediaServicesResources))]
-        public string Icon { get; set; } = "icon-fo-image";
-
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_ContentLength, ParentRowName: DetailsRow, ParentRowIndex:1, FieldType: FieldTypes.Integer, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public long? ContentSize { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.MediaResources_MimeType, ParentRowName:DetailsRow, ParentRowIndex: 2, IsUserEditable: false, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources))]

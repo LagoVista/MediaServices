@@ -22,9 +22,6 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: Resources.MediaServicesResources.Names.MediaLibrary_MediaResources, FieldType: FieldTypes.Action, ResourceType: typeof(MediaServicesResources))]
         public string MediaResources { get; set; }
 
-        [FormField(LabelResource: MediaServicesResources.Names.Common_Icon, FieldType: FieldTypes.Icon, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
-        public string Icon { get; set; } = "icon-pz-podcast";
-
         public EntityHeader Customer { get; set; }
 
         public MediaLibrarySummary CreateSummary()

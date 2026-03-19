@@ -143,7 +143,7 @@ namespace LagoVista.MediaServices.Managers
             var newBuffer = ScaleImage(mediaItem.Result, width, height, fileType);
             // this will generate a new storage reference name.
             resource.SetContentType(fileType);
-            resource.LastUpdatedDate = DateTime.UtcNow.ToJSONString();
+            resource.LastUpdatedDate = UtcTimestamp.Now;
             resource.LastUpdatedBy = user;
             resource.ContentSize = newBuffer.Length;
 
@@ -174,7 +174,7 @@ namespace LagoVista.MediaServices.Managers
             return InvokeResult<MediaResource>.Create(resource);
         }
 
-        private async Task<MediaLibrary> CreateOrGetLibraryIfNecessary(string entityTypeName, string timeStamp, EntityHeader org, EntityHeader user)
+        private async Task<MediaLibrary> CreateOrGetLibraryIfNecessary(string entityTypeName, UtcTimestamp timeStamp, EntityHeader org, EntityHeader user)
         {
             var library = await _libraryRepo.GetMediaLibraryByKeyAsync(org.Id, entityTypeName.ToLower());
             if (library == null)
@@ -193,7 +193,7 @@ namespace LagoVista.MediaServices.Managers
             return library;
         }
 
-        public async Task<EntityHeader> CreateCategoryIfNecssary(string categoryKey, string categoryName, string timeStamp, EntityHeader org, EntityHeader user)
+        public async Task<EntityHeader> CreateCategoryIfNecssary(string categoryKey, string categoryName, UtcTimestamp timeStamp, EntityHeader org, EntityHeader user)
         {
             Console.WriteLine("=========>>>> Create Category If Necessary!");
 
@@ -233,7 +233,7 @@ namespace LagoVista.MediaServices.Managers
         public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false, 
             string license = "", string url = "", string responseId = "", string originalPrompt = "", string revisedPrompt = "", string entityTypeName = "", string entityFieldName = "", string size = "", string resourceName = "")
         {
-            var timeStamp = DateTime.UtcNow.ToJSONString();
+            var timeStamp = UtcTimestamp.Now;
 
             var mediaResource = new MediaResource();
             mediaResource.Id = id;
@@ -331,7 +331,7 @@ namespace LagoVista.MediaServices.Managers
             var mediaResource = await _mediaRepo.GetMediaResourceRecordAsync(id);
             await AuthorizeAsync(mediaResource, AuthorizeActions.Update, user, org);
             
-            mediaResource.LastUpdatedDate = DateTime.UtcNow.ToJSONString();
+            mediaResource.LastUpdatedDate = UtcTimestamp.Now;
             mediaResource.LastUpdatedBy = user;
 
             mediaResource.SetContentType(contentType);
@@ -632,7 +632,7 @@ namespace LagoVista.MediaServices.Managers
             if (response.Successful)
             {
                 mediaResource.Name = request.Name;
-                mediaResource.LastUpdatedDate = DateTime.UtcNow.ToJSONString();
+                mediaResource.LastUpdatedDate = UtcTimestamp.Now;
                 mediaResource.LastUpdatedBy = user;
                 mediaResource.TextGenerationRequest = request;
 
@@ -679,8 +679,8 @@ namespace LagoVista.MediaServices.Managers
                     Name = request.Name,
                     Key = request.Key,
                     OwnerOrganization = org,
-                    CreationDate = DateTime.UtcNow.ToJSONString(),
-                    LastUpdatedDate = DateTime.UtcNow.ToJSONString(),
+                    CreationDate = UtcTimestamp.Now,
+                    LastUpdatedDate = UtcTimestamp.Now,
                     CreatedBy = user,
                     LastUpdatedBy = user,
                     IsPublic = false,
@@ -748,7 +748,7 @@ namespace LagoVista.MediaServices.Managers
 
                 await _mediaRepo.AddMediaAsync(response.Result, org.Id, resource.GetCurrentStorageReferenceName(), resource.MimeType);
 
-                resource.LastUpdatedDate = DateTime.UtcNow.ToJSONString();
+                resource.LastUpdatedDate = UtcTimestamp.Now;
                 resource.LastUpdatedBy = user;
 
                 var summary = resource.CreateSummary();
@@ -776,7 +776,7 @@ namespace LagoVista.MediaServices.Managers
 
         public async Task<InvokeResult<MediaResource>> CloneMediaResourceAsync(string id, string entityTypeName, string entityFieldName, string resourceName, EntityHeader orgEntityHeader, EntityHeader userEntityHeader)
         {
-            var timeStamp = DateTime.UtcNow.ToJSONString();
+            var timeStamp = UtcTimestamp.Now;
 
             var mediaResource = await _mediaRepo.GetMediaResourceRecordAsync(id);
             await AuthorizeAsync(mediaResource, AuthorizeActions.Create, userEntityHeader, orgEntityHeader);
