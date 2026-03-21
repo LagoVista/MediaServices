@@ -2,7 +2,6 @@
 // ContentHash: 6360dd9a5358d8b908f25c3a0cac7d64169bb94c2cc082262562c696781b6f2c
 // IndexVersion: 2
 // --- END CODE INDEX META ---
-using LagoVista.Core.Interfaces;
 using LagoVista.Core.Models.UIMetaData;
 using LagoVista.Core.Validation;
 using LagoVista.MediaServices.Models;
@@ -26,18 +25,5 @@ namespace LagoVista.MediaServices.Interfaces
 
         Task AddOrUpdateMediaResourceAsync(MediaResource record);
         Task<InvokeResult<string>> AddToContainerAsync(byte[] data, string containerName, string fileName, string contentType, bool isPublic);
-    }
-
-    public interface IMediaServicesConnectionSettings
-    {
-        IConnectionSettings MediaLibraryConnection { get; }
-        IConnectionSettings MediaStorageConnection { get; }
-
-        string ImageSearchUri { get; }
-        string ImageSearchClientId { get; }
-        string ImageSearchClientSecret { get;  }        
-        string GoogleTextToSpeechAPIKey { get; }
-
-        bool ShouldConsolidateCollections { get; }
     }
 }

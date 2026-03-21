@@ -16,6 +16,7 @@ namespace LagoVista.MediaServices.CloudRepos
         {
             services.AddTransient<IMediaServicesRepo, MediaServicesRepo>();
             services.AddTransient<IMediaLibraryRepo, MediaLibraryRepo>();
+            services.AddSingleton<IMediaServicesConnectionSettings, MediaServicesConnectionSettings>();
         }
     }
 }
