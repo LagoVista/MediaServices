@@ -30,12 +30,12 @@ namespace LagoVista.MediaServices.CloudRepos
             MediaLibraryConnection = configuration.CreateDefaultDBStorageSettings();
             MediaStorageConnection = configuration.CreateDefaultTableStorageSettings();
 
-            var imageSearchSection = configuration.GetRequiredSection("ImageSearch");
+            var imageSearchSection = configuration.GetSection("ImageSearch");
             ImageSearchUri = imageSearchSection.Require("Uri");
             ImageSearchClientId = imageSearchSection.Require("ClientId");
             ImageSearchClientSecret = imageSearchSection.Require("Secret");
 
-            var tts = configuration.GetRequiredSection("GoogleApiKeys");
+            var tts = configuration.GetSection("GoogleApiKeys");
             GoogleTextToSpeechAPIKey = tts.Require("TextToSpeech");
         }
     }
