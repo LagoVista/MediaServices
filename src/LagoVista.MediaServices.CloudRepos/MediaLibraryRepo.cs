@@ -18,19 +18,9 @@ namespace LagoVista.MediaServices.CloudRepos
 {
     public class MediaLibraryRepo : DocumentDBRepoBase<MediaLibrary>, IMediaLibraryRepo
     {
-        private bool _shouldConsolidateCollections;
         public MediaLibraryRepo(IMediaServicesConnectionSettings repoSettings, IAdminLogger logger, ICacheProvider cacheProvider)
             : base(repoSettings.MediaLibraryConnection.Uri, repoSettings.MediaLibraryConnection.AccessKey, repoSettings.MediaLibraryConnection.ResourceName, logger, cacheProvider)
         {
-            _shouldConsolidateCollections = repoSettings.ShouldConsolidateCollections;
-        }
-
-        protected override bool ShouldConsolidateCollections
-        {
-            get
-            {
-                return _shouldConsolidateCollections;
-            }
         }
 
         public Task AddMediaLibraryAsync(MediaLibrary mediaLibrary)

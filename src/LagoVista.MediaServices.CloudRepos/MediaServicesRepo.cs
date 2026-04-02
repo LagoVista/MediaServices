@@ -33,8 +33,6 @@ namespace LagoVista.MediaServices.CloudRepos
             _blobConnectionSettings = settings.MediaStorageConnection;
         }
 
-        protected override bool ShouldConsolidateCollections => true;
-
         private BlobServiceClient CreateBlobClient(IConnectionSettings settings)
         {
             var connectionString = $"DefaultEndpointsProtocol=https;AccountName={settings.AccountId};AccountKey={settings.AccessKey}";
