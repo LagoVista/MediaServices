@@ -800,5 +800,40 @@ namespace LagoVista.MediaServices.Managers
 
             return InvokeResult<MediaResource>.Create(mediaResource);
         }
+
+        public async Task<InvokeResult> ImportMediaResourceContentsAsync(string id, Stream stream, EntityHeader org, EntityHeader user)
+        {
+            if (string.IsNullOrWhiteSpace(id)) throw new ArgumentNullException(nameof(id));
+            if (stream == null) throw new ArgumentNullException(nameof(stream));
+
+            var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
+            if (resource == null)
+            {
+                throw new RecordNotFoundException(nameof(MediaResource), id);
+            }
+
+            if (resource.OwnerOrganization == null || resource.OwnerOrganization.Id != org.Id)
+            {
+                throw new NotAuthorizedException("Org mismatch");
+            }
+
+            await AuthorizeAsync(resource, AuthorizeActions.Update, user, org);
+
+            if (string.IsNullOrWhiteSpace(resource.StorageReferenceName))
+            {
+                return InvokeResult.FromError($"Media resource '{id}' does not have a storage reference name.");
+            }
+
+            if (string.IsNullOrWhiteSpace(resource.MimeType))
+            {
+                return InvokeResult.FromError($"Media resource '{id}' does not have a mime type.");
+            }
+
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+
+            var bytes = ms.ToArray();
+            return await _mediaRepo.AddMediaAsync(bytes, org.Id, resource.GetCurrentStorageReferenceName(), resource.MimeType);
+        }
     }
 }

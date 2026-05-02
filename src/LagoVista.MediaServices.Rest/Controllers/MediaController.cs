@@ -316,6 +316,12 @@ namespace LagoVista.MediaServices.Rest.Controllers
         }
 
 
+        [HttpPost("/api/sysadmin/media/resource/{id}/contents")]
+        public async Task<InvokeResult> ImportMediaResourceContentsAsync(string id)
+        {
+            return await _mediaServicesManager.ImportMediaResourceContentsAsync(id, Request.Body, OrgEntityHeader, UserEntityHeader);
+        }
+
 
         [HttpGet("/api/media/resource/{id}/download/{revisionid}")]
         public async Task<IActionResult> DownloadMediaRevision(string id, string revisionid)
