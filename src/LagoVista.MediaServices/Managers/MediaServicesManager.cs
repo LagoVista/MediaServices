@@ -231,7 +231,7 @@ namespace LagoVista.MediaServices.Managers
         }
 
         public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false, 
-            string license = "", string url = "", string responseId = "", string originalPrompt = "", string revisedPrompt = "", string entityTypeName = "", string entityFieldName = "", string size = "", string resourceName = "")
+            string license = "", string url = "", string responseId = "", string originalPrompt = "", string revisedPrompt = "", string entityTypeName = "", string entityFieldName = "", string size = "", string resourceName = "", ImageGenerationRequest imageGenerationRequest = null)
         {
             var timeStamp = UtcTimestamp.Now;
 
@@ -272,6 +272,7 @@ namespace LagoVista.MediaServices.Managers
             stream.Read(bytes, 0, (int)stream.Length);
             mediaResource.FileName = fileName;
             mediaResource.ContentSize = stream.Length;
+            mediaResource.ImageGenerationRequest = imageGenerationRequest?.CreateSnapshot();
 
             if (!String.IsNullOrEmpty(size))
             {
@@ -306,6 +307,7 @@ namespace LagoVista.MediaServices.Managers
                 ContentSize = mediaResource.ContentSize,
                 Width = mediaResource.Width,
                 Height = mediaResource.Height,
+                ImageGenerationRequest = imageGenerationRequest?.CreateSnapshot(),
             };
 
             mediaResource.CurrentRevision = history.Id;
@@ -326,7 +328,7 @@ namespace LagoVista.MediaServices.Managers
         }
 
         public async Task<InvokeResult<MediaResource>> AddResourceMediaRevisionAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false, string license = "", string url = ""
-            , string responseId = "", string originalPrompt = "", string revisedPrompt = "", string size = "")
+            , string responseId = "", string originalPrompt = "", string revisedPrompt = "", string size = "", ImageGenerationRequest imageGenerationRequest = null)
         {
             var mediaResource = await _mediaRepo.GetMediaResourceRecordAsync(id);
             await AuthorizeAsync(mediaResource, AuthorizeActions.Update, user, org);
@@ -345,6 +347,7 @@ namespace LagoVista.MediaServices.Managers
             stream.Read(bytes, 0, (int)stream.Length);
             mediaResource.FileName = fileName;
             mediaResource.ContentSize = stream.Length;
+            mediaResource.ImageGenerationRequest = imageGenerationRequest?.CreateSnapshot();
 
             if (!String.IsNullOrEmpty(size))
             {
@@ -379,7 +382,8 @@ namespace LagoVista.MediaServices.Managers
                 Name = $"Revision {mediaResource.History.Count + 1}",
                 Width = mediaResource.Width,
                 Height = mediaResource.Height,
-                
+                ImageGenerationRequest = imageGenerationRequest?.CreateSnapshot(),
+
             };
 
             mediaResource.CurrentRevision = history.Id;

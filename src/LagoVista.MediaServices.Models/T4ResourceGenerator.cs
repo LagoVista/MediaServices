@@ -1,8 +1,4 @@
-// --- BEGIN CODE INDEX META (do not edit) ---
-// ContentHash: ef810f3633be4c1fe0ff80c807d39799ca51c2dee2a7aa2c483cfbf19306c6d1
-// IndexVersion: 2
-// --- END CODE INDEX META ---
-/*10/31/2024 6:10:34 AM*/
+﻿/*6/21/2026 4:50:09 PM*/
 using System.Globalization;
 using System.Reflection;
 
@@ -118,6 +114,99 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:DeviceResourceTypes_Audio
 
 		public static string DeviceResourceTypes_Audio { get { return GetResourceString("DeviceResourceTypes_Audio"); } }
+//Resources:MediaServicesResources:GeneratedImageQualities_Premium
+
+		public static string GeneratedImageQualities_Premium { get { return GetResourceString("GeneratedImageQualities_Premium"); } }
+//Resources:MediaServicesResources:GeneratedImageQualities_Standard
+
+		public static string GeneratedImageQualities_Standard { get { return GetResourceString("GeneratedImageQualities_Standard"); } }
+//Resources:MediaServicesResources:GeneratedImageSizes_Landscape
+
+		public static string GeneratedImageSizes_Landscape { get { return GetResourceString("GeneratedImageSizes_Landscape"); } }
+//Resources:MediaServicesResources:GeneratedImageSizes_Portrait
+
+		public static string GeneratedImageSizes_Portrait { get { return GetResourceString("GeneratedImageSizes_Portrait"); } }
+//Resources:MediaServicesResources:GeneratedImageSizes_Square
+
+		public static string GeneratedImageSizes_Square { get { return GetResourceString("GeneratedImageSizes_Square"); } }
+//Resources:MediaServicesResources:GeneratedImageStyles_Abstract
+
+		public static string GeneratedImageStyles_Abstract { get { return GetResourceString("GeneratedImageStyles_Abstract"); } }
+//Resources:MediaServicesResources:GeneratedImageStyles_CorporateMemphis
+
+		public static string GeneratedImageStyles_CorporateMemphis { get { return GetResourceString("GeneratedImageStyles_CorporateMemphis"); } }
+//Resources:MediaServicesResources:GeneratedImageStyles_EditorialIllustration
+
+		public static string GeneratedImageStyles_EditorialIllustration { get { return GetResourceString("GeneratedImageStyles_EditorialIllustration"); } }
+//Resources:MediaServicesResources:GeneratedImageStyles_EditorialPhotography
+
+		public static string GeneratedImageStyles_EditorialPhotography { get { return GetResourceString("GeneratedImageStyles_EditorialPhotography"); } }
+//Resources:MediaServicesResources:GeneratedImageStyles_FlatIllustration
+
+		public static string GeneratedImageStyles_FlatIllustration { get { return GetResourceString("GeneratedImageStyles_FlatIllustration"); } }
+//Resources:MediaServicesResources:GeneratedImageStyles_StudioPortrait
+
+		public static string GeneratedImageStyles_StudioPortrait { get { return GetResourceString("GeneratedImageStyles_StudioPortrait"); } }
+//Resources:MediaServicesResources:GeneratedImageStyles_ThreeDimensionalIllustration
+
+		public static string GeneratedImageStyles_ThreeDimensionalIllustration { get { return GetResourceString("GeneratedImageStyles_ThreeDimensionalIllustration"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_Description
+
+		public static string ImageGenerationRequest_Description { get { return GetResourceString("ImageGenerationRequest_Description"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_Help
+
+		public static string ImageGenerationRequest_Help { get { return GetResourceString("ImageGenerationRequest_Help"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_ImageGenerationStyleGuidance
+
+		public static string ImageGenerationRequest_ImageGenerationStyleGuidance { get { return GetResourceString("ImageGenerationRequest_ImageGenerationStyleGuidance"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_ImageGenerationStyleGuidance_Help
+
+		public static string ImageGenerationRequest_ImageGenerationStyleGuidance_Help { get { return GetResourceString("ImageGenerationRequest_ImageGenerationStyleGuidance_Help"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_ImagePurpose
+
+		public static string ImageGenerationRequest_ImagePurpose { get { return GetResourceString("ImageGenerationRequest_ImagePurpose"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_ImagePurpose_Help
+
+		public static string ImageGenerationRequest_ImagePurpose_Help { get { return GetResourceString("ImageGenerationRequest_ImagePurpose_Help"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_ImageQuality
+
+		public static string ImageGenerationRequest_ImageQuality { get { return GetResourceString("ImageGenerationRequest_ImageQuality"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_ImageQuality_Help
+
+		public static string ImageGenerationRequest_ImageQuality_Help { get { return GetResourceString("ImageGenerationRequest_ImageQuality_Help"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_ImageSize
+
+		public static string ImageGenerationRequest_ImageSize { get { return GetResourceString("ImageGenerationRequest_ImageSize"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_ImageSize_Help
+
+		public static string ImageGenerationRequest_ImageSize_Help { get { return GetResourceString("ImageGenerationRequest_ImageSize_Help"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_ImageStyle
+
+		public static string ImageGenerationRequest_ImageStyle { get { return GetResourceString("ImageGenerationRequest_ImageStyle"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_ImageStyle_Help
+
+		public static string ImageGenerationRequest_ImageStyle_Help { get { return GetResourceString("ImageGenerationRequest_ImageStyle_Help"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_IsPublic
+
+		public static string ImageGenerationRequest_IsPublic { get { return GetResourceString("ImageGenerationRequest_IsPublic"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_IsPublic_Help
+
+		public static string ImageGenerationRequest_IsPublic_Help { get { return GetResourceString("ImageGenerationRequest_IsPublic_Help"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_NumberGenerated
+
+		public static string ImageGenerationRequest_NumberGenerated { get { return GetResourceString("ImageGenerationRequest_NumberGenerated"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_NumberGenerated_Help
+
+		public static string ImageGenerationRequest_NumberGenerated_Help { get { return GetResourceString("ImageGenerationRequest_NumberGenerated_Help"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_Title
+
+		public static string ImageGenerationRequest_Title { get { return GetResourceString("ImageGenerationRequest_Title"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_UserPrompt
+
+		public static string ImageGenerationRequest_UserPrompt { get { return GetResourceString("ImageGenerationRequest_UserPrompt"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_UserPrompt_Help
+
+		public static string ImageGenerationRequest_UserPrompt_Help { get { return GetResourceString("ImageGenerationRequest_UserPrompt_Help"); } }
 //Resources:MediaServicesResources:MediaLibraries_Title
 
 		public static string MediaLibraries_Title { get { return GetResourceString("MediaLibraries_Title"); } }
@@ -255,6 +344,37 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string Common_UniqueId = "Common_UniqueId";
 			public const string Common_ValidationErrors = "Common_ValidationErrors";
 			public const string DeviceResourceTypes_Audio = "DeviceResourceTypes_Audio";
+			public const string GeneratedImageQualities_Premium = "GeneratedImageQualities_Premium";
+			public const string GeneratedImageQualities_Standard = "GeneratedImageQualities_Standard";
+			public const string GeneratedImageSizes_Landscape = "GeneratedImageSizes_Landscape";
+			public const string GeneratedImageSizes_Portrait = "GeneratedImageSizes_Portrait";
+			public const string GeneratedImageSizes_Square = "GeneratedImageSizes_Square";
+			public const string GeneratedImageStyles_Abstract = "GeneratedImageStyles_Abstract";
+			public const string GeneratedImageStyles_CorporateMemphis = "GeneratedImageStyles_CorporateMemphis";
+			public const string GeneratedImageStyles_EditorialIllustration = "GeneratedImageStyles_EditorialIllustration";
+			public const string GeneratedImageStyles_EditorialPhotography = "GeneratedImageStyles_EditorialPhotography";
+			public const string GeneratedImageStyles_FlatIllustration = "GeneratedImageStyles_FlatIllustration";
+			public const string GeneratedImageStyles_StudioPortrait = "GeneratedImageStyles_StudioPortrait";
+			public const string GeneratedImageStyles_ThreeDimensionalIllustration = "GeneratedImageStyles_ThreeDimensionalIllustration";
+			public const string ImageGenerationRequest_Description = "ImageGenerationRequest_Description";
+			public const string ImageGenerationRequest_Help = "ImageGenerationRequest_Help";
+			public const string ImageGenerationRequest_ImageGenerationStyleGuidance = "ImageGenerationRequest_ImageGenerationStyleGuidance";
+			public const string ImageGenerationRequest_ImageGenerationStyleGuidance_Help = "ImageGenerationRequest_ImageGenerationStyleGuidance_Help";
+			public const string ImageGenerationRequest_ImagePurpose = "ImageGenerationRequest_ImagePurpose";
+			public const string ImageGenerationRequest_ImagePurpose_Help = "ImageGenerationRequest_ImagePurpose_Help";
+			public const string ImageGenerationRequest_ImageQuality = "ImageGenerationRequest_ImageQuality";
+			public const string ImageGenerationRequest_ImageQuality_Help = "ImageGenerationRequest_ImageQuality_Help";
+			public const string ImageGenerationRequest_ImageSize = "ImageGenerationRequest_ImageSize";
+			public const string ImageGenerationRequest_ImageSize_Help = "ImageGenerationRequest_ImageSize_Help";
+			public const string ImageGenerationRequest_ImageStyle = "ImageGenerationRequest_ImageStyle";
+			public const string ImageGenerationRequest_ImageStyle_Help = "ImageGenerationRequest_ImageStyle_Help";
+			public const string ImageGenerationRequest_IsPublic = "ImageGenerationRequest_IsPublic";
+			public const string ImageGenerationRequest_IsPublic_Help = "ImageGenerationRequest_IsPublic_Help";
+			public const string ImageGenerationRequest_NumberGenerated = "ImageGenerationRequest_NumberGenerated";
+			public const string ImageGenerationRequest_NumberGenerated_Help = "ImageGenerationRequest_NumberGenerated_Help";
+			public const string ImageGenerationRequest_Title = "ImageGenerationRequest_Title";
+			public const string ImageGenerationRequest_UserPrompt = "ImageGenerationRequest_UserPrompt";
+			public const string ImageGenerationRequest_UserPrompt_Help = "ImageGenerationRequest_UserPrompt_Help";
 			public const string MediaLibraries_Title = "MediaLibraries_Title";
 			public const string MediaLibrary_Description = "MediaLibrary_Description";
 			public const string MediaLibrary_Help = "MediaLibrary_Help";

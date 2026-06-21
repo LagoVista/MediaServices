@@ -291,4 +291,129 @@
   <data name="DeviceResourceTypes_Audio" xml:space="preserve">
     <value>Audio</value>
   </data>
+
+  <data name="GeneratedImageStyles_StudioPortrait" xml:space="preserve">
+  <value>Studio Portrait</value>
+</data>
+
+  <data name="GeneratedImageStyles_EditorialPhotography" xml:space="preserve">
+  <value>Editorial Photography</value>
+</data>
+
+  <data name="GeneratedImageStyles_FlatIllustration" xml:space="preserve">
+  <value>Flat Illustration</value>
+</data>
+
+  <data name="GeneratedImageStyles_EditorialIllustration" xml:space="preserve">
+  <value>Editorial Illustration</value>
+</data>
+
+  <data name="GeneratedImageStyles_CorporateMemphis" xml:space="preserve">
+  <value>Corporate Memphis Illustration</value>
+</data>
+
+  <data name="GeneratedImageStyles_Abstract" xml:space="preserve">
+  <value>Abstract</value>
+</data>
+
+  <data name="GeneratedImageStyles_ThreeDimensionalIllustration" xml:space="preserve">
+  <value>3D Illustration</value>
+</data>
+
+  <data name="GeneratedImageQualities_Standard" xml:space="preserve">
+  <value>Standard</value>
+</data>
+
+  <data name="GeneratedImageQualities_Premium" xml:space="preserve">
+  <value>Premium</value>
+</data>
+
+  <data name="GeneratedImageSizes_Square" xml:space="preserve">
+  <value>Square (1024 × 1024)</value>
+</data>
+
+  <data name="GeneratedImageSizes_Landscape" xml:space="preserve">
+  <value>Landscape (1536 × 1024)</value>
+</data>
+
+  <data name="GeneratedImageSizes_Portrait" xml:space="preserve">
+  <value>Portrait (1024 × 1536)</value>
+</data>
+
+  <data name="ImageGenerationRequest_Title" xml:space="preserve">
+  <value>Image Generation Request</value>
+</data>
+
+  <data name="ImageGenerationRequest_Help" xml:space="preserve">
+  <value>Configure the content, style, dimensions, and quality of an AI-generated image.</value>
+</data>
+
+  <data name="ImageGenerationRequest_Description" xml:space="preserve">
+  <value>Defines the creative and technical settings used to generate or revise an image.</value>
+</data>
+
+  <data name="ImageGenerationRequest_ImageStyle" xml:space="preserve">
+  <value>Image Style</value>
+</data>
+
+  <data name="ImageGenerationRequest_ImageStyle_Help" xml:space="preserve">
+  <value>Select the broad visual medium and treatment for the generated image.</value>
+</data>
+
+  <data name="ImageGenerationRequest_ImageSize" xml:space="preserve">
+  <value>Image Size</value>
+</data>
+
+  <data name="ImageGenerationRequest_ImageSize_Help" xml:space="preserve">
+  <value>Select the dimensions and orientation of the generated image.</value>
+</data>
+
+  <data name="ImageGenerationRequest_ImageQuality" xml:space="preserve">
+  <value>Image Quality</value>
+</data>
+
+  <data name="ImageGenerationRequest_ImageQuality_Help" xml:space="preserve">
+  <value>Select the generation quality. Premium images use a higher-quality generation setting and may cost more.</value>
+</data>
+
+  <data name="ImageGenerationRequest_NumberGenerated" xml:space="preserve">
+  <value>Number of Images</value>
+</data>
+
+  <data name="ImageGenerationRequest_NumberGenerated_Help" xml:space="preserve">
+  <value>Enter the number of image candidates to generate.</value>
+</data>
+
+  <data name="ImageGenerationRequest_ImagePurpose" xml:space="preserve">
+  <value>Image Purpose</value>
+</data>
+
+  <data name="ImageGenerationRequest_ImagePurpose_Help" xml:space="preserve">
+  <value>Describe the business role, intended use, and outcome expected from this image.</value>
+</data>
+
+  <data name="ImageGenerationRequest_ImageGenerationStyleGuidance" xml:space="preserve">
+  <value>Style Guidance</value>
+</data>
+
+  <data name="ImageGenerationRequest_ImageGenerationStyleGuidance_Help" xml:space="preserve">
+  <value>Describe the visual direction, photographic or illustrative character, lighting, mood, composition, and treatments to avoid.</value>
+</data>
+
+  <data name="ImageGenerationRequest_UserPrompt" xml:space="preserve">
+  <value>Generation Instructions</value>
+</data>
+
+  <data name="ImageGenerationRequest_UserPrompt_Help" xml:space="preserve">
+  <value>Describe the image to create or the changes to make to the current image.</value>
+</data>
+
+  <data name="ImageGenerationRequest_IsPublic" xml:space="preserve">
+  <value>Public Image</value>
+</data>
+
+  <data name="ImageGenerationRequest_IsPublic_Help" xml:space="preserve">
+  <value>Indicates whether the generated media resource may be accessed publicly.</value>
+</data>
+
 </root>

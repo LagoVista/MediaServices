@@ -8,14 +8,10 @@ using LagoVista.Core.Interfaces;
 using LagoVista.Core.Models;
 using LagoVista.Core.Models.UIMetaData;
 using LagoVista.Core.Validation;
-using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Models.Resources;
-using Newtonsoft.Json;
-using RingCentral;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Mime;
 
 namespace LagoVista.MediaServices.Models
 {
@@ -111,9 +107,30 @@ namespace LagoVista.MediaServices.Models
 
         public string StorageReferenceName { get; set; }
 
-        public string ResponseId { get => History.FirstOrDefault()?.ResponseId ?? String.Empty; }
-        public string OriginalPrompt { get => History.FirstOrDefault()?.OriginalPrompt ?? String.Empty; }
-        public string RevisedPrompt { get => History.FirstOrDefault()?.RevisedPrompt ?? String.Empty; }
+        public ImageGenerationRequest ImageGenerationRequest { get; set; }
+
+        public string ResponseId => GetCurrentRevision()?.ResponseId ?? String.Empty;
+
+        public string OriginalPrompt => GetCurrentRevision()?.OriginalPrompt ?? String.Empty;
+
+        public string RevisedPrompt => GetCurrentRevision()?.RevisedPrompt ?? String.Empty;
+
+        public MediaResourceHistory GetCurrentRevision()
+        {
+            if (History == null || History.Count == 0)
+                return null;
+
+            if (!String.IsNullOrEmpty(CurrentRevision))
+            {
+                var revision = History.FirstOrDefault(rev => rev.Id == CurrentRevision);
+                if (revision == null)
+                    throw new Exception($"Could not find content revision with id {CurrentRevision} on resource {Id}.");
+
+                return revision;
+            }
+
+            return History.FirstOrDefault();
+        }
 
         public void RegenerateStorageReferenceName()
         { 
@@ -227,18 +244,8 @@ namespace LagoVista.MediaServices.Models
 
         public string GetCurrentStorageReferenceName()
         {
-            if(!String.IsNullOrEmpty(CurrentRevision))
-            {
-                var revision = History.FirstOrDefault(rev => rev.Id == CurrentRevision);
-                if (revision == null)
-                    throw new Exception($"Could not find content revision with id {CurrentRevision} on resource {Id}");
-
-                Console.WriteLine($"RETURING CURRENT REVISION: {CurrentRevision}");
-
-                return revision.StorageReferenceName;
-            }
-
-            return StorageReferenceName;
+            var revision = GetCurrentRevision();
+            return revision?.StorageReferenceName ?? StorageReferenceName;
         }
 
         public List<MediaResourceHistory> History { get; set; } = new List<MediaResourceHistory>();
@@ -441,5 +448,6 @@ namespace LagoVista.MediaServices.Models
         public string Notes { get; set; }
         public TextToSpeechRequest TextGenerationRequest { get; set; }
 
+        public ImageGenerationRequest ImageGenerationRequest { get; set; }
     }
 }

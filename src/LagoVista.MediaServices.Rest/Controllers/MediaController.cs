@@ -59,6 +59,21 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return response;
         }
 
+        [HttpGet("/api/media/imagegeneration/factory")]
+        public DetailResponse<ImageGenerationRequest> CreateImageGenerationRequest(string entityTypeName, string entityFieldName, string entityId)
+        {
+            var request = new ImageGenerationRequest()
+            {
+                EntityFieldName = entityFieldName,
+                EntityTypeName = entityTypeName,
+                EntityId = entityId,
+            };
+
+            return DetailResponse<ImageGenerationRequest>.Create(request);
+        }
+
+
+
         /// <summary>
         /// Media Resources - Add a Media Resource Record
         /// </summary>
