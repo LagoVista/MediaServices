@@ -44,13 +44,13 @@ namespace LagoVista.MediaServices.Models
     public enum GeneratedImageSizes
     {
         [EnumLabel(ImageGenerationRequest.GeneratedImageSizes_Square, MediaServicesResources.Names.GeneratedImageSizes_Square, typeof(MediaServicesResources))]
-        Square,
+        Square1024x1024,
 
         [EnumLabel(ImageGenerationRequest.GeneratedImageSizes_Landscape, MediaServicesResources.Names.GeneratedImageSizes_Landscape, typeof(MediaServicesResources))]
-        Landscape,
+        Landscape1536x1024,
 
         [EnumLabel(ImageGenerationRequest.GeneratedImageSizes_Portrait, MediaServicesResources.Names.GeneratedImageSizes_Portrait, typeof(MediaServicesResources))]
-        Portrait
+        Portrait1024x1536,
     }
 
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.ImageGenerationRequest_Title, MediaServicesResources.Names.ImageGenerationRequest_Help, MediaServicesResources.Names.ImageGenerationRequest_Description, EntityDescriptionAttribute.EntityTypes.ChildObject, typeof(MediaServicesResources), 
@@ -68,9 +68,9 @@ namespace LagoVista.MediaServices.Models
         public const string GeneratedImageQualities_Standard = "standard";
         public const string GeneratedImageQualities_Premium = "premium";
 
-        public const string GeneratedImageSizes_Square = "1024x1024";
-        public const string GeneratedImageSizes_Landscape = "1536x1024";
-        public const string GeneratedImageSizes_Portrait = "1024x1536";
+        public const string GeneratedImageSizes_Square = "square1024x1024";
+        public const string GeneratedImageSizes_Landscape = "landscape1536x1024";
+        public const string GeneratedImageSizes_Portrait = "portrait1024x1536";
 
         public string ResourceName { get; set; }
 
@@ -90,7 +90,7 @@ namespace LagoVista.MediaServices.Models
         public EntityHeader<GeneratedImageStyles> ImageStyle { get; set; } = EntityHeader<GeneratedImageStyles>.Create(GeneratedImageStyles.EditorialPhotography);
 
         [FormField(LabelResource: MediaServicesResources.Names.ImageGenerationRequest_ImageSize, HelpResource: MediaServicesResources.Names.ImageGenerationRequest_ImageSize_Help, EnumType: typeof(GeneratedImageSizes), FieldType: FieldTypes.Picker, IsRequired: true, IsUserEditable: true, ResourceType: typeof(MediaServicesResources))]
-        public EntityHeader<GeneratedImageSizes> ImageSize { get; set; } = EntityHeader<GeneratedImageSizes>.Create(GeneratedImageSizes.Square);
+        public EntityHeader<GeneratedImageSizes> ImageSize { get; set; } = EntityHeader<GeneratedImageSizes>.Create(GeneratedImageSizes.Square1024x1024);
 
         [FormField(LabelResource: MediaServicesResources.Names.ImageGenerationRequest_ImageQuality, HelpResource: MediaServicesResources.Names.ImageGenerationRequest_ImageQuality_Help, EnumType: typeof(GeneratedImageQualities), FieldType: FieldTypes.Picker, IsRequired: true, IsUserEditable: true, ResourceType: typeof(MediaServicesResources))]
         public EntityHeader<GeneratedImageQualities> ImageQuality { get; set; } = EntityHeader<GeneratedImageQualities>.Create(GeneratedImageQualities.Standard);
