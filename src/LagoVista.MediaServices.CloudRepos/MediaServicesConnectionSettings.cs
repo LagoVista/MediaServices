@@ -1,11 +1,6 @@
 ﻿using LagoVista.Core.Interfaces;
 using LagoVista.MediaServices.Interfaces;
 using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace LagoVista.MediaServices.CloudRepos
 {
@@ -25,6 +20,8 @@ namespace LagoVista.MediaServices.CloudRepos
 
         public bool ShouldConsolidateCollections { get; }
 
+        public string HeyGenApiKey { get;}
+
         public MediaServicesConnectionSettings(IConfiguration configuration)
         {
             MediaLibraryConnection = configuration.CreateDefaultDBStorageSettings();
@@ -37,6 +34,9 @@ namespace LagoVista.MediaServices.CloudRepos
 
             var tts = configuration.GetSection("GoogleApiKeys");
             GoogleTextToSpeechAPIKey = tts.Require("TextToSpeech");
+
+            var heyGen = configuration.GetSection("HeyGen");
+            HeyGenApiKey = configuration.Require("ApiKey");
         }
     }
 }

@@ -16,6 +16,6 @@ namespace LagoVista.MediaServices
             services.AddTransient<IMediaLibraryManager, MediaLibraryManager>();
             services.AddTransient<IMediaSearchManager, MediaSearchManager>();
             services.AddTransient<ITextToSpeechService, TextToSpeechService>();
-        }
+         }
     }
 }

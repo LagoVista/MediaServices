@@ -54,5 +54,7 @@ namespace LagoVista.MediaServices.MediaTests
         public string ImageSearchUri => "https://https://api.openverse.org";
 
         public string GoogleTextToSpeechAPIKey { get; }
+
+        public string HeyGenApiKey { get; }
     }
 }

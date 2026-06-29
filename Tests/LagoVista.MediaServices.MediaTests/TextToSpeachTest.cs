@@ -5,15 +5,8 @@
 using LagoVista.Core.Interfaces;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
-using Microsoft.Azure.Cosmos.Serialization.HybridRow;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace LagoVista.MediaServices.MediaTests
@@ -69,8 +62,7 @@ namespace LagoVista.MediaServices.MediaTests
         public string GoogleTextToSpeechAPIKey => System.Environment.GetEnvironmentVariable("GOOGLE_API_SPEECH_TO_TEXT");
 
         public bool ShouldConsolidateCollections => throw new NotImplementedException();
+
+        public string HeyGenApiKey => throw new NotImplementedException();
     }
-
-
-
 }

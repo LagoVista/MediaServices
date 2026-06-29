@@ -16,6 +16,7 @@ namespace LagoVista.MediaServices.Interfaces
         string ImageSearchClientSecret { get;  }        
         string GoogleTextToSpeechAPIKey { get; }
 
+        string HeyGenApiKey { get; }
         bool ShouldConsolidateCollections { get; }
     }
 }

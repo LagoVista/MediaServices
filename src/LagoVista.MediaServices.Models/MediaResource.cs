@@ -95,6 +95,9 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Height, ParentRowName: DetailsRow, ParentRowIndex: 4, FieldType: FieldTypes.Integer, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public int? Height { get; set; }
 
+        public string HeyGenAssetId { get; set; }
+
+        public string HeyGenAvatarId { get; set; }
         public string CurrentRevision { get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_License, FieldType: FieldTypes.WebLink, IsUserEditable:false, ResourceType: typeof(MediaServicesResources))]

@@ -1,6 +1,8 @@
 using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Interfaces;
+using LagoVista.MediaServices.Managers;
 using LagoVista.MediaServices.Models;
+using LagoVista.MediaServices.Services;
 using LagoVista.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +18,9 @@ namespace LagoVista.MediaServices.CloudRepos
         {
             services.AddTransient<IMediaServicesRepo, MediaServicesRepo>();
             services.AddTransient<IMediaLibraryRepo, MediaLibraryRepo>();
+            services.AddTransient<IVideoGenerationRequestStore, VideoGenerationRequestStore>();
+            services.AddTransient<IVideoGenerationManager, VideoGenerationManager>();
+            services.AddTransient<IHeyGenVideoService, HeyGenVideoService>();
             services.AddSingleton<IMediaServicesConnectionSettings, MediaServicesConnectionSettings>();
         }
     }
