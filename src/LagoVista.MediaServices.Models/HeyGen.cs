@@ -7,16 +7,40 @@ namespace LagoVista.MediaServices.Models
 {
     public sealed class HeyGenVideoRequest
     {
+        [JsonProperty("type")]
+        public string Type { get; set; } = "avatar";
+
+        [JsonProperty("avatar_id")]
         public string AvatarId { get; set; }
+
+        [JsonProperty("script")]
         public string Script { get; set; }
+
+        [JsonProperty("voice_id")]
         public string VoiceId { get; set; }
-        public string LanguageCode { get; set; }
+
+        [JsonProperty("title")]
         public string Title { get; set; }
+
+        [JsonProperty("callback_id")]
         public string CallbackId { get; set; }
+
+        [JsonProperty("callback_url")]
         public string CallbackUrl { get; set; }
+
+        [JsonProperty("resolution")]
         public string Resolution { get; set; }
+
+        [JsonProperty("aspect_ratio")]
         public string AspectRatio { get; set; }
+
+        [JsonProperty("output_format")]
+        public string OutputFormat { get; set; } = "mp4";
+
+        [JsonProperty("background")]
         public HeyGenBackground Background { get; set; }
+
+        [JsonProperty("voice_settings")]
         public HeyGenVoiceSettings VoiceSettings { get; set; }
     }
 

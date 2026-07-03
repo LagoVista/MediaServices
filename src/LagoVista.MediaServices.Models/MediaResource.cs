@@ -255,8 +255,6 @@ namespace LagoVista.MediaServices.Models
 
         public TextToSpeechRequest TextGenerationRequest { get; set; }
 
-        public List<Discussion> Discussions { get; set; } = new List<Discussion>();
-
         public MediaResourceSummary CreateSummary()
         {
             var summary = new MediaResourceSummary()

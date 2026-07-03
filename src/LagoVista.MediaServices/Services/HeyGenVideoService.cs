@@ -1,4 +1,5 @@
 ﻿using LagoVista.Core.Validation;
+using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
 using Newtonsoft.Json;
@@ -16,13 +17,15 @@ namespace LagoVista.MediaServices.Services
     {
         private readonly HttpClient _httpClient;
         private readonly IMediaServicesConnectionSettings _settings;
+        private readonly IAdminLogger _adminLogger;
 
-        public HeyGenVideoService(IHttpClientFactory httpClientFactory, IMediaServicesConnectionSettings settings)
+        public HeyGenVideoService(IHttpClientFactory httpClientFactory, IAdminLogger adminLogger, IMediaServicesConnectionSettings settings)
         {
             _httpClient = httpClientFactory.CreateClient();
             _httpClient.BaseAddress = new Uri("https://api.heygen.com/");
 
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _adminLogger = adminLogger ?? throw new ArgumentNullException(nameof(adminLogger));
         }
 
 
@@ -56,6 +59,8 @@ namespace LagoVista.MediaServices.Services
             {
                 NullValueHandling = NullValueHandling.Ignore
             });
+
+            _adminLogger.WriteJson(nameof(HeyGenVideoRequest), request);
 
             httpRequest.Content = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
