@@ -29,13 +29,13 @@ namespace LagoVista.MediaServices.Rest.Controllers
         [HttpPost("/api/media/icons/semantic/generate")]
         public Task<InvokeResult<LagoVistaIconPublishResult>> GenerateAsync([FromBody] LagoVistaIconGenerationRequest request)
         {
-            return _iconGenerationManager.GenerateAsync(request);
+            return _iconGenerationManager.GenerateAsync(request, OrgEntityHeader, UserEntityHeader);
         }
 
         [HttpPost("/api/media/icons/semantic/publish")]
         public Task<InvokeResult<LagoVistaIconPublishResult>> PublishAsync([FromBody] LagoVistaIconAssetPublishRequest publishRequest)
         {
-            return _iconGenerationManager.PublishAsync(publishRequest);
+            return _iconGenerationManager.PublishAsync(publishRequest, OrgEntityHeader, UserEntityHeader);
         }
     }
 }

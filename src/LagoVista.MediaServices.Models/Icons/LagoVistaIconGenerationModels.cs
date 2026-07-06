@@ -121,6 +121,7 @@ namespace LagoVista.MediaServices.Models.Icons
         public string GeneratedUtc { get; set; }
         public string Prompt { get; set; }
         public string RevisedPrompt { get; set; }
+        public LagoVistaIconGenerationUsage Usage { get; set; }
         public LagoVistaIconGenerationRequest Request { get; set; }
     }
 

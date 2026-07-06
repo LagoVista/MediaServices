@@ -21,5 +21,6 @@ namespace LagoVista.MediaServices.Models.Icons
         public string Model { get; set; }
         public string GeneratedUtc { get; set; }
         public string CdnBaseUrl { get; set; }
+        public LagoVistaIconGenerationUsage Usage { get; set; }
     }
 }

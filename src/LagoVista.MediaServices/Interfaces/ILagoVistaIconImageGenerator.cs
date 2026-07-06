@@ -1,3 +1,4 @@
+using LagoVista.Core.Models;
 using LagoVista.Core.Validation;
 using LagoVista.MediaServices.Models.Icons;
 using System.Threading.Tasks;
@@ -6,6 +7,6 @@ namespace LagoVista.MediaServices.Interfaces
 {
     public interface ILagoVistaIconImageGenerator
     {
-        Task<InvokeResult<LagoVistaIconGeneratedImage>> GenerateAsync(LagoVistaIconGenerationRequest request, LagoVistaIconStyleProfile profile, string prompt);
+        Task<InvokeResult<LagoVistaIconGeneratedImage>> GenerateAsync(LagoVistaIconGenerationRequest request, LagoVistaIconStyleProfile profile, string prompt, EntityHeader org, EntityHeader user);
     }
 }

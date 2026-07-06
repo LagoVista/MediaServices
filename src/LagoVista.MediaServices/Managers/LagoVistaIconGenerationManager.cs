@@ -1,3 +1,4 @@
+using LagoVista.Core.Models;
 using LagoVista.Core.Validation;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models.Icons;
@@ -35,7 +36,7 @@ namespace LagoVista.MediaServices.Managers
             return _promptBuilder.BuildPrompt(request, profileResult.Result);
         }
 
-        public async Task<InvokeResult<LagoVistaIconPublishResult>> GenerateAsync(LagoVistaIconGenerationRequest request)
+        public async Task<InvokeResult<LagoVistaIconPublishResult>> GenerateAsync(LagoVistaIconGenerationRequest request, EntityHeader org, EntityHeader user)
         {
             if (request == null)
                 return InvokeResult<LagoVistaIconPublishResult>.FromError("LagoVista icon generation request is required.");
@@ -52,7 +53,7 @@ namespace LagoVista.MediaServices.Managers
             if (generator == null)
                 return InvokeResult<LagoVistaIconPublishResult>.FromError("No LagoVista icon image generator has been registered.");
 
-            var generatedImageResult = await generator.GenerateAsync(request, profileResult.Result, promptResult.Result);
+            var generatedImageResult = await generator.GenerateAsync(request, profileResult.Result, promptResult.Result, org, user);
             if (!generatedImageResult.Successful)
                 return generatedImageResult.ToInvokeResult<LagoVistaIconPublishResult>();
 
@@ -73,13 +74,14 @@ namespace LagoVista.MediaServices.Managers
                 ProviderResponseId = generatedImage.ProviderResponseId,
                 Model = generatedImage.Model,
                 GeneratedUtc = generatedImage.GeneratedUtc,
-                CdnBaseUrl = request.CdnBaseUrl
+                CdnBaseUrl = request.CdnBaseUrl,
+                Usage = generatedImage.Usage
             };
 
             return await _assetPublisher.PublishAsync(publishRequest);
         }
 
-        public async Task<InvokeResult<LagoVistaIconPublishResult>> PublishAsync(LagoVistaIconAssetPublishRequest publishRequest)
+        public async Task<InvokeResult<LagoVistaIconPublishResult>> PublishAsync(LagoVistaIconAssetPublishRequest publishRequest, EntityHeader org, EntityHeader user)
         {
             if (publishRequest == null)
                 return InvokeResult<LagoVistaIconPublishResult>.FromError("LagoVista icon asset publish request is required.");

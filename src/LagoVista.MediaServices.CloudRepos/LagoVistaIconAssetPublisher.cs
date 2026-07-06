@@ -198,6 +198,7 @@ namespace LagoVista.MediaServices.CloudRepos
                     GeneratedUtc = String.IsNullOrWhiteSpace(publishRequest.GeneratedUtc) ? DateTime.UtcNow.ToString("o") : publishRequest.GeneratedUtc,
                     Prompt = publishRequest.Prompt,
                     RevisedPrompt = publishRequest.RevisedPrompt,
+                    Usage = publishRequest.Usage,
                     Request = generationRequest
                 }
             };
