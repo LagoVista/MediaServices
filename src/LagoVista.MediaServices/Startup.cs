@@ -16,6 +16,9 @@ namespace LagoVista.MediaServices
             services.AddTransient<IMediaLibraryManager, MediaLibraryManager>();
             services.AddTransient<IMediaSearchManager, MediaSearchManager>();
             services.AddTransient<ITextToSpeechService, TextToSpeechService>();
+            services.AddTransient<ILagoVistaIconStyleProfileProvider, LagoVistaIconStyleProfileProvider>();
+            services.AddTransient<ILagoVistaIconPromptBuilder, LagoVistaIconPromptBuilder>();
+            services.AddTransient<ILagoVistaIconGenerationManager, LagoVistaIconGenerationManager>();
          }
     }
 }
