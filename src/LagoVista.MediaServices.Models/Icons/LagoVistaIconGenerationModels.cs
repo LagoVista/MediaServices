@@ -1,9 +1,19 @@
+using LagoVista.Core.Models;
 using System.Collections.Generic;
 
 namespace LagoVista.MediaServices.Models.Icons
 {
+    public enum LagoVistaIconBackground
+    {
+        Transparent,
+        Opaque,
+        Auto
+    }
+
     public class LagoVistaIconGenerationRequest
     {
+        public const string SystemOrgNamespace = "system";
+
         public LagoVistaIconGenerationRequest()
         {
             Version = "1.0";
@@ -16,6 +26,8 @@ namespace LagoVista.MediaServices.Models.Icons
             AvoidMetaphors = new List<string>();
         }
 
+
+
         public string Version { get; set; }
         public string RequestType { get; set; }
         public string OrgNamespace { get; set; }
@@ -27,21 +39,62 @@ namespace LagoVista.MediaServices.Models.Icons
         public string AdditionalGuidance { get; set; }
         public string CdnBaseUrl { get; set; }
         public LagoVistaIconSourceEntity SourceEntity { get; set; }
+
+        public LagoVistaIconSourceInstance SourceInstance { get; set; }
         public List<string> Keywords { get; set; }
         public List<string> SuggestedMetaphors { get; set; }
         public List<string> AvoidMetaphors { get; set; }
+        public LagoVistaIconBackground Background { get; set; } = LagoVistaIconBackground.Transparent;
     }
 
     public class LagoVistaIconSourceEntity
     {
         public string Id { get; set; }
+
         public string Type { get; set; }
+
+        public string Key { get; set; }
+
         public string DisplayName { get; set; }
-        public string ShortCode { get; set; }
+
         public string Description { get; set; }
+
+        public string UserHelp { get; set; }
+
         public string Purpose { get; set; }
+
         public string PurposeSummary { get; set; }
+
+        public string ShortCode { get; set; }
+
+        public string DomainKey { get; set; }
+
+        public string EntityKey { get; set; }
+
+        public string ClusterKey { get; set; }
+
+        public string AiIconGuidance { get; set; }
     }
+
+    public class LagoVistaIconSourceInstance
+    {
+        public string Id { get; set; }
+
+        public string Key { get; set; }
+
+        public string DisplayName { get; set; }
+
+        public string Description { get; set; }
+
+        public string Purpose { get; set; }
+
+        public string PurposeSummary { get; set; }
+
+        public string ShortCode { get; set; }
+
+        public List<string> Keywords { get; set; } = new List<string>();
+    }
+
 
     public class LagoVistaIconStyleProfile
     {
@@ -98,6 +151,28 @@ namespace LagoVista.MediaServices.Models.Icons
         public LagoVistaIconAssetManifest Assets { get; set; }
     }
 
+    public class LagoVistaIconPublicManifest
+    {
+        public LagoVistaIconPublicManifest()
+        {
+            Version = "1.0";
+            Assets = new LagoVistaIconAssetManifest();
+        }
+
+        public string Version { get; set; }
+        public string IconKey { get; set; }
+        public string DisplayName { get; set; }
+        public string SourceEntityType { get; set; }
+        public string SourceEntityId { get; set; }
+        public string SourceEntityKey { get; set; }
+        public string FamilyKey { get; set; }
+        public string FamilyVersion { get; set; }
+        public int CurrentVersion { get; set; }
+        public int PreferredSize { get; set; }
+        public int MinimumSupportedSize { get; set; }
+        public LagoVistaIconAssetManifest Assets { get; set; }
+    }
+
     public class LagoVistaIconManifestCatalogInfo
     {
         public LagoVistaIconManifestCatalogInfo()
@@ -141,6 +216,7 @@ namespace LagoVista.MediaServices.Models.Icons
         public LagoVistaIconCatalogDocument()
         {
             Version = "1.0";
+            SourceEntityTypes = new List<LagoVistaIconSourceEntityTypeHeader>();
             Icons = new List<LagoVistaIconCatalogEntry>();
         }
 
@@ -149,7 +225,30 @@ namespace LagoVista.MediaServices.Models.Icons
         public string FamilyKey { get; set; }
         public string FamilyVersion { get; set; }
         public string LastUpdatedUtc { get; set; }
+        public List<LagoVistaIconSourceEntityTypeHeader> SourceEntityTypes { get; set; }
         public List<LagoVistaIconCatalogEntry> Icons { get; set; }
+    }
+
+    public class LagoVistaIconSourceEntityTypeHeader
+    {
+        public LagoVistaIconSourceEntityTypeHeader()
+        {
+            Tags = new List<string>();
+            SuggestedMetaphors = new List<string>();
+            AvoidMetaphors = new List<string>();
+        }
+
+        public string SourceEntityType { get; set; }
+        public string DisplayName { get; set; }
+        public string Description { get; set; }
+        public string DefaultIconKey { get; set; }
+        public string DefaultPreviewUrl { get; set; }
+        public string DefaultManifestUrl { get; set; }
+        public string DefaultPromptGuidance { get; set; }
+        public int IconCount { get; set; }
+        public List<string> Tags { get; set; }
+        public List<string> SuggestedMetaphors { get; set; }
+        public List<string> AvoidMetaphors { get; set; }
     }
 
     public class LagoVistaIconCatalogEntry
@@ -170,6 +269,7 @@ namespace LagoVista.MediaServices.Models.Icons
         public string Status { get; set; }
         public int PreferredSize { get; set; }
         public int MinimumSupportedSize { get; set; }
+        public string PreviewUrl { get; set; }
         public List<string> Tags { get; set; }
         public Dictionary<string, string> Assets { get; set; }
         public string ManifestUrl { get; set; }
@@ -180,12 +280,14 @@ namespace LagoVista.MediaServices.Models.Icons
         public LagoVistaIconMasterCatalogDocument()
         {
             Version = "1.0";
+            SourceEntityTypes = new List<LagoVistaIconSourceEntityTypeHeader>();
             Icons = new List<LagoVistaIconMasterCatalogEntry>();
         }
 
         public string Version { get; set; }
         public string OrgNamespace { get; set; }
         public string LastUpdatedUtc { get; set; }
+        public List<LagoVistaIconSourceEntityTypeHeader> SourceEntityTypes { get; set; }
         public List<LagoVistaIconMasterCatalogEntry> Icons { get; set; }
     }
 
@@ -194,6 +296,8 @@ namespace LagoVista.MediaServices.Models.Icons
         public LagoVistaIconMasterCatalogEntry()
         {
             Tags = new List<string>();
+            SuggestedMetaphors = new List<string>();
+            AvoidMetaphors = new List<string>();
             Assets = new Dictionary<string, string>();
         }
 
@@ -208,10 +312,14 @@ namespace LagoVista.MediaServices.Models.Icons
         public string Status { get; set; }
         public int PreferredSize { get; set; }
         public int MinimumSupportedSize { get; set; }
+        public string Meaning { get; set; }
+        public string AdditionalGuidance { get; set; }
         public string PreviewUrl { get; set; }
         public string ManifestUrl { get; set; }
         public string SearchText { get; set; }
         public List<string> Tags { get; set; }
+        public List<string> SuggestedMetaphors { get; set; }
+        public List<string> AvoidMetaphors { get; set; }
         public Dictionary<string, string> Assets { get; set; }
     }
 
@@ -229,6 +337,7 @@ namespace LagoVista.MediaServices.Models.Icons
         public string BaseUrl { get; set; }
         public string SourceUrl { get; set; }
         public string ManifestUrl { get; set; }
+        public string GenerationRecordPath { get; set; }
         public string CatalogUrl { get; set; }
         public string MasterCatalogUrl { get; set; }
         public string PublishedUtc { get; set; }

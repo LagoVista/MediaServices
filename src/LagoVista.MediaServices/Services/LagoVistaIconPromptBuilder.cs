@@ -4,6 +4,7 @@ using LagoVista.MediaServices.Models.Icons;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 
 namespace LagoVista.MediaServices.Services
@@ -46,6 +47,15 @@ namespace LagoVista.MediaServices.Services
             prompt.AppendLine("- Use white interior shapes or negative-space details when helpful for clarity");
             prompt.AppendLine("- The icon should feel like part of a consistent product icon family");
             prompt.AppendLine();
+            prompt.AppendLine("Background rules:");
+            prompt.AppendLine("- Use a real transparent alpha background.");
+            prompt.AppendLine("- The pixels outside the icon must be fully transparent.");
+            prompt.AppendLine("- Do not draw, render, simulate, or include a checkerboard transparency grid.");
+            prompt.AppendLine("- Do not include any background pattern, tile, grid, paper, canvas, backdrop, scene, square, or border.");
+            prompt.AppendLine("- do not incldue text, letters, numbers, logos, watermarks, screenshots, dashboards, UI chrome, photorealism, 3D effects, shadows, glow, blur, background scenes, or checkerboard transparency grids.");
+
+            prompt.AppendLine();
+           
             prompt.AppendLine("Color rules:");
             prompt.AppendLine("Use only these exact colors:");
             AppendColorLine(prompt, profile.DominantColor, "primary blue");
@@ -63,9 +73,30 @@ namespace LagoVista.MediaServices.Services
             prompt.AppendLine("Subject:");
             prompt.AppendLine($"Entity Type: {SafeValue(request.SourceEntity.Type)}");
             prompt.AppendLine($"Entity Name: {request.SourceEntity.DisplayName.Trim()}");
+
+            if (!String.IsNullOrWhiteSpace(request.SourceEntity.DomainKey))
+                prompt.AppendLine($"Domain: {request.SourceEntity.DomainKey.Trim()}");
+
+            if (!String.IsNullOrWhiteSpace(request.SourceEntity.EntityKey))
+                prompt.AppendLine($"Entity Key: {request.SourceEntity.EntityKey.Trim()}");
+
+            if (!String.IsNullOrWhiteSpace(request.SourceEntity.ClusterKey))
+                prompt.AppendLine($"Cluster: {request.SourceEntity.ClusterKey.Trim()}");
+
+            if (!String.IsNullOrWhiteSpace(request.SourceEntity.Description))
+                prompt.AppendLine($"Description: {request.SourceEntity.Description.Trim()}");
+
+            if (!String.IsNullOrWhiteSpace(request.SourceEntity.UserHelp))
+                prompt.AppendLine($"User Help: {request.SourceEntity.UserHelp.Trim()}");
+
             if (!String.IsNullOrWhiteSpace(request.SourceEntity.ShortCode))
                 prompt.AppendLine($"Short Code Metadata: {request.SourceEntity.ShortCode.Trim()} (do not render this text in the icon)");
+
             prompt.AppendLine($"Meaning: {meaning}");
+
+            if (request.SourceInstance != null)
+                AppendInstanceSubject(prompt, request);
+
             AppendOptionalCsv(prompt, "Keywords", request.Keywords);
             AppendOptionalCsv(prompt, "Preferred metaphors", request.SuggestedMetaphors);
             AppendOptionalCsv(prompt, "Avoid metaphors", request.AvoidMetaphors);
@@ -74,6 +105,14 @@ namespace LagoVista.MediaServices.Services
                 prompt.AppendLine("Additional user guidance:");
                 prompt.AppendLine(request.AdditionalGuidance.Trim());
                 prompt.AppendLine("Follow this additional guidance only when it does not conflict with the style, color, composition, and exclusion rules above.");
+            }
+
+            if (!String.IsNullOrWhiteSpace(request.SourceEntity.AiIconGuidance))
+            {
+                prompt.AppendLine();
+                prompt.AppendLine("Entity-specific icon guidance:");
+                prompt.AppendLine(request.SourceEntity.AiIconGuidance.Trim());
+                prompt.AppendLine("Use this guidance to choose the semantic metaphor for both the default entity icon and specific instance icons of this entity type.");
             }
             prompt.AppendLine();
             prompt.AppendLine("Composition rules:");
@@ -90,6 +129,29 @@ namespace LagoVista.MediaServices.Services
             return InvokeResult<string>.Create(prompt.ToString().Trim());
         }
 
+        private static string AppendInstanceSubject(StringBuilder prompt, LagoVistaIconGenerationRequest request)
+        {
+            prompt.AppendLine();
+            prompt.AppendLine("Specific instance:");
+            prompt.AppendLine($"Instance Name: {request.SourceInstance.DisplayName.Trim()}");
+
+            if (!String.IsNullOrWhiteSpace(request.SourceInstance.Description))
+                prompt.AppendLine($"Instance Description: {request.SourceInstance.Description.Trim()}");
+
+            if (!String.IsNullOrWhiteSpace(request.SourceInstance.PurposeSummary))
+                prompt.AppendLine($"Instance Purpose Summary: {request.SourceInstance.PurposeSummary.Trim()}");
+
+            if (!String.IsNullOrWhiteSpace(request.SourceInstance.Purpose))
+                prompt.AppendLine($"Instance Purpose: {request.SourceInstance.Purpose.Trim()}");
+
+            AppendOptionalCsv(prompt, "Instance Keywords", request.SourceInstance.Keywords);
+
+            prompt.AppendLine("Use these instance facts to specialize the icon, but do not violate the entity-specific icon guidance or product icon family style.");
+
+            return prompt.ToString();
+        }
+        
+        
         private static string ResolveMeaning(LagoVistaIconGenerationRequest request)
         {
             if (!String.IsNullOrWhiteSpace(request.Meaning))

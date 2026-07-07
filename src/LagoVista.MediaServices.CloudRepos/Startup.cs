@@ -22,6 +22,7 @@ namespace LagoVista.MediaServices.CloudRepos
             services.AddTransient<IVideoGenerationManager, VideoGenerationManager>();
             services.AddTransient<IHeyGenVideoService, HeyGenVideoService>();
             services.AddTransient<ILagoVistaIconAssetPublisher, LagoVistaIconAssetPublisher>();
+            services.AddTransient<ILagoVistaIconCatalogManager, LagoVistaIconCatalogManager>();
             services.AddSingleton<IMediaServicesConnectionSettings, MediaServicesConnectionSettings>();
         }
     }
