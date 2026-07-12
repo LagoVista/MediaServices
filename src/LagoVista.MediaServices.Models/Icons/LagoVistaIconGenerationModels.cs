@@ -38,6 +38,8 @@ namespace LagoVista.MediaServices.Models.Icons
         public string PreferredAccentColor { get; set; }
         public string AdditionalGuidance { get; set; }
         public string CdnBaseUrl { get; set; }
+        public string ReferenceImageUrl { get; set; }
+        
         public LagoVistaIconSourceEntity SourceEntity { get; set; }
 
         public LagoVistaIconSourceInstance SourceInstance { get; set; }

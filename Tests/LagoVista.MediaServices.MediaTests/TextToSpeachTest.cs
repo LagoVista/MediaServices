@@ -64,5 +64,7 @@ namespace LagoVista.MediaServices.MediaTests
         public bool ShouldConsolidateCollections => throw new NotImplementedException();
 
         public string HeyGenApiKey => throw new NotImplementedException();
+
+        public IConnectionSettings IconStorageConnection => throw new NotImplementedException();
     }
 }

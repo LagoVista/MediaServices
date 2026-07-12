@@ -14,9 +14,11 @@ namespace LagoVista.MediaServices.Rest.Controllers
     public class LagoVistaIconGenerationController : LagoVistaBaseController
     {
         private readonly ILagoVistaIconGenerationManager _iconGenerationManager;
+        private readonly ILagoVistaEntityInstanceIconGenerationManager _manager;
 
-        public LagoVistaIconGenerationController(UserManager<AppUser> userManager, IAdminLogger logger, ILagoVistaIconGenerationManager iconGenerationManager) : base(userManager, logger)
+        public LagoVistaIconGenerationController(UserManager<AppUser> userManager, IAdminLogger logger, ILagoVistaEntityInstanceIconGenerationManager manager, ILagoVistaIconGenerationManager iconGenerationManager) : base(userManager, logger)
         {
+            _manager = manager ?? throw new ArgumentNullException(nameof(manager));
             _iconGenerationManager = iconGenerationManager ?? throw new ArgumentNullException(nameof(iconGenerationManager));
         }
 
@@ -36,6 +38,13 @@ namespace LagoVista.MediaServices.Rest.Controllers
         public Task<InvokeResult<LagoVistaIconPublishResult>> PublishAsync([FromBody] LagoVistaIconAssetPublishRequest publishRequest)
         {
             return _iconGenerationManager.PublishAsync(publishRequest, OrgEntityHeader, UserEntityHeader);
+        }
+
+
+        [HttpPost("/api/media/icons/semantic/instance/generate")]
+        public Task<InvokeResult<LagoVistaGeneratedInstanceIconResult>> GenerateInstanceIconAsync([FromBody] LagoVistaGeneratedInstanceIconRequest request)
+        {
+            return _manager.GenerateInstanceIconAsync(request, OrgEntityHeader, UserEntityHeader);
         }
     }
 }

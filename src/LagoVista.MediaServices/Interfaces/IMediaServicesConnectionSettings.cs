@@ -10,7 +10,7 @@ namespace LagoVista.MediaServices.Interfaces
     {
         IConnectionSettings MediaLibraryConnection { get; }
         IConnectionSettings MediaStorageConnection { get; }
-
+        IConnectionSettings IconStorageConnection { get; }
         string ImageSearchUri { get; }
         string ImageSearchClientId { get; }
         string ImageSearchClientSecret { get;  }        

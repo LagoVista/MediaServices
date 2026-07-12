@@ -19,6 +19,7 @@ namespace LagoVista.MediaServices
             services.AddTransient<ILagoVistaIconStyleProfileProvider, LagoVistaIconStyleProfileProvider>();
             services.AddTransient<ILagoVistaIconPromptBuilder, LagoVistaIconPromptBuilder>();
             services.AddTransient<ILagoVistaIconGenerationManager, LagoVistaIconGenerationManager>();
+            services.AddTransient<ILagoVistaEntityInstanceIconGenerationManager, LagoVistaEntityInstanceIconGenerationManager>();
             services.AddTransient<ILagoVistaSystemDefaultIconGenerationManager, LagoVistaSystemDefaultIconGenerationManager>();
          }
     }

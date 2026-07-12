@@ -15,6 +15,11 @@ namespace LagoVista.MediaServices.Interfaces
 
     public class LagoVistaGeneratedInstanceIconRequest
     {
+        public LagoVistaGeneratedInstanceIconRequest()
+        {
+          
+        }
+
         public string EntityTypeName { get; set; }
 
         public string EntityId { get; set; }
@@ -27,15 +32,20 @@ namespace LagoVista.MediaServices.Interfaces
 
         public string CurrentIcon { get; set; }
 
-        public string AdditionalGuidance { get; set; }
-
         public string BaseIconPrompt { get; set; }
+
+        public string AdditionalGuidance { get; set; }
 
         public bool ApplyChanges { get; set; }
     }
 
     public class LagoVistaGeneratedInstanceIconResult
     {
+        public LagoVistaGeneratedInstanceIconResult()
+        {
+            Assets = new Dictionary<string, string>();
+        }
+
         public string IconReference { get; set; }
 
         public string IconKey { get; set; }
@@ -48,8 +58,18 @@ namespace LagoVista.MediaServices.Interfaces
 
         public string PreviewUrl { get; set; }
 
-        public LagoVistaIconPublishResult PublishResult { get; set; }
+        public string SourceUrl { get; set; }
+
+        public string ManifestUrl { get; set; }
+
+        public string GenerationRecordPath { get; set; }
+
+        public string PublishedUtc { get; set; }
 
         public bool Applied { get; set; }
+
+        public Dictionary<string, string> Assets { get; set; }
+
+        public LagoVistaIconPublishResult PublishResult { get; set; }
     }
 }

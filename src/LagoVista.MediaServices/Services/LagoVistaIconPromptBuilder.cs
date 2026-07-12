@@ -52,7 +52,17 @@ namespace LagoVista.MediaServices.Services
             prompt.AppendLine("- The pixels outside the icon must be fully transparent.");
             prompt.AppendLine("- Do not draw, render, simulate, or include a checkerboard transparency grid.");
             prompt.AppendLine("- Do not include any background pattern, tile, grid, paper, canvas, backdrop, scene, square, or border.");
-            prompt.AppendLine("- do not incldue text, letters, numbers, logos, watermarks, screenshots, dashboards, UI chrome, photorealism, 3D effects, shadows, glow, blur, background scenes, or checkerboard transparency grids.");
+            prompt.AppendLine("- Do not include text, letters, numbers, logos, watermarks, screenshots, dashboards, UI chrome, photorealism, 3D effects, shadows, glow, blur, background scenes, or checkerboard transparency grids.");
+
+            if (!String.IsNullOrWhiteSpace(request.SourceEntity.AiIconGuidance))
+            {
+                prompt.AppendLine();
+                prompt.AppendLine("Entity-specific icon guidance:");
+                prompt.AppendLine(request.SourceEntity.AiIconGuidance.Trim());
+                prompt.AppendLine("Use this guidance only to preserve the structural shape language, hierarchy, and family resemblance of this entity type.");
+                prompt.AppendLine("Do not let the entity type guidance overpower the specific instance meaning.");
+            }
+
 
             prompt.AppendLine();
            
@@ -95,25 +105,69 @@ namespace LagoVista.MediaServices.Services
             prompt.AppendLine($"Meaning: {meaning}");
 
             if (request.SourceInstance != null)
-                AppendInstanceSubject(prompt, request);
+            {
+                prompt.AppendLine();
+                prompt.AppendLine("Instance-priority rule:");
+                prompt.AppendLine("The icon must be visually distinct from other icons of the same entity type.");
+                prompt.AppendLine("The primary semantic metaphor should come from the specific instance, not only from the entity type.");
+                prompt.AppendLine("Use the entity type guidance to control the structural style, hierarchy, and family resemblance.");
+                prompt.AppendLine("Use the specific instance guidance to determine what the icon is actually about.");
+                prompt.AppendLine($"The result should look like a {SafeValue(request.SourceInstance.DisplayName)} icon that belongs to the {request.SourceEntity.DisplayName.Trim()} family, not a generic {request.SourceEntity.DisplayName.Trim()} icon with a small accent.");
+            }
+
+            if (request.SourceInstance != null)
+            {
+                prompt.AppendLine();
+                prompt.AppendLine("Specific instance:");
+                prompt.AppendLine($"Instance Name: {SafeValue(request.SourceInstance.DisplayName)}");
+
+                if (!String.IsNullOrWhiteSpace(request.SourceInstance.Key))
+                    prompt.AppendLine($"Instance Key Metadata: {request.SourceInstance.Key.Trim()} (do not render this text in the icon)");
+
+                if (!String.IsNullOrWhiteSpace(request.SourceInstance.Description))
+                    prompt.AppendLine($"Instance Description: {request.SourceInstance.Description.Trim()}");
+
+                if (!String.IsNullOrWhiteSpace(request.SourceInstance.PurposeSummary))
+                    prompt.AppendLine($"Instance Purpose Summary: {request.SourceInstance.PurposeSummary.Trim()}");
+
+                if (!String.IsNullOrWhiteSpace(request.SourceInstance.Purpose))
+                    prompt.AppendLine($"Instance Purpose: {request.SourceInstance.Purpose.Trim()}");
+
+                var cleansedKeyWords = CleanKeywords(request.SourceInstance.Keywords);
+
+                AppendOptionalCsv(prompt, "Instance Keywords", cleansedKeyWords);
+
+                prompt.AppendLine("This specific instance must strongly influence the semantic metaphor.");
+                prompt.AppendLine($"The finished icon should clearly communicate {SafeValue(request.SourceInstance.DisplayName)} at a glance.");
+                prompt.AppendLine($"Do not make this a generic {request.SourceEntity.DisplayName.Trim()} icon.");
+                prompt.AppendLine("Do not merely add a small badge, tiny decoration, or minor accent to the default entity icon.");
+                prompt.AppendLine("Create a standalone icon for this specific instance while preserving the entity type guidance and product icon family style.");
+                prompt.AppendLine("Use instance facts to define the main metaphor, while using the entity type guidance to preserve family resemblance.");
+                prompt.AppendLine("Interpret the instance name as a business concept, not as literal text, letters, or decorative marks.");
+                prompt.AppendLine("If the instance name contains words that could imply charts, lines, screens, or documents, avoid those literal interpretations unless they are clearly part of the business meaning.");
+            }
+
+            if (request.SourceInstance != null)
+            {
+                prompt.AppendLine();
+                prompt.AppendLine("Distinctiveness rule:");
+                prompt.AppendLine("This icon should be clearly distinguishable from sibling instance icons in the same catalog.");
+                prompt.AppendLine("Avoid reusing the same generic entity-type metaphor unless it is meaningfully specialized for this specific instance.");
+            }
+
 
             AppendOptionalCsv(prompt, "Keywords", request.Keywords);
             AppendOptionalCsv(prompt, "Preferred metaphors", request.SuggestedMetaphors);
             AppendOptionalCsv(prompt, "Avoid metaphors", request.AvoidMetaphors);
+
             if (!String.IsNullOrWhiteSpace(request.AdditionalGuidance))
             {
+                prompt.AppendLine();
                 prompt.AppendLine("Additional user guidance:");
                 prompt.AppendLine(request.AdditionalGuidance.Trim());
-                prompt.AppendLine("Follow this additional guidance only when it does not conflict with the style, color, composition, and exclusion rules above.");
+                prompt.AppendLine("Follow this additional guidance only when it does not conflict with the style, color, composition, entity-specific icon guidance, and exclusion rules above.");
             }
 
-            if (!String.IsNullOrWhiteSpace(request.SourceEntity.AiIconGuidance))
-            {
-                prompt.AppendLine();
-                prompt.AppendLine("Entity-specific icon guidance:");
-                prompt.AppendLine(request.SourceEntity.AiIconGuidance.Trim());
-                prompt.AppendLine("Use this guidance to choose the semantic metaphor for both the default entity icon and specific instance icons of this entity type.");
-            }
             prompt.AppendLine();
             prompt.AppendLine("Composition rules:");
             prompt.AppendLine("- Use one clear semantic metaphor.");
@@ -123,35 +177,23 @@ namespace LagoVista.MediaServices.Services
             prompt.AppendLine("- Keep internal details minimal.");
             prompt.AppendLine("- Prefer simple bold shapes over detailed scenes.");
             prompt.AppendLine("- Avoid object piles or stacked compositions unless explicitly requested.");
-            prompt.AppendLine();
-            prompt.AppendLine("Do not include text, letters, numbers, logos, watermarks, background scenes, shadows under the icon, glow, haze, blur, photorealism, 3D rendering, dashboard elements, or screenshot elements.");
+            prompt.AppendLine("- Do not include text, letters, numbers, logos, watermarks, screenshots, dashboards, UI chrome, photorealism, 3D effects, shadows, glow, blur, background scenes, or checkerboard transparency grids.");
 
             return InvokeResult<string>.Create(prompt.ToString().Trim());
         }
 
-        private static string AppendInstanceSubject(StringBuilder prompt, LagoVistaIconGenerationRequest request)
+
+        private static List<string> CleanKeywords(IEnumerable<string> keywords)
         {
-            prompt.AppendLine();
-            prompt.AppendLine("Specific instance:");
-            prompt.AppendLine($"Instance Name: {request.SourceInstance.DisplayName.Trim()}");
-
-            if (!String.IsNullOrWhiteSpace(request.SourceInstance.Description))
-                prompt.AppendLine($"Instance Description: {request.SourceInstance.Description.Trim()}");
-
-            if (!String.IsNullOrWhiteSpace(request.SourceInstance.PurposeSummary))
-                prompt.AppendLine($"Instance Purpose Summary: {request.SourceInstance.PurposeSummary.Trim()}");
-
-            if (!String.IsNullOrWhiteSpace(request.SourceInstance.Purpose))
-                prompt.AppendLine($"Instance Purpose: {request.SourceInstance.Purpose.Trim()}");
-
-            AppendOptionalCsv(prompt, "Instance Keywords", request.SourceInstance.Keywords);
-
-            prompt.AppendLine("Use these instance facts to specialize the icon, but do not violate the entity-specific icon guidance or product icon family style.");
-
-            return prompt.ToString();
+            return keywords
+                .Where(keyword => !String.IsNullOrWhiteSpace(keyword))
+                .Select(keyword => keyword.Trim())
+                .Where(keyword => keyword.Length > 1)
+                .Where(keyword => !String.Equals(keyword, "Domain", StringComparison.OrdinalIgnoreCase))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
-        
-        
+
         private static string ResolveMeaning(LagoVistaIconGenerationRequest request)
         {
             if (!String.IsNullOrWhiteSpace(request.Meaning))

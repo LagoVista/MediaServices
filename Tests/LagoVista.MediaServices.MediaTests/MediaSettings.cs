@@ -56,5 +56,8 @@ namespace LagoVista.MediaServices.MediaTests
         public string GoogleTextToSpeechAPIKey { get; }
 
         public string HeyGenApiKey { get; }
+
+
+        public IConnectionSettings IconStorageConnection { get; set; }
     }
 }

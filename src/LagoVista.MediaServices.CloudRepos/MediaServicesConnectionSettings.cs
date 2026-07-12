@@ -1,4 +1,5 @@
 ﻿using LagoVista.Core.Interfaces;
+using LagoVista.Core.Models;
 using LagoVista.MediaServices.Interfaces;
 using Microsoft.Extensions.Configuration;
 
@@ -9,6 +10,8 @@ namespace LagoVista.MediaServices.CloudRepos
         public IConnectionSettings MediaLibraryConnection { get; }
 
         public IConnectionSettings MediaStorageConnection { get; }
+
+        public IConnectionSettings IconStorageConnection { get; }
 
         public string ImageSearchUri { get; }
 
@@ -26,6 +29,13 @@ namespace LagoVista.MediaServices.CloudRepos
         {
             MediaLibraryConnection = configuration.CreateDefaultDBStorageSettings();
             MediaStorageConnection = configuration.CreateDefaultTableStorageSettings();
+
+            var iconStorageSection = configuration.GetSection("IconStorageConnection");
+            IconStorageConnection = new ConnectionSettings()
+            {
+                AccountId = configuration.Require("AccountId"),
+                AccessKey = configuration.Require("AccessKey"),
+            };
 
             var imageSearchSection = configuration.GetSection("ImageSearch");
             ImageSearchUri = imageSearchSection.Require("Uri");

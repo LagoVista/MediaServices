@@ -78,16 +78,16 @@ namespace LagoVista.MediaServices.CloudRepos
 
         private CloudFileStorage CreateStorage()
         {
-            if (_settings.MediaStorageConnection == null)
+            if (_settings.IconStorageConnection == null)
                 throw new InvalidOperationException("Media storage connection is required.");
 
-            if (String.IsNullOrWhiteSpace(_settings.MediaStorageConnection.AccountId))
+            if (String.IsNullOrWhiteSpace(_settings.IconStorageConnection.AccountId))
                 throw new InvalidOperationException("Media storage account id is required.");
 
-            if (String.IsNullOrWhiteSpace(_settings.MediaStorageConnection.AccessKey))
+            if (String.IsNullOrWhiteSpace(_settings.IconStorageConnection.AccessKey))
                 throw new InvalidOperationException("Media storage access key is required.");
 
-            return new CloudFileStorage(_settings.MediaStorageConnection.AccountId, _settings.MediaStorageConnection.AccessKey, _adminLogger);
+            return new CloudFileStorage(_settings.IconStorageConnection.AccountId, _settings.IconStorageConnection.AccessKey, _adminLogger);
         }
 
         private static string NormalizePathSegment(string value)
