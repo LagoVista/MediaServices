@@ -1,4 +1,4 @@
-﻿/*6/21/2026 4:50:09 PM*/
+﻿/*7/13/2026 10:32:17 AM*/
 using System.Globalization;
 using System.Reflection;
 
@@ -321,6 +321,210 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:MediaResourceType_WebLink
 
 		public static string MediaResourceType_WebLink { get { return GetResourceString("MediaResourceType_WebLink"); } }
+//Resources:MediaServicesResources:VideoAvatar_Description
+
+		public static string VideoAvatar_Description { get { return GetResourceString("VideoAvatar_Description"); } }
+//Resources:MediaServicesResources:VideoAvatar_EditorialImage
+
+		public static string VideoAvatar_EditorialImage { get { return GetResourceString("VideoAvatar_EditorialImage"); } }
+//Resources:MediaServicesResources:VideoAvatar_ErrorMessage
+
+		public static string VideoAvatar_ErrorMessage { get { return GetResourceString("VideoAvatar_ErrorMessage"); } }
+//Resources:MediaServicesResources:VideoAvatar_Help
+
+		public static string VideoAvatar_Help { get { return GetResourceString("VideoAvatar_Help"); } }
+//Resources:MediaServicesResources:VideoAvatar_IsDefault
+
+		public static string VideoAvatar_IsDefault { get { return GetResourceString("VideoAvatar_IsDefault"); } }
+//Resources:MediaServicesResources:VideoAvatar_LanguageCode
+
+		public static string VideoAvatar_LanguageCode { get { return GetResourceString("VideoAvatar_LanguageCode"); } }
+//Resources:MediaServicesResources:VideoAvatar_LastStatusCheckUtc
+
+		public static string VideoAvatar_LastStatusCheckUtc { get { return GetResourceString("VideoAvatar_LastStatusCheckUtc"); } }
+//Resources:MediaServicesResources:VideoAvatar_LastUsedUtc
+
+		public static string VideoAvatar_LastUsedUtc { get { return GetResourceString("VideoAvatar_LastUsedUtc"); } }
+//Resources:MediaServicesResources:VideoAvatar_Locale
+
+		public static string VideoAvatar_Locale { get { return GetResourceString("VideoAvatar_Locale"); } }
+//Resources:MediaServicesResources:VideoAvatar_Provider
+
+		public static string VideoAvatar_Provider { get { return GetResourceString("VideoAvatar_Provider"); } }
+//Resources:MediaServicesResources:VideoAvatar_ProviderAssetId
+
+		public static string VideoAvatar_ProviderAssetId { get { return GetResourceString("VideoAvatar_ProviderAssetId"); } }
+//Resources:MediaServicesResources:VideoAvatar_ProviderAvatarId
+
+		public static string VideoAvatar_ProviderAvatarId { get { return GetResourceString("VideoAvatar_ProviderAvatarId"); } }
+//Resources:MediaServicesResources:VideoAvatar_ProviderAvatarStatus
+
+		public static string VideoAvatar_ProviderAvatarStatus { get { return GetResourceString("VideoAvatar_ProviderAvatarStatus"); } }
+//Resources:MediaServicesResources:VideoAvatar_Role
+
+		public static string VideoAvatar_Role { get { return GetResourceString("VideoAvatar_Role"); } }
+//Resources:MediaServicesResources:VideoAvatar_SourceImage
+
+		public static string VideoAvatar_SourceImage { get { return GetResourceString("VideoAvatar_SourceImage"); } }
+//Resources:MediaServicesResources:VideoAvatar_Status
+
+		public static string VideoAvatar_Status { get { return GetResourceString("VideoAvatar_Status"); } }
+//Resources:MediaServicesResources:VideoAvatar_SubjectEntity
+
+		public static string VideoAvatar_SubjectEntity { get { return GetResourceString("VideoAvatar_SubjectEntity"); } }
+//Resources:MediaServicesResources:VideoAvatar_Title
+
+		public static string VideoAvatar_Title { get { return GetResourceString("VideoAvatar_Title"); } }
+//Resources:MediaServicesResources:VideoAvatar_VoiceId
+
+		public static string VideoAvatar_VoiceId { get { return GetResourceString("VideoAvatar_VoiceId"); } }
+//Resources:MediaServicesResources:VideoAvatar_VoiceName
+
+		public static string VideoAvatar_VoiceName { get { return GetResourceString("VideoAvatar_VoiceName"); } }
+//Resources:MediaServicesResources:VideoAvatarProvider_HeyGen
+
+		public static string VideoAvatarProvider_HeyGen { get { return GetResourceString("VideoAvatarProvider_HeyGen"); } }
+//Resources:MediaServicesResources:VideoAvatarRole_Campaign
+
+		public static string VideoAvatarRole_Campaign { get { return GetResourceString("VideoAvatarRole_Campaign"); } }
+//Resources:MediaServicesResources:VideoAvatarRole_Editorial
+
+		public static string VideoAvatarRole_Editorial { get { return GetResourceString("VideoAvatarRole_Editorial"); } }
+//Resources:MediaServicesResources:VideoAvatarRole_Experimental
+
+		public static string VideoAvatarRole_Experimental { get { return GetResourceString("VideoAvatarRole_Experimental"); } }
+//Resources:MediaServicesResources:VideoAvatarRole_Primary
+
+		public static string VideoAvatarRole_Primary { get { return GetResourceString("VideoAvatarRole_Primary"); } }
+//Resources:MediaServicesResources:VideoAvatarStatus_Archived
+
+		public static string VideoAvatarStatus_Archived { get { return GetResourceString("VideoAvatarStatus_Archived"); } }
+//Resources:MediaServicesResources:VideoAvatarStatus_Draft
+
+		public static string VideoAvatarStatus_Draft { get { return GetResourceString("VideoAvatarStatus_Draft"); } }
+//Resources:MediaServicesResources:VideoAvatarStatus_Failed
+
+		public static string VideoAvatarStatus_Failed { get { return GetResourceString("VideoAvatarStatus_Failed"); } }
+//Resources:MediaServicesResources:VideoAvatarStatus_Preparing
+
+		public static string VideoAvatarStatus_Preparing { get { return GetResourceString("VideoAvatarStatus_Preparing"); } }
+//Resources:MediaServicesResources:VideoAvatarStatus_Ready
+
+		public static string VideoAvatarStatus_Ready { get { return GetResourceString("VideoAvatarStatus_Ready"); } }
+//Resources:MediaServicesResources:VideoAvatarStatus_WaitingForProvider
+
+		public static string VideoAvatarStatus_WaitingForProvider { get { return GetResourceString("VideoAvatarStatus_WaitingForProvider"); } }
+//Resources:MediaServicesResources:VideoProduction_BackgroundMediaResource
+
+		public static string VideoProduction_BackgroundMediaResource { get { return GetResourceString("VideoProduction_BackgroundMediaResource"); } }
+//Resources:MediaServicesResources:VideoProduction_Description
+
+		public static string VideoProduction_Description { get { return GetResourceString("VideoProduction_Description"); } }
+//Resources:MediaServicesResources:VideoProduction_ErrorMessage
+
+		public static string VideoProduction_ErrorMessage { get { return GetResourceString("VideoProduction_ErrorMessage"); } }
+//Resources:MediaServicesResources:VideoProduction_FinalVideoMediaResource
+
+		public static string VideoProduction_FinalVideoMediaResource { get { return GetResourceString("VideoProduction_FinalVideoMediaResource"); } }
+//Resources:MediaServicesResources:VideoProduction_Help
+
+		public static string VideoProduction_Help { get { return GetResourceString("VideoProduction_Help"); } }
+//Resources:MediaServicesResources:VideoProduction_LanguageCode
+
+		public static string VideoProduction_LanguageCode { get { return GetResourceString("VideoProduction_LanguageCode"); } }
+//Resources:MediaServicesResources:VideoProduction_Locale
+
+		public static string VideoProduction_Locale { get { return GetResourceString("VideoProduction_Locale"); } }
+//Resources:MediaServicesResources:VideoProduction_PreviewAudioMediaResource
+
+		public static string VideoProduction_PreviewAudioMediaResource { get { return GetResourceString("VideoProduction_PreviewAudioMediaResource"); } }
+//Resources:MediaServicesResources:VideoProduction_Provider
+
+		public static string VideoProduction_Provider { get { return GetResourceString("VideoProduction_Provider"); } }
+//Resources:MediaServicesResources:VideoProduction_Script
+
+		public static string VideoProduction_Script { get { return GetResourceString("VideoProduction_Script"); } }
+//Resources:MediaServicesResources:VideoProduction_Status
+
+		public static string VideoProduction_Status { get { return GetResourceString("VideoProduction_Status"); } }
+//Resources:MediaServicesResources:VideoProduction_TargetEntityId
+
+		public static string VideoProduction_TargetEntityId { get { return GetResourceString("VideoProduction_TargetEntityId"); } }
+//Resources:MediaServicesResources:VideoProduction_TargetEntityName
+
+		public static string VideoProduction_TargetEntityName { get { return GetResourceString("VideoProduction_TargetEntityName"); } }
+//Resources:MediaServicesResources:VideoProduction_TargetEntityProperty
+
+		public static string VideoProduction_TargetEntityProperty { get { return GetResourceString("VideoProduction_TargetEntityProperty"); } }
+//Resources:MediaServicesResources:VideoProduction_TargetEntityType
+
+		public static string VideoProduction_TargetEntityType { get { return GetResourceString("VideoProduction_TargetEntityType"); } }
+//Resources:MediaServicesResources:VideoProduction_Title
+
+		public static string VideoProduction_Title { get { return GetResourceString("VideoProduction_Title"); } }
+//Resources:MediaServicesResources:VideoProduction_VideoAvatar
+
+		public static string VideoProduction_VideoAvatar { get { return GetResourceString("VideoProduction_VideoAvatar"); } }
+//Resources:MediaServicesResources:VideoProduction_VideoName
+
+		public static string VideoProduction_VideoName { get { return GetResourceString("VideoProduction_VideoName"); } }
+//Resources:MediaServicesResources:VideoProduction_VoiceId
+
+		public static string VideoProduction_VoiceId { get { return GetResourceString("VideoProduction_VoiceId"); } }
+//Resources:MediaServicesResources:VideoProduction_VoiceName
+
+		public static string VideoProduction_VoiceName { get { return GetResourceString("VideoProduction_VoiceName"); } }
+//Resources:MediaServicesResources:VideoProductionProvider_HeyGen
+
+		public static string VideoProductionProvider_HeyGen { get { return GetResourceString("VideoProductionProvider_HeyGen"); } }
+//Resources:MediaServicesResources:VideoProductionStatus_Cancelled
+
+		public static string VideoProductionStatus_Cancelled { get { return GetResourceString("VideoProductionStatus_Cancelled"); } }
+//Resources:MediaServicesResources:VideoProductionStatus_Completed
+
+		public static string VideoProductionStatus_Completed { get { return GetResourceString("VideoProductionStatus_Completed"); } }
+//Resources:MediaServicesResources:VideoProductionStatus_Draft
+
+		public static string VideoProductionStatus_Draft { get { return GetResourceString("VideoProductionStatus_Draft"); } }
+//Resources:MediaServicesResources:VideoProductionStatus_Failed
+
+		public static string VideoProductionStatus_Failed { get { return GetResourceString("VideoProductionStatus_Failed"); } }
+//Resources:MediaServicesResources:VideoProductionStatus_GeneratingPreviewAudio
+
+		public static string VideoProductionStatus_GeneratingPreviewAudio { get { return GetResourceString("VideoProductionStatus_GeneratingPreviewAudio"); } }
+//Resources:MediaServicesResources:VideoProductionStatus_ImportingToVimeo
+
+		public static string VideoProductionStatus_ImportingToVimeo { get { return GetResourceString("VideoProductionStatus_ImportingToVimeo"); } }
+//Resources:MediaServicesResources:VideoProductionStatus_PreparingAvatar
+
+		public static string VideoProductionStatus_PreparingAvatar { get { return GetResourceString("VideoProductionStatus_PreparingAvatar"); } }
+//Resources:MediaServicesResources:VideoProductionStatus_PreviewAudioReady
+
+		public static string VideoProductionStatus_PreviewAudioReady { get { return GetResourceString("VideoProductionStatus_PreviewAudioReady"); } }
+//Resources:MediaServicesResources:VideoProductionStatus_ProcessingAtVimeo
+
+		public static string VideoProductionStatus_ProcessingAtVimeo { get { return GetResourceString("VideoProductionStatus_ProcessingAtVimeo"); } }
+//Resources:MediaServicesResources:VideoProductionStatus_ProviderCompleted
+
+		public static string VideoProductionStatus_ProviderCompleted { get { return GetResourceString("VideoProductionStatus_ProviderCompleted"); } }
+//Resources:MediaServicesResources:VideoProductionStatus_Rendering
+
+		public static string VideoProductionStatus_Rendering { get { return GetResourceString("VideoProductionStatus_Rendering"); } }
+//Resources:MediaServicesResources:VideoProductionStatus_Submitted
+
+		public static string VideoProductionStatus_Submitted { get { return GetResourceString("VideoProductionStatus_Submitted"); } }
+//Resources:MediaServicesResources:VideoProductionStatus_Submitting
+
+		public static string VideoProductionStatus_Submitting { get { return GetResourceString("VideoProductionStatus_Submitting"); } }
+//Resources:MediaServicesResources:VideoProductionStatus_UpdatingEntity
+
+		public static string VideoProductionStatus_UpdatingEntity { get { return GetResourceString("VideoProductionStatus_UpdatingEntity"); } }
+//Resources:MediaServicesResources:VideoProductionStatus_UploadingBackground
+
+		public static string VideoProductionStatus_UploadingBackground { get { return GetResourceString("VideoProductionStatus_UploadingBackground"); } }
+//Resources:MediaServicesResources:VideoProductionStatus_WaitingForAvatar
+
+		public static string VideoProductionStatus_WaitingForAvatar { get { return GetResourceString("VideoProductionStatus_WaitingForAvatar"); } }
 
 		public static class Names
 		{
@@ -413,6 +617,74 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string MediaResourceType_UserGuide = "MediaResourceType_UserGuide";
 			public const string MediaResourceType_Video = "MediaResourceType_Video";
 			public const string MediaResourceType_WebLink = "MediaResourceType_WebLink";
+			public const string VideoAvatar_Description = "VideoAvatar_Description";
+			public const string VideoAvatar_EditorialImage = "VideoAvatar_EditorialImage";
+			public const string VideoAvatar_ErrorMessage = "VideoAvatar_ErrorMessage";
+			public const string VideoAvatar_Help = "VideoAvatar_Help";
+			public const string VideoAvatar_IsDefault = "VideoAvatar_IsDefault";
+			public const string VideoAvatar_LanguageCode = "VideoAvatar_LanguageCode";
+			public const string VideoAvatar_LastStatusCheckUtc = "VideoAvatar_LastStatusCheckUtc";
+			public const string VideoAvatar_LastUsedUtc = "VideoAvatar_LastUsedUtc";
+			public const string VideoAvatar_Locale = "VideoAvatar_Locale";
+			public const string VideoAvatar_Provider = "VideoAvatar_Provider";
+			public const string VideoAvatar_ProviderAssetId = "VideoAvatar_ProviderAssetId";
+			public const string VideoAvatar_ProviderAvatarId = "VideoAvatar_ProviderAvatarId";
+			public const string VideoAvatar_ProviderAvatarStatus = "VideoAvatar_ProviderAvatarStatus";
+			public const string VideoAvatar_Role = "VideoAvatar_Role";
+			public const string VideoAvatar_SourceImage = "VideoAvatar_SourceImage";
+			public const string VideoAvatar_Status = "VideoAvatar_Status";
+			public const string VideoAvatar_SubjectEntity = "VideoAvatar_SubjectEntity";
+			public const string VideoAvatar_Title = "VideoAvatar_Title";
+			public const string VideoAvatar_VoiceId = "VideoAvatar_VoiceId";
+			public const string VideoAvatar_VoiceName = "VideoAvatar_VoiceName";
+			public const string VideoAvatarProvider_HeyGen = "VideoAvatarProvider_HeyGen";
+			public const string VideoAvatarRole_Campaign = "VideoAvatarRole_Campaign";
+			public const string VideoAvatarRole_Editorial = "VideoAvatarRole_Editorial";
+			public const string VideoAvatarRole_Experimental = "VideoAvatarRole_Experimental";
+			public const string VideoAvatarRole_Primary = "VideoAvatarRole_Primary";
+			public const string VideoAvatarStatus_Archived = "VideoAvatarStatus_Archived";
+			public const string VideoAvatarStatus_Draft = "VideoAvatarStatus_Draft";
+			public const string VideoAvatarStatus_Failed = "VideoAvatarStatus_Failed";
+			public const string VideoAvatarStatus_Preparing = "VideoAvatarStatus_Preparing";
+			public const string VideoAvatarStatus_Ready = "VideoAvatarStatus_Ready";
+			public const string VideoAvatarStatus_WaitingForProvider = "VideoAvatarStatus_WaitingForProvider";
+			public const string VideoProduction_BackgroundMediaResource = "VideoProduction_BackgroundMediaResource";
+			public const string VideoProduction_Description = "VideoProduction_Description";
+			public const string VideoProduction_ErrorMessage = "VideoProduction_ErrorMessage";
+			public const string VideoProduction_FinalVideoMediaResource = "VideoProduction_FinalVideoMediaResource";
+			public const string VideoProduction_Help = "VideoProduction_Help";
+			public const string VideoProduction_LanguageCode = "VideoProduction_LanguageCode";
+			public const string VideoProduction_Locale = "VideoProduction_Locale";
+			public const string VideoProduction_PreviewAudioMediaResource = "VideoProduction_PreviewAudioMediaResource";
+			public const string VideoProduction_Provider = "VideoProduction_Provider";
+			public const string VideoProduction_Script = "VideoProduction_Script";
+			public const string VideoProduction_Status = "VideoProduction_Status";
+			public const string VideoProduction_TargetEntityId = "VideoProduction_TargetEntityId";
+			public const string VideoProduction_TargetEntityName = "VideoProduction_TargetEntityName";
+			public const string VideoProduction_TargetEntityProperty = "VideoProduction_TargetEntityProperty";
+			public const string VideoProduction_TargetEntityType = "VideoProduction_TargetEntityType";
+			public const string VideoProduction_Title = "VideoProduction_Title";
+			public const string VideoProduction_VideoAvatar = "VideoProduction_VideoAvatar";
+			public const string VideoProduction_VideoName = "VideoProduction_VideoName";
+			public const string VideoProduction_VoiceId = "VideoProduction_VoiceId";
+			public const string VideoProduction_VoiceName = "VideoProduction_VoiceName";
+			public const string VideoProductionProvider_HeyGen = "VideoProductionProvider_HeyGen";
+			public const string VideoProductionStatus_Cancelled = "VideoProductionStatus_Cancelled";
+			public const string VideoProductionStatus_Completed = "VideoProductionStatus_Completed";
+			public const string VideoProductionStatus_Draft = "VideoProductionStatus_Draft";
+			public const string VideoProductionStatus_Failed = "VideoProductionStatus_Failed";
+			public const string VideoProductionStatus_GeneratingPreviewAudio = "VideoProductionStatus_GeneratingPreviewAudio";
+			public const string VideoProductionStatus_ImportingToVimeo = "VideoProductionStatus_ImportingToVimeo";
+			public const string VideoProductionStatus_PreparingAvatar = "VideoProductionStatus_PreparingAvatar";
+			public const string VideoProductionStatus_PreviewAudioReady = "VideoProductionStatus_PreviewAudioReady";
+			public const string VideoProductionStatus_ProcessingAtVimeo = "VideoProductionStatus_ProcessingAtVimeo";
+			public const string VideoProductionStatus_ProviderCompleted = "VideoProductionStatus_ProviderCompleted";
+			public const string VideoProductionStatus_Rendering = "VideoProductionStatus_Rendering";
+			public const string VideoProductionStatus_Submitted = "VideoProductionStatus_Submitted";
+			public const string VideoProductionStatus_Submitting = "VideoProductionStatus_Submitting";
+			public const string VideoProductionStatus_UpdatingEntity = "VideoProductionStatus_UpdatingEntity";
+			public const string VideoProductionStatus_UploadingBackground = "VideoProductionStatus_UploadingBackground";
+			public const string VideoProductionStatus_WaitingForAvatar = "VideoProductionStatus_WaitingForAvatar";
 		}
 	}
 }

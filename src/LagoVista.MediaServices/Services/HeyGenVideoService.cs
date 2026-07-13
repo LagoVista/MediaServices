@@ -3,8 +3,11 @@ using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
 using Newtonsoft.Json;
+using RingCentral;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -231,6 +234,166 @@ namespace LagoVista.MediaServices.Services
                 Status = statusResponse.Data.Status,
                 ErrorCode = statusResponse.Data.Error?.Code,
                 ErrorMessage = statusResponse.Data.Error?.Message
+            });
+        }
+
+        public async Task<InvokeResult<HeyGenVoiceListResult>> GetVoicesAsync(HeyGenVoiceListRequest request, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(_settings.HeyGenApiKey))
+            {
+                return InvokeResult<HeyGenVoiceListResult>.FromError("HeyGen API key has not been configured.");
+            }
+
+            var url = BuildVoiceListUrl(request);
+
+            _adminLogger.Trace($"{this.Tag()} Request Url: {url}");
+
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Get, url);
+            httpRequest.Headers.Add("x-api-key", _settings.HeyGenApiKey);
+
+            using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return InvokeResult<HeyGenVoiceListResult>.FromError($"HeyGen voice list request failed with status {(int)response.StatusCode}: {responseContent}");
+            }
+
+            _adminLogger.WriteJson("GetVoicesResponse", responseContent);
+
+            var voiceResponse = JsonConvert.DeserializeObject<HeyGenVoiceListResponse>(responseContent);
+
+            var result = new HeyGenVoiceListResult
+            {
+                HasMore = voiceResponse?.HasMore ?? false,
+                NextToken = voiceResponse?.NextToken
+            };
+
+            if (voiceResponse?.Data != null)
+            {
+                foreach (var voice in voiceResponse.Data)
+                {
+                    var voiceId = string.IsNullOrWhiteSpace(voice.VoiceId) ? voice.Id : voice.VoiceId;
+                    var name = (voice.Name ?? string.Empty).Trim();
+
+                    result.Voices.Add(new HeyGenVoiceSummary
+                    {
+                        VoiceId = voiceId,
+                        Name = string.IsNullOrWhiteSpace(name) ? voiceId : name,
+                        Language = voice.Language,
+                        Locale = voice.Locale,
+                        Gender = voice.Gender,
+                        Accent = voice.Accent,
+                        Age = voice.Age,
+                        Type = voice.Type,
+                        PreviewAudioUrl = voice.PreviewAudioUrl,
+                        SupportInteractiveAvatar= voice.SupportInteractiveAvatar,
+                        SupportLocale = voice.SupportLocale,
+                        SupportPause = voice.SupportPause,
+                        IsPreviewable = !string.IsNullOrWhiteSpace(voice.PreviewAudioUrl)
+                    });
+                }
+            }
+
+            return InvokeResult<HeyGenVoiceListResult>.Create(result);
+        }
+
+        private static string BuildVoiceListUrl(HeyGenVoiceListRequest request)
+        {
+            var query = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(request.Engine))
+            {
+                request.Engine = "starfish";
+            }
+
+            query.Add($"engine={Uri.EscapeDataString(request.Engine)}");
+
+            if (!string.IsNullOrWhiteSpace(request.Type))
+            {
+                query.Add($"type={Uri.EscapeDataString(request.Type)}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Language))
+            {
+                query.Add($"language={Uri.EscapeDataString(request.Language)}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Gender))
+            {
+                query.Add($"gender={Uri.EscapeDataString(request.Gender)}");
+            }
+
+            if (request.Limit.HasValue)
+            {
+                query.Add($"limit={request.Limit.Value}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Token))
+            {
+                query.Add($"token={Uri.EscapeDataString(request.Token)}");
+            }
+
+            return $"v3/voices?{string.Join("&", query)}";
+        }
+
+        public async Task<InvokeResult<HeyGenSpeechPreviewResult>> GenerateSpeechPreviewAsync(HeyGenSpeechPreviewRequest request, CancellationToken cancellationToken = default)
+        {
+            if (request == null)
+            {
+                return InvokeResult<HeyGenSpeechPreviewResult>.FromError("Speech preview request is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.VoiceId))
+            {
+                return InvokeResult<HeyGenSpeechPreviewResult>.FromError("Voice ID is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(request.Text))
+            {
+                return InvokeResult<HeyGenSpeechPreviewResult>.FromError("Preview text is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(_settings.HeyGenApiKey))
+            {
+                return InvokeResult<HeyGenSpeechPreviewResult>.FromError("HeyGen API key has not been configured.");
+            }
+
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "v3/voices/speech");
+            httpRequest.Headers.Add("x-api-key", _settings.HeyGenApiKey);
+
+            var apiRequest = new HeyGenSpeechPreviewApiRequest
+            {
+                VoiceId = request.VoiceId,
+                Text = request.Text,
+                Locale = request.Locale
+            };
+
+            var requestJson = JsonConvert.SerializeObject(apiRequest, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+            httpRequest.Content = new StringContent(requestJson, Encoding.UTF8, "application/json");
+
+            using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return InvokeResult<HeyGenSpeechPreviewResult>.FromError($"HeyGen speech preview request failed with status {(int)response.StatusCode}: {responseContent}");
+            }
+
+            var previewResponse = JsonConvert.DeserializeObject<HeyGenSpeechPreviewResponse>(responseContent);
+            if (string.IsNullOrWhiteSpace(previewResponse?.Data?.AudioUrl))
+            {
+                return InvokeResult<HeyGenSpeechPreviewResult>.FromError("HeyGen speech preview completed without returning an audio URL.");
+            }
+
+            var durationSeconds = previewResponse.Data.DurationSeconds ?? (previewResponse.Data.Duration.HasValue ? (int?)Math.Ceiling(previewResponse.Data.Duration.Value) : null);
+
+            return InvokeResult<HeyGenSpeechPreviewResult>.Create(new HeyGenSpeechPreviewResult
+            {
+                AudioUrl = previewResponse.Data.AudioUrl,
+                DurationSeconds = durationSeconds,
+                EstimatedCost = durationSeconds.HasValue ? Math.Round(durationSeconds.Value * 0.000667m, 4) : (decimal?)null,
+                Currency = "USD"
             });
         }
     }

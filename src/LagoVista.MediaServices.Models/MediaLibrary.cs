@@ -13,12 +13,17 @@ using System.Collections.Generic;
 namespace LagoVista.MediaServices.Models
 {
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaLibrary_Title, MediaServicesResources.Names.MediaLibrary_Help, MediaServicesResources.Names.MediaLibrary_Description, 
-        EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources), Icon: "icon-pz-podcast",
+        EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources), Icon: "lago-icon://system/nuvos-semantic-icon/media-library-default",
         EditUIUrl: "/contentmanagement/medialibrary/{id}", ListUIUrl: "/contentmanagement/medialibraries", CreateUIUrl: "/contentmanagement/medialibrary/add",
         FactoryUrl: "/api/media/library/factory", GetListUrl: "/api/media/libraries", GetUrl: "/api/media/library/{id}", SaveUrl: "/api/media/library", DeleteUrl: "/api/media/library/{id}")]
     public class MediaLibrary : EntityBase, IDescriptionEntity, IValidateable, IFormDescriptor, ISummaryFactory, IIconEntity
     {
         
+        public MediaLibrary()
+        {
+            Icon = "lago-icon://system/nuvos-semantic-icon/media-library-default";
+        }
+
         [FormField(LabelResource: Resources.MediaServicesResources.Names.MediaLibrary_MediaResources, FieldType: FieldTypes.Action, ResourceType: typeof(MediaServicesResources))]
         public string MediaResources { get; set; }
 
@@ -51,7 +56,7 @@ namespace LagoVista.MediaServices.Models
 
 
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaLibraries_Title, MediaServicesResources.Names.MediaLibrary_Help, MediaServicesResources.Names.MediaLibrary_Description,
-        EntityDescriptionAttribute.EntityTypes.Summary, ResourceType: typeof(MediaServicesResources), Icon: "icon-pz-podcast",
+        EntityDescriptionAttribute.EntityTypes.Summary, ResourceType: typeof(MediaServicesResources), Icon: "lago-icon://system/nuvos-semantic-icon/media-library-default",
         FactoryUrl: "/api/media/library/factory", GetListUrl: "/api/media/libraries", GetUrl: "/api/media/library/{id}", SaveUrl: "/api/media/library", DeleteUrl: "/api/media/library/{id}")]
     public class MediaLibrarySummary : SummaryData
     {

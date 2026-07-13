@@ -17,6 +17,10 @@ namespace LagoVista.MediaServices.CloudRepos
         public static void ConfigureServices(IServiceCollection services)
         {
             services.AddTransient<IMediaServicesRepo, MediaServicesRepo>();
+
+            services.AddTransient<IVideoAvatarRepo, VideoAvatarRepo>();
+            services.AddTransient<IVideoProductionRepo, VideoProductionRepo>();
+
             services.AddTransient<IMediaLibraryRepo, MediaLibraryRepo>();
             services.AddTransient<IVideoGenerationRequestStore, VideoGenerationRequestStore>();
             services.AddTransient<IVideoGenerationManager, VideoGenerationManager>();

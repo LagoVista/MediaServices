@@ -16,5 +16,7 @@ namespace LagoVista.MediaServices.Interfaces
         Task<InvokeResult<HeyGenVideoSubmission>> SubmitVideoAsync(HeyGenVideoRequest request, CancellationToken cancellationToken = default);
         Task<InvokeResult<HeyGenAvatarCreationResult>> CreatePhotoAvatarAsync(HeyGenPhotoAvatarRequest request, CancellationToken cancellationToken = default);
         Task<InvokeResult<HeyGenAvatarStatusResult>> GetAvatarStatusAsync(string avatarId, CancellationToken cancellationToken = default);
+        Task<InvokeResult<HeyGenVoiceListResult>> GetVoicesAsync(HeyGenVoiceListRequest request, CancellationToken cancellationToken = default);
+        Task<InvokeResult<HeyGenSpeechPreviewResult>> GenerateSpeechPreviewAsync(HeyGenSpeechPreviewRequest request, CancellationToken cancellationToken = default);
     }
 }

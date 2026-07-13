@@ -416,4 +416,212 @@
   <value>Indicates whether the generated media resource may be accessed publicly.</value>
 </data>
 
+
+  <data name="VideoAvatar_Title" xml:space="preserve">
+  <value>Video Avatar</value>
+</data>
+  <data name="VideoAvatar_Help" xml:space="preserve">
+  <value>Reusable video avatar profile used to generate avatar-based videos.</value>
+</data>
+  <data name="VideoAvatar_Description" xml:space="preserve">
+  <value>Defines a reusable video avatar, source image, provider identity, voice, language, and readiness state.</value>
+</data>
+  <data name="VideoAvatar_SubjectEntity" xml:space="preserve">
+  <value>Subject Entity</value>
+</data>
+  <data name="VideoAvatar_SourceImage" xml:space="preserve">
+  <value>Source Image</value>
+</data>
+  <data name="VideoAvatar_EditorialImage" xml:space="preserve">
+  <value>Editorial Image</value>
+</data>
+  <data name="VideoAvatar_Provider" xml:space="preserve">
+  <value>Provider</value>
+</data>
+  <data name="VideoAvatar_Role" xml:space="preserve">
+  <value>Role</value>
+</data>
+  <data name="VideoAvatar_Status" xml:space="preserve">
+  <value>Status</value>
+</data>
+  <data name="VideoAvatar_ProviderAssetId" xml:space="preserve">
+  <value>Provider Asset ID</value>
+</data>
+  <data name="VideoAvatar_ProviderAvatarId" xml:space="preserve">
+  <value>Provider Avatar ID</value>
+</data>
+  <data name="VideoAvatar_ProviderAvatarStatus" xml:space="preserve">
+  <value>Provider Avatar Status</value>
+</data>
+  <data name="VideoAvatar_VoiceId" xml:space="preserve">
+  <value>Voice ID</value>
+</data>
+  <data name="VideoAvatar_VoiceName" xml:space="preserve">
+  <value>Voice Name</value>
+</data>
+  <data name="VideoAvatar_LanguageCode" xml:space="preserve">
+  <value>Language Code</value>
+</data>
+  <data name="VideoAvatar_Locale" xml:space="preserve">
+  <value>Locale</value>
+</data>
+  <data name="VideoAvatar_IsDefault" xml:space="preserve">
+  <value>Default Avatar</value>
+</data>
+  <data name="VideoAvatar_LastStatusCheckUtc" xml:space="preserve">
+  <value>Last Status Check UTC</value>
+</data>
+  <data name="VideoAvatar_LastUsedUtc" xml:space="preserve">
+  <value>Last Used UTC</value>
+</data>
+  <data name="VideoAvatar_ErrorMessage" xml:space="preserve">
+  <value>Error Message</value>
+</data>
+
+  <data name="VideoAvatarProvider_HeyGen" xml:space="preserve">
+  <value>HeyGen</value>
+</data>
+  <data name="VideoAvatarRole_Primary" xml:space="preserve">
+  <value>Primary</value>
+</data>
+  <data name="VideoAvatarRole_Editorial" xml:space="preserve">
+  <value>Editorial</value>
+</data>
+  <data name="VideoAvatarRole_Campaign" xml:space="preserve">
+  <value>Campaign</value>
+</data>
+  <data name="VideoAvatarRole_Experimental" xml:space="preserve">
+  <value>Experimental</value>
+</data>
+  <data name="VideoAvatarStatus_Draft" xml:space="preserve">
+  <value>Draft</value>
+</data>
+  <data name="VideoAvatarStatus_Preparing" xml:space="preserve">
+  <value>Preparing</value>
+</data>
+  <data name="VideoAvatarStatus_WaitingForProvider" xml:space="preserve">
+  <value>Waiting for Provider</value>
+</data>
+  <data name="VideoAvatarStatus_Ready" xml:space="preserve">
+  <value>Ready</value>
+</data>
+  <data name="VideoAvatarStatus_Failed" xml:space="preserve">
+  <value>Failed</value>
+</data>
+  <data name="VideoAvatarStatus_Archived" xml:space="preserve">
+  <value>Archived</value>
+</data>
+
+  <data name="VideoProduction_Title" xml:space="preserve">
+  <value>Video Production</value>
+</data>
+  <data name="VideoProduction_Help" xml:space="preserve">
+  <value>Durable video composition, generation job, cost record, and output reference.</value>
+</data>
+  <data name="VideoProduction_Description" xml:space="preserve">
+  <value>Defines the script, avatar, voice, background, target entity, generation status, provider identifiers, output media, and cost information for a video production.</value>
+</data>
+  <data name="VideoProduction_VideoAvatar" xml:space="preserve">
+  <value>Video Avatar</value>
+</data>
+  <data name="VideoProduction_BackgroundMediaResource" xml:space="preserve">
+  <value>Background Media Resource</value>
+</data>
+  <data name="VideoProduction_PreviewAudioMediaResource" xml:space="preserve">
+  <value>Preview Audio Media Resource</value>
+</data>
+  <data name="VideoProduction_FinalVideoMediaResource" xml:space="preserve">
+  <value>Final Video Media Resource</value>
+</data>
+  <data name="VideoProduction_Script" xml:space="preserve">
+  <value>Script</value>
+</data>
+  <data name="VideoProduction_VideoName" xml:space="preserve">
+  <value>Video Name</value>
+</data>
+  <data name="VideoProduction_VoiceId" xml:space="preserve">
+  <value>Voice ID</value>
+</data>
+  <data name="VideoProduction_VoiceName" xml:space="preserve">
+  <value>Voice Name</value>
+</data>
+  <data name="VideoProduction_LanguageCode" xml:space="preserve">
+  <value>Language Code</value>
+</data>
+  <data name="VideoProduction_Locale" xml:space="preserve">
+  <value>Locale</value>
+</data>
+  <data name="VideoProduction_TargetEntityType" xml:space="preserve">
+  <value>Target Entity Type</value>
+</data>
+  <data name="VideoProduction_TargetEntityId" xml:space="preserve">
+  <value>Target Entity ID</value>
+</data>
+  <data name="VideoProduction_TargetEntityName" xml:space="preserve">
+  <value>Target Entity Name</value>
+</data>
+  <data name="VideoProduction_TargetEntityProperty" xml:space="preserve">
+  <value>Target Entity Property</value>
+</data>
+  <data name="VideoProduction_Provider" xml:space="preserve">
+  <value>Provider</value>
+</data>
+  <data name="VideoProduction_Status" xml:space="preserve">
+  <value>Status</value>
+</data>
+  <data name="VideoProduction_ErrorMessage" xml:space="preserve">
+  <value>Error Message</value>
+</data>
+
+  <data name="VideoProductionProvider_HeyGen" xml:space="preserve">
+  <value>HeyGen</value>
+</data>
+  <data name="VideoProductionStatus_Draft" xml:space="preserve">
+  <value>Draft</value>
+</data>
+  <data name="VideoProductionStatus_PreparingAvatar" xml:space="preserve">
+  <value>Preparing Avatar</value>
+</data>
+  <data name="VideoProductionStatus_WaitingForAvatar" xml:space="preserve">
+  <value>Waiting for Avatar</value>
+</data>
+  <data name="VideoProductionStatus_GeneratingPreviewAudio" xml:space="preserve">
+  <value>Generating Preview Audio</value>
+</data>
+  <data name="VideoProductionStatus_PreviewAudioReady" xml:space="preserve">
+  <value>Preview Audio Ready</value>
+</data>
+  <data name="VideoProductionStatus_UploadingBackground" xml:space="preserve">
+  <value>Uploading Background</value>
+</data>
+  <data name="VideoProductionStatus_Submitting" xml:space="preserve">
+  <value>Submitting</value>
+</data>
+  <data name="VideoProductionStatus_Submitted" xml:space="preserve">
+  <value>Submitted</value>
+</data>
+  <data name="VideoProductionStatus_Rendering" xml:space="preserve">
+  <value>Rendering</value>
+</data>
+  <data name="VideoProductionStatus_ProviderCompleted" xml:space="preserve">
+  <value>Provider Completed</value>
+</data>
+  <data name="VideoProductionStatus_ImportingToVimeo" xml:space="preserve">
+  <value>Importing to Vimeo</value>
+</data>
+  <data name="VideoProductionStatus_ProcessingAtVimeo" xml:space="preserve">
+  <value>Processing at Vimeo</value>
+</data>
+  <data name="VideoProductionStatus_UpdatingEntity" xml:space="preserve">
+  <value>Updating Entity</value>
+</data>
+  <data name="VideoProductionStatus_Completed" xml:space="preserve">
+  <value>Completed</value>
+</data>
+  <data name="VideoProductionStatus_Failed" xml:space="preserve">
+  <value>Failed</value>
+</data>
+  <data name="VideoProductionStatus_Cancelled" xml:space="preserve">
+  <value>Cancelled</value>
+</data>
 </root>

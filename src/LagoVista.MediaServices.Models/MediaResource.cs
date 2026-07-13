@@ -43,7 +43,7 @@ namespace LagoVista.MediaServices.Models
         MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources),
         EditUIUrl: "/contentmanagement/mediaresource/{id}", ListUIUrl: "/contentmanagement/mediaresources", CreateUIUrl: "/contentmanagement/mediaresource/add",
         FactoryUrl: "/api/media/resource/factory", GetListUrl: "/api/media/library/{libraryid}/resources", GetUrl: "/api/media/resource/{id}", DeleteUrl: "/api/media/resource/{id}",
-        SaveUrl: "/api/media/resource", Icon: "icon-fo-image")]
+        SaveUrl: "/api/media/resource", Icon: "lago-icon://system/nuvos-semantic-icon/media-resource-default")]
     public class MediaResource : EntityBase, IValidateable, IDescriptionEntity, IFormDescriptor, IFormConditionalFields, ISummaryFactory, IFormDescriptorAdvanced, IDiscussable
     {
         public const string DeviceResourceTypes_Manual = "manual";
@@ -61,6 +61,7 @@ namespace LagoVista.MediaServices.Models
 
         public MediaResource()
         {
+            Icon = "lago-icon://system/nuvos-semantic-icon/media-resource-default";
             IsFileUpload = true;
         }
 
@@ -400,8 +401,9 @@ namespace LagoVista.MediaServices.Models
 
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResources_Title, MediaServicesResources.Names.MediaResource_Help,
     MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.Summary, ResourceType: typeof(MediaServicesResources),
+        Icon: "lago-icon://system/nuvos-semantic-icon/media-resource-default",
     FactoryUrl: "/api/media/resource/factory", GetListUrl: "/api/media/library/{libraryid}/resources", GetUrl: "/api/media/resource/{id}", DeleteUrl: "/api/media/resource/{id}",
-    SaveUrl: "/api/media/resource", Icon: "icon-fo-image")]
+    SaveUrl: "/api/media/resource")]
     public class MediaResourceSummary : SummaryData
     {
         public string ResourceType { get; set; }
