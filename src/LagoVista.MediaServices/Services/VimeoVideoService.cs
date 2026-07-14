@@ -1,4 +1,5 @@
 ﻿using LagoVista.Core.Validation;
+using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
 using Newtonsoft.Json;
@@ -14,55 +15,58 @@ namespace LagoVista.MediaServices.Services
     public class VimeoVideoService : IVimeoVideoService
     {
         private readonly HttpClient _httpClient;
+        private readonly IAdminLogger _adminLogger;
 
-        public VimeoVideoService(IHttpClientFactory httpClientFactory)
+
+
+        public VimeoVideoService(IHttpClientFactory httpClientFactory, IAdminLogger adminLogger)
         {
             if (httpClientFactory == null)
             {
                 throw new ArgumentNullException(nameof(httpClientFactory));
             }
 
+            _adminLogger = adminLogger ?? throw new ArgumentNullException(nameof(adminLogger));
             _httpClient = httpClientFactory.CreateClient();
             _httpClient.BaseAddress = new Uri("https://api.vimeo.com/");
         }
 
-        public async Task<InvokeResult<VimeoVideo>> CreatePullUploadAsync(string accessToken, VimeoPullUploadRequest request, CancellationToken cancellationToken = default)
+        public async Task<InvokeResult<VimeoVideo>> CreatePullUploadAsync(string accessToken, VimeoPullUploadRequest uploadRequest, CancellationToken cancellationToken = default)
         {
             if (String.IsNullOrWhiteSpace(accessToken))
             {
-                return InvokeResult<VimeoVideo>.FromError("Vimeo access token is required.");
+                return InvokeResult<VimeoVideo>.FromError("The Vimeo access token is required.");
             }
 
-            if (request == null)
+            if (uploadRequest == null)
             {
-                return InvokeResult<VimeoVideo>.FromError("Vimeo upload request is required.");
+                return InvokeResult<VimeoVideo>.FromError("The Vimeo upload request is required.");
             }
 
-            if (String.IsNullOrWhiteSpace(request.Upload?.Link))
-            {
-                return InvokeResult<VimeoVideo>.FromError("Vimeo pull-upload source URL is required.");
-            }
+            var json = JsonConvert.SerializeObject(uploadRequest);
 
-            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "me/videos");
+            using var request = new HttpRequestMessage(HttpMethod.Post, "me/videos");
 
-            ApplyHeaders(httpRequest, accessToken);
+            request.Headers.Authorization = new AuthenticationHeaderValue("bearer", accessToken.Trim());
+            request.Headers.TryAddWithoutValidation("Accept", "application/vnd.vimeo.*+json;version=3.4");
+            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var json = JsonConvert.SerializeObject(request, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            httpRequest.Content = new StringContent(json, Encoding.UTF8, "application/json");
+            var requestUri = request.RequestUri;
+            _adminLogger.Trace($"{this.Tag()} {requestUri} [{accessToken.Substring(0, 4)}****{accessToken.Substring(accessToken.Length - 4)}]");
 
-            using var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
-            var responseContent = await response.Content.ReadAsStringAsync();
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            var content = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
             {
-                return InvokeResult<VimeoVideo>.FromError($"Vimeo pull upload failed with status {(int)response.StatusCode}: {responseContent}");
+                return InvokeResult<VimeoVideo>.FromError($"Vimeo pull upload failed with status {(int)response.StatusCode}: {content}");
             }
 
-            var video = JsonConvert.DeserializeObject<VimeoVideo>(responseContent);
+            var video = JsonConvert.DeserializeObject<VimeoVideo>(content);
 
-            if (String.IsNullOrWhiteSpace(video?.Uri))
+            if (video == null || String.IsNullOrWhiteSpace(video.Uri))
             {
-                return InvokeResult<VimeoVideo>.FromError("Vimeo accepted the upload without returning a video URI.");
+                return InvokeResult<VimeoVideo>.FromError("Vimeo accepted the upload request but did not return a video URI.");
             }
 
             return InvokeResult<VimeoVideo>.Create(video);

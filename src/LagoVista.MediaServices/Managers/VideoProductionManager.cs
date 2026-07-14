@@ -3,6 +3,7 @@ using LagoVista.Core.Interfaces;
 using LagoVista.Core.Managers;
 using LagoVista.Core.Models;
 using LagoVista.Core.Models.UIMetaData;
+using LagoVista.Core.PlatformSupport;
 using LagoVista.Core.Validation;
 using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Interfaces;
@@ -30,8 +31,13 @@ namespace LagoVista.MediaServices.Managers
         private readonly IVimeoVideoService _vimeoVideoService;
         private readonly IOrganizationLoaderRepo _organizationLoaderRepo;
         private readonly ISecureStorage _secureStorage;
+
+        private static readonly TimeSpan VimeoStatusPollingInterval = TimeSpan.FromSeconds(20);
+        private static readonly TimeSpan VimeoStatusPollingTimeout = TimeSpan.FromMinutes(30);
+
         private static readonly TimeSpan WebhookProcessingLockDuration = TimeSpan.FromMinutes(2);
         private static readonly TimeSpan WebhookReceiptDuration = TimeSpan.FromDays(14);
+        private readonly ILogger _logger;
 
 
         public VideoProductionManager(IVideoProductionRepo repo, IVideoAvatarManager videoAvatarManager, IHeyGenVideoService heyGenVideoService, IVimeoVideoService vimeoVideoService, IOrganizationLoaderRepo organizationLoaderRepo, ISecureStorage secureStorage, ICacheProvider cacheProvider, ICoreAppServices coreAppServices) : base(coreAppServices)
@@ -46,6 +52,7 @@ namespace LagoVista.MediaServices.Managers
             _webhookSecretOwner = coreAppServices.AppConfig.SystemOwnerOrg;
             _cacheProvider = cacheProvider ?? throw new ArgumentNullException(nameof(cacheProvider));
 
+            _logger = coreAppServices.Logger ?? throw new ArgumentNullException(nameof(coreAppServices.Logger));
             var siteUrl = coreAppServices.AppConfig.Environment == Environments.LocalDevelopment || coreAppServices.AppConfig.Environment == Environments.Development ? "https://dev.nuviot.com" : coreAppServices.AppConfig.WebAddress;
 
             _heyGenWebhookCallbackUrl = $"{siteUrl.TrimEnd('/')}{HeyGenWebhookPath}";
@@ -190,7 +197,7 @@ namespace LagoVista.MediaServices.Managers
 
             if (!String.IsNullOrWhiteSpace(settings.DefaultFolderUri))
             {
-                var folderResult = await _vimeoVideoService.AddVideoToFolderAsync(settings.AccessToken, settings.DefaultFolderUri, production.VimeoVideoUri, cancellationToken);
+                var folderResult = await _vimeoVideoService.AddVideoToFolderAsync(production.VimeoVideoUri, settings.DefaultFolderUri, settings.AccessToken, cancellationToken);
                 if (!folderResult.Successful)
                 {
                     production.ErrorMessage = folderResult.Errors[0].Message;
@@ -209,6 +216,117 @@ namespace LagoVista.MediaServices.Managers
                 await _repo.UpdateVideoProductionAsync(production);
                 await PublishVideoProductionUpdatedAsync(production);
             }
+
+            await _repo.UpdateVideoProductionAsync(production);
+            await PublishVideoProductionUpdatedAsync(production);
+
+            QueueVimeoStatusPolling(production.Id, org, user);
+
+            return InvokeResult<VideoProduction>.Create(production);
+        }
+
+        private void QueueVimeoStatusPolling(string productionId, EntityHeader org, EntityHeader user)
+        {
+            if (String.IsNullOrWhiteSpace(productionId))
+            {
+                return;
+            }
+
+            BackgroundServiceTaskQueueProvider.Instance.QueueBackgroundWorkItemAsync(async cancellationToken =>
+            {
+                var startedUtc = DateTime.UtcNow;
+
+                while (DateTime.UtcNow - startedUtc < VimeoStatusPollingTimeout)
+                {
+                    await Task.Delay(VimeoStatusPollingInterval, cancellationToken);
+
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var production = await _repo.GetVideoProductionAsync(productionId);
+                    if (production == null)
+                    {
+                        return;
+                    }
+
+                    if (IsTerminalVideoProductionStatus(production.Status))
+                    {
+                        return;
+                    }
+
+                    if (String.IsNullOrWhiteSpace(production.VimeoVideoUri))
+                    {
+                        return;
+                    }
+
+                    var refreshResult = await RefreshVimeoStatusCoreAsync(production, org, user, cancellationToken);
+                    if (!refreshResult.Successful || refreshResult.Result == null)
+                    {
+                        continue;
+                    }
+
+                    if (IsTerminalVideoProductionStatus(refreshResult.Result.Status))
+                    {
+                        return;
+                    }
+                }
+
+                var timedOutProduction = await _repo.GetVideoProductionAsync(productionId);
+                if (timedOutProduction == null || IsTerminalVideoProductionStatus(timedOutProduction.Status))
+                {
+                    return;
+                }
+
+                timedOutProduction.LastStatusCheckUtc = UtcTimestamp.Now;
+
+                await _repo.UpdateVideoProductionAsync(timedOutProduction);
+                await PublishVideoProductionUpdatedAsync(timedOutProduction);
+            });
+        }
+
+        private static bool IsTerminalVideoProductionStatus(EntityHeader<VideoProductionStatus> status)
+        {
+            if (status == null)
+            {
+                return false;
+            }
+
+            return status.Value == VideoProductionStatus.Completed ||
+                   status.Value == VideoProductionStatus.Failed ||
+                   status.Value == VideoProductionStatus.Cancelled;
+        }
+
+        private async Task<InvokeResult<VideoProduction>> RefreshVimeoStatusCoreAsync(VideoProduction production, EntityHeader org, EntityHeader user, CancellationToken cancellationToken)
+        {
+            if (production == null)
+            {
+                return InvokeResult<VideoProduction>.FromError("Video production is required.");
+            }
+
+            if (String.IsNullOrWhiteSpace(production.VimeoVideoUri))
+            {
+                return InvokeResult<VideoProduction>.FromError("The video production does not have a Vimeo video URI.");
+            }
+
+            var settingsResult = await ResolveVimeoTenantSettingsAsync(org, user);
+            if (!settingsResult.Successful)
+            {
+                return settingsResult.ToInvokeResult<VideoProduction>();
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var statusResult = await _vimeoVideoService.GetVideoAsync(settingsResult.Result.AccessToken, production.VimeoVideoUri, cancellationToken);
+            if (!statusResult.Successful)
+            {
+                return statusResult.ToInvokeResult<VideoProduction>();
+            }
+
+            ApplyVimeoStatus(production, statusResult.Result);
+
+            production.LastStatusCheckUtc = UtcTimestamp.Now;
+
+            await _repo.UpdateVideoProductionAsync(production);
+            await PublishVideoProductionUpdatedAsync(production);
 
             return InvokeResult<VideoProduction>.Create(production);
         }
@@ -233,7 +351,7 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<VideoProduction>.Create(production);
             }
 
-            var folderResult = await _vimeoVideoService.AddVideoToFolderAsync(settings.AccessToken, settings.DefaultFolderUri, production.VimeoVideoUri, cancellationToken);
+            var folderResult = await _vimeoVideoService.AddVideoToFolderAsync(production.VimeoVideoUri, settings.DefaultFolderUri, settings.AccessToken, cancellationToken);
             if (!folderResult.Successful)
             {
                 production.ErrorMessage = folderResult.Errors[0].Message;
@@ -605,34 +723,7 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<VideoProduction>.FromError("The video production does not have a Vimeo video URI.");
             }
 
-            var settingsResult = await ResolveVimeoTenantSettingsAsync(org, user);
-            if (!settingsResult.Successful)
-            {
-                return settingsResult.ToInvokeResult<VideoProduction>();
-            }
-
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var statusResult = await _vimeoVideoService.GetVideoAsync(settingsResult.Result.AccessToken, production.VimeoVideoUri, cancellationToken);
-            if (!statusResult.Successful)
-            {
-                production.LastStatusCheckUtc = UtcTimestamp.Now;
-                production.ErrorMessage = statusResult.Errors[0].Message;
-
-                await _repo.UpdateVideoProductionAsync(production);
-                await PublishVideoProductionUpdatedAsync(production);
-
-                return statusResult.ToInvokeResult<VideoProduction>();
-            }
-
-            ApplyVimeoStatus(production, statusResult.Result);
-
-            production.LastStatusCheckUtc = UtcTimestamp.Now;
-
-            await _repo.UpdateVideoProductionAsync(production);
-            await PublishVideoProductionUpdatedAsync(production);
-
-            return InvokeResult<VideoProduction>.Create(production);
+            return await RefreshVimeoStatusCoreAsync(production, org, user, cancellationToken);
         }
 
         private static void ApplyVimeoStatus(VideoProduction production, VimeoVideo video)
@@ -878,6 +969,7 @@ namespace LagoVista.MediaServices.Managers
         private async Task PublishVideoProductionUpdatedAsync(VideoProduction production)
         {
             await _notificationPublisher.PublishAsync(Targets.WebSocket, Channels.Entity, production.Id, "video-production-updated", production);
+            await _notificationPublisher.PublishAsync(Targets.WebSocket, Channels.Org, production.OwnerOrganization.Id, "video-production-updated", production);
         }
 
         private static int EstimateDurationSeconds(string script, int wordsPerMinute = 150)

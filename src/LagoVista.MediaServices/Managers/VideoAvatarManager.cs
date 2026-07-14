@@ -433,6 +433,7 @@ namespace LagoVista.MediaServices.Managers
         private async Task PublishAvatarUpdatedAsync(VideoAvatar avatar)
         {
             await _notificationPublisher.PublishAsync(Targets.WebSocket, Channels.Entity, avatar.Id, "video-avatar-updated", avatar);
+            await _notificationPublisher.PublishAsync(Targets.WebSocket, Channels.Org, avatar.OwnerOrganization.Id, "video-avatar-updated", avatar);
         }
 
         private static void NormalizeVoices(VideoAvatar avatar)
