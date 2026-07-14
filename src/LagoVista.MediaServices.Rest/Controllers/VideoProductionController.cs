@@ -5,11 +5,13 @@ using LagoVista.IoT.Logging.Loggers;
 using LagoVista.IoT.Web.Common.Attributes;
 using LagoVista.IoT.Web.Common.Controllers;
 using LagoVista.MediaServices.Interfaces;
+using LagoVista.MediaServices.Managers;
 using LagoVista.MediaServices.Models;
 using LagoVista.UserAdmin.Models.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace LagoVista.MediaServices.Rest.Controllers
@@ -90,6 +92,18 @@ namespace LagoVista.MediaServices.Rest.Controllers
         public Task<InvokeResult<VideoProduction>> RefreshVideoProductionStatusAsync(string id)
         {
             return _manager.RefreshVideoProductionStatusAsync(id, OrgEntityHeader, UserEntityHeader);
+        }
+
+        [HttpPost("/api/media/videoproduction/{id}/vimeo/publish")]
+        public Task<InvokeResult<VideoProduction>> PublishVideoProductionToVimeoAsync(string id, CancellationToken cancellationToken = default)
+        {
+            return _manager.PublishVideoProductionToVimeoAsync(id, OrgEntityHeader, UserEntityHeader, cancellationToken);
+        }
+
+        [HttpPost("/api/media/videoproduction/{id}/vimeo/refresh")]
+        public Task<InvokeResult<VideoProduction>> RefreshVimeoVideoProductionStatusAsync(string id, CancellationToken cancellationToken = default)
+        {
+            return _manager.RefreshVimeoVideoProductionStatusAsync(id, OrgEntityHeader, UserEntityHeader, cancellationToken);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 
 namespace LagoVista.MediaServices.Services
@@ -239,5 +240,216 @@ namespace LagoVista.MediaServices.Services
 
         [JsonProperty("duration")]
         public decimal? Duration { get; set; }
+    }
+
+    public sealed class HeyGenWebhookEvent
+    {
+        [JsonProperty("event_id")]
+        public string EventId { get; set; }
+
+        [JsonProperty("event_type")]
+        public string EventType { get; set; }
+
+        [JsonProperty("event_data")]
+        public JObject EventData { get; set; }
+
+        [JsonProperty("created_at")]
+        public string CreatedAt { get; set; }
+    }
+
+    public sealed class HeyGenVideoWebhookData
+    {
+        [JsonProperty("video_id")]
+        public string VideoId { get; set; }
+
+        [JsonProperty("callback_id")]
+        public string CallbackId { get; set; }
+
+        [JsonProperty("url")]
+        public string VideoUrl { get; set; }
+
+        [JsonProperty("gif_download_url")]
+        public string GifDownloadUrl { get; set; }
+
+        [JsonProperty("video_page_url")]
+        public string VideoPageUrl { get; set; }
+
+        [JsonProperty("video_share_page_url")]
+        public string VideoSharePageUrl { get; set; }
+
+        [JsonProperty("error")]
+        public JToken Error { get; set; }
+
+        [JsonProperty("error_code")]
+        public string ErrorCode { get; set; }
+
+        [JsonProperty("error_message")]
+        public string ErrorMessage { get; set; }
+
+        [JsonProperty("message")]
+        public string Message { get; set; }
+    }
+
+    public class HeyGenVideoDetailsResponse
+    {
+        [JsonProperty("data")]
+        public HeyGenVideoDetails Data { get; set; }
+    }
+
+    public class HeyGenVideoDetails
+    {
+        [JsonProperty("video_id")]
+        public string VideoId { get; set; }
+
+        [JsonProperty("status")]
+        public string Status { get; set; }
+
+        [JsonProperty("video_url")]
+        public string VideoUrl { get; set; }
+
+        [JsonProperty("thumbnail_url")]
+        public string ThumbnailUrl { get; set; }
+
+        [JsonProperty("duration")]
+        public decimal? Duration { get; set; }
+
+        [JsonProperty("failure_code")]
+        public string FailureCode { get; set; }
+
+        [JsonProperty("failure_message")]
+        public string FailureMessage { get; set; }
+    }
+
+    public class VimeoPullUploadRequest
+    {
+        [JsonProperty("upload")]
+        public VimeoPullUploadSource Upload { get; set; }
+
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonProperty("description")]
+        public string Description { get; set; }
+
+        [JsonProperty("privacy")]
+        public VimeoPrivacySettings Privacy { get; set; }
+    }
+
+    public class VimeoPullUploadSource
+    {
+        [JsonProperty("approach")]
+        public string Approach { get; set; } = "pull";
+
+        [JsonProperty("link")]
+        public string Link { get; set; }
+    }
+
+    public class VimeoPrivacySettings
+    {
+        [JsonProperty("view")]
+        public string View { get; set; }
+    }
+
+    public class VimeoVideo
+    {
+        [JsonProperty("uri")]
+        public string Uri { get; set; }
+
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonProperty("link")]
+        public string Link { get; set; }
+
+        [JsonProperty("upload")]
+        public VimeoUploadState Upload { get; set; }
+
+        [JsonProperty("transcode")]
+        public VimeoTranscodeState Transcode { get; set; }
+    }
+
+    public class VimeoUploadState
+    {
+        [JsonProperty("approach")]
+        public string Approach { get; set; }
+
+        [JsonProperty("status")]
+        public string Status { get; set; }
+
+        [JsonProperty("error")]
+        public string Error { get; set; }
+    }
+
+    public class VimeoTranscodeState
+    {
+        [JsonProperty("status")]
+        public string Status { get; set; }
+    }
+
+    public class VimeoTenantSettings
+    {
+        public string AccessToken { get; set; }
+
+        public string DefaultFolderUri { get; set; }
+
+        public string DefaultPrivacy { get; set; }
+    }
+
+    public class HeyGenVideoStatusResponse
+    {
+        [JsonProperty("data")]
+        public HeyGenVideoStatusData Data { get; set; }
+    }
+
+    public class HeyGenVideoStatusData
+    {
+        [JsonProperty("video_id")]
+        public string VideoId { get; set; }
+
+        [JsonProperty("status")]
+        public string Status { get; set; }
+
+        [JsonProperty("video_url")]
+        public string VideoUrl { get; set; }
+
+        [JsonProperty("thumbnail_url")]
+        public string ThumbnailUrl { get; set; }
+
+        [JsonProperty("caption_url")]
+        public string CaptionUrl { get; set; }
+
+        [JsonProperty("duration")]
+        public decimal? DurationSeconds { get; set; }
+
+        [JsonProperty("error")]
+        public HeyGenVideoStatusError Error { get; set; }
+    }
+
+    public class HeyGenVideoStatusError
+    {
+        [JsonProperty("code")]
+        public string Code { get; set; }
+
+        [JsonProperty("message")]
+        public string Message { get; set; }
+    }
+
+    public class HeyGenVideoStatusResult
+    {
+        public string VideoId { get; set; }
+
+        public string Status { get; set; }
+
+        public string VideoUrl { get; set; }
+
+        public string ThumbnailUrl { get; set; }
+
+        public string CaptionUrl { get; set; }
+
+        public decimal? DurationSeconds { get; set; }
+
+        public string ErrorCode { get; set; }
+
+        public string ErrorMessage { get; set; }
     }
 }

@@ -4,6 +4,7 @@ using LagoVista.Core.Interfaces;
 using LagoVista.Core.Models.UIMetaData;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -64,6 +65,51 @@ namespace LagoVista.MediaServices.CloudRepos
         public Task UpdateVideoProductionAsync(VideoProduction production)
         {
             return UpsertDocumentAsync(production);
+        }
+
+        public async Task<VideoProduction> GetVideoProductionByProviderVideoIdAsync(string providerVideoId)
+        {
+            if (String.IsNullOrWhiteSpace(providerVideoId))
+            {
+                throw new ArgumentNullException(nameof(providerVideoId));
+            }
+
+            var productions = await QueryAsync(production => production.ProviderVideoId == providerVideoId);
+
+            return productions.SingleOrDefault();
+        }
+
+        public async Task<VideoProduction> UpdateVideoProductionProviderStateAsync(string id, VideoProductionProviderState state)
+        {
+            if (String.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (state == null)
+            {
+                throw new ArgumentNullException(nameof(state));
+            }
+
+            var production = await GetVideoProductionAsync(id);
+
+            if (production == null)
+            {
+                throw new InvalidOperationException($"Could not find video production '{id}'.");
+            }
+
+            production.ProviderVideoUrl = state.ProviderVideoUrl;
+            production.ProviderThumbnailUrl = state.ProviderThumbnailUrl;
+            production.ProviderCaptionUrl = state.ProviderCaptionUrl;
+            production.ActualDurationSeconds = state.ActualDurationSeconds;
+            production.Status = state.Status;
+            production.CompletedUtc = state.CompletedUtc;
+            production.LastStatusCheckUtc = state.LastStatusCheckUtc;
+            production.ErrorMessage = state.ErrorMessage;
+
+            await UpdateVideoProductionAsync(production);
+
+            return production;
         }
     }
 }

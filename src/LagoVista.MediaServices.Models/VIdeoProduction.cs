@@ -159,6 +159,8 @@ namespace LagoVista.MediaServices.Models
         public string ProviderThumbnailUrl { get; set; }
         public string ProviderCaptionUrl { get; set; }
 
+        public string VimeoFolderUri { get; set; }
+        public string VimeoFolderAssignedUtc { get; set; }
         public string VimeoVideoId { get; set; }
         public string VimeoVideoUri { get; set; }
         public string VimeoVideoUrl { get; set; }

@@ -1,5 +1,6 @@
 ﻿using LagoVista.CloudStorage.DocumentDB;
 using LagoVista.CloudStorage.Interfaces;
+using LagoVista.CloudStorage.Storage;
 using LagoVista.Core.Interfaces;
 using LagoVista.Core.Models.UIMetaData;
 using LagoVista.MediaServices.Interfaces;
@@ -13,8 +14,12 @@ namespace LagoVista.MediaServices.CloudRepos
 {
     public class VideoAvatarRepo : DocumentDBRepoBase<VideoAvatar>, IVideoAvatarRepo
     {
+        private readonly ICacheProvider _cacheProvider;
+        private static readonly TimeSpan ProviderCreationLockDuration = TimeSpan.FromMinutes(5);
+
         public VideoAvatarRepo(IMediaServicesConnectionSettings settings, IDocumentCloudCachedServices services) : base(settings.MediaLibraryConnection.Uri, settings.MediaLibraryConnection.AccessKey, settings.MediaLibraryConnection.ResourceName, services)
         {
+            _cacheProvider = services?.CacheProvider ?? throw new ArgumentNullException(nameof(services.CacheProvider));
         }
 
         public Task AddVideoAvatarAsync(VideoAvatar avatar)
@@ -25,6 +30,36 @@ namespace LagoVista.MediaServices.CloudRepos
         public Task DeleteVideoAvatarAsync(string id)
         {
             return DeleteDocumentAsync(id);
+        }
+
+        public Task<bool> AttemptAcquireProviderCreationLockAsync(string avatarId, string token)
+        {
+            if (String.IsNullOrWhiteSpace(avatarId))
+            {
+                throw new ArgumentNullException(nameof(avatarId));
+            }
+
+            if (String.IsNullOrWhiteSpace(token))
+            {
+                throw new ArgumentNullException(nameof(token));
+            }
+
+            return _cacheProvider.AttemptAcquireLockAsync(CreateProviderCreationLockKey(avatarId), token, ProviderCreationLockDuration);
+        }
+
+        public async Task ReleaseProviderCreationLockAsync(string avatarId, string token)
+        {
+            if (String.IsNullOrWhiteSpace(avatarId) || String.IsNullOrWhiteSpace(token))
+            {
+                return;
+            }
+
+            await _cacheProvider.ReleaseLockAsync(CreateProviderCreationLockKey(avatarId), token);
+        }
+
+        private static string CreateProviderCreationLockKey(string avatarId)
+        {
+            return $"video-avatar:provider-create:{avatarId}".ToLowerInvariant();
         }
 
         public Task<VideoAvatar> GetVideoAvatarAsync(string id)
@@ -59,9 +94,68 @@ namespace LagoVista.MediaServices.CloudRepos
             return (await QueryAsync(avatar => avatar.Key == key && (avatar.OwnerOrganization.Id == orgId || avatar.IsPublic))).Any();
         }
 
-        public Task UpdateVideoAvatarAsync(VideoAvatar avatar)
+        public async Task<VideoAvatar> UpdateVideoAvatarAsync(VideoAvatar source)
         {
-            return UpsertDocumentAsync(avatar);
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            var current = await GetVideoAvatarAsync(source.Id);
+
+            if (current == null)
+            {
+                throw new InvalidOperationException($"Could not find video avatar '{source.Id}'.");
+            }
+
+            ApplyUserEditableFields(source, current);
+
+            await UpsertDocumentAsync(current);
+
+            return current;
+        }
+
+        public async Task<VideoAvatar> UpdateVideoAvatarProviderStateAsync(string id, VideoAvatarProviderState state)
+        {
+            if (String.IsNullOrWhiteSpace(id))
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
+            if (state == null)
+            {
+                throw new ArgumentNullException(nameof(state));
+            }
+
+            var avatar = await GetVideoAvatarAsync(id);
+
+            if (avatar == null)
+            {
+                throw new InvalidOperationException($"Could not find video avatar '{id}'.");
+            }
+
+            avatar.ProviderAssetId = state.ProviderAssetId;
+            avatar.ProviderAvatarId = state.ProviderAvatarId;
+            avatar.ProviderAvatarStatus = state.ProviderAvatarStatus;
+            avatar.Status = state.Status;
+            avatar.ErrorMessage = state.ErrorMessage;
+            avatar.LastStatusCheck = state.LastStatusCheck;
+
+            await UpsertDocumentAsync(avatar);
+
+            return avatar;
+        }
+
+        private static void ApplyUserEditableFields(VideoAvatar source, VideoAvatar target)
+        {
+            target.Name = source.Name;
+            target.Key = source.Key;
+            target.IsDefault = source.IsDefault;
+            target.Icon = source.Icon;
+            target.Description = source.Description;
+            target.AvatarImage = source.AvatarImage;
+            target.EditorialImages = source.EditorialImages;
+            target.Voices = source.Voices;
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using LagoVista.Core.Models;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -94,5 +95,25 @@ namespace LagoVista.MediaServices.Models
         public string ErrorMessage { get; set; }
 
         public bool IsReady => string.Equals(Status, "completed", StringComparison.OrdinalIgnoreCase);
+    }
+
+
+    public sealed class VideoProductionProviderState
+    {
+        public string ProviderVideoUrl { get; set; }
+
+        public string ProviderThumbnailUrl { get; set; }
+
+        public string ProviderCaptionUrl { get; set; }
+
+        public int? ActualDurationSeconds { get; set; }
+
+        public EntityHeader<VideoProductionStatus> Status { get; set; }
+
+        public string CompletedUtc { get; set; }
+
+        public string LastStatusCheckUtc { get; set; }
+
+        public string ErrorMessage { get; set; }
     }
 }

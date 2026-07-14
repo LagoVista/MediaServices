@@ -19,5 +19,7 @@ namespace LagoVista.MediaServices.Interfaces
         Task<IEnumerable<VideoProduction>> GetFullVideoProductionsForTargetAsync(string targetEntityType, string targetEntityId, string orgId);
         Task<IEnumerable<VideoProduction>> GetVideoProductionsByProviderVideoIdAsync(string providerVideoId, string orgId);
         Task<bool> QueryKeyInUseAsync(string key, string orgId);
+        Task<VideoProduction> GetVideoProductionByProviderVideoIdAsync(string providerVideoId);
+        Task<VideoProduction> UpdateVideoProductionProviderStateAsync(string id, VideoProductionProviderState state);
     }
 }

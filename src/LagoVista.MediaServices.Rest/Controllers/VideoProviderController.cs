@@ -24,16 +24,16 @@ namespace LagoVista.MediaServices.Rest.Controllers
         }
 
         [HttpGet("/api/media/video/providers/heygen/voices")]
-        public Task<InvokeResult<HeyGenVoiceListResult>> GetHeyGenVoicesAsync([FromQuery] string language, [FromQuery] string gender, [FromQuery] string type, [FromQuery] string pageToken)
+        public Task<InvokeResult<HeyGenVoiceListResult>> GetHeyGenVoicesAsync([FromQuery] string language, [FromQuery] string gender, [FromQuery] string type, [FromQuery] string token, [FromQuery] string engine)
         {
             var request = new HeyGenVoiceListRequest
             {
-                Engine = "starfish",
+                Engine = engine,
                 Language = language,
                 Gender = gender,
                 Type = type,
-                Token = pageToken,
-                Limit = 100
+                Token = token,
+                Limit = 50
             };
 
             return _heyGenVideoService.GetVoicesAsync(request);

@@ -46,14 +46,14 @@ namespace LagoVista.MediaServices.Rest.Controllers
         }
 
         [HttpPost("/api/media/videoavatar")]
-        public Task<InvokeResult> AddVideoAvatarAsync([FromBody] VideoAvatar avatar)
+        public Task<InvokeResult<VideoAvatar>> AddVideoAvatarAsync([FromBody] VideoAvatar avatar)
         {
             SetAuditProperties(avatar);
             return _manager.AddVideoAvatarAsync(avatar, OrgEntityHeader, UserEntityHeader);
         }
 
         [HttpPut("/api/media/videoavatar")]
-        public Task<InvokeResult> UpdateVideoAvatarAsync([FromBody] VideoAvatar avatar)
+        public Task<InvokeResult<VideoAvatar>> UpdateVideoAvatarAsync([FromBody] VideoAvatar avatar)
         {
             SetUpdatedProperties(avatar);
             return _manager.UpdateVideoAvatarAsync(avatar, OrgEntityHeader, UserEntityHeader);

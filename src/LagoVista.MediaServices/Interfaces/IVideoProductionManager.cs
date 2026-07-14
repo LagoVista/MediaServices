@@ -2,9 +2,11 @@
 using LagoVista.Core.Models.UIMetaData;
 using LagoVista.Core.Validation;
 using LagoVista.MediaServices.Models;
+using LagoVista.MediaServices.Services;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace LagoVista.MediaServices.Interfaces
@@ -20,5 +22,8 @@ namespace LagoVista.MediaServices.Interfaces
         Task<InvokeResult<VideoProduction>> GeneratePreviewAudioAsync(string id, EntityHeader org, EntityHeader user);
         Task<InvokeResult<VideoProduction>> SubmitVideoProductionAsync(string id, EntityHeader org, EntityHeader user);
         Task<InvokeResult<VideoProduction>> RefreshVideoProductionStatusAsync(string id, EntityHeader org, EntityHeader user);
+        Task<InvokeResult<VideoProduction>> ProcessHeyGenWebhookAsync(HeyGenWebhookEvent webhookEvent, CancellationToken cancellationToken = default);
+        Task<InvokeResult<VideoProduction>> PublishVideoProductionToVimeoAsync(string id, EntityHeader org, EntityHeader user, CancellationToken cancellationToken = default);
+        Task<InvokeResult<VideoProduction>> RefreshVimeoVideoProductionStatusAsync(string id, EntityHeader org, EntityHeader user, CancellationToken cancellationToken = default);
     }
 }
