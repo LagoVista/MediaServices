@@ -68,11 +68,18 @@ namespace LagoVista.VideoAssembly
             }
 
             var executionOptions = request.ExecutionOptions ?? new VideoAssemblyExecutionOptions();
+            if (executionOptions.UploadToAzure) ValidateAzureDestination(request.AzureVideoDestination, errors);
+            if (executionOptions.GenerateThumbnail) ValidateThumbnail(request.Thumbnail, errors);
+
             if (executionOptions.UploadToVimeo)
             {
                 if (request.VimeoUpload == null)
                 {
                     errors.Add("VimeoUpload is required when UploadToVimeo is enabled.");
+                }
+                else if (String.IsNullOrWhiteSpace(request.VimeoUpload.MediaResourceId))
+                {
+                    errors.Add("VimeoUpload.MediaResourceId is required when UploadToVimeo is enabled.");
                 }
                 else if (!String.IsNullOrWhiteSpace(request.VimeoUpload.UploadUrl))
                 {
@@ -142,6 +149,50 @@ namespace LagoVista.VideoAssembly
             if (label.VisibleDurationSeconds.HasValue && label.VisibleDurationSeconds.Value <= 0) errors.Add($"{prefix}.VisibleDurationSeconds must be greater than zero when supplied.");
             if (label.FadeInSeconds < 0) errors.Add($"{prefix}.FadeInSeconds cannot be negative.");
             if (label.FadeOutSeconds < 0) errors.Add($"{prefix}.FadeOutSeconds cannot be negative.");
+        }
+
+        private static void ValidateAzureDestination(VideoMediaImportDestination destination, List<string> errors)
+        {
+            if (destination == null)
+            {
+                errors.Add("AzureVideoDestination is required when UploadToAzure is enabled.");
+                return;
+            }
+
+            if (String.IsNullOrWhiteSpace(destination.MediaResourceId)) errors.Add("AzureVideoDestination.MediaResourceId is required.");
+            ValidateUrl(errors, destination.UploadUrl, "AzureVideoDestination.UploadUrl");
+            if (String.IsNullOrWhiteSpace(destination.StorageReferenceName)) errors.Add("AzureVideoDestination.StorageReferenceName is required.");
+            if (String.IsNullOrWhiteSpace(destination.FileName)) errors.Add("AzureVideoDestination.FileName is required.");
+            if (String.IsNullOrWhiteSpace(destination.ContentType)) errors.Add("AzureVideoDestination.ContentType is required.");
+        }
+
+        private static void ValidateThumbnail(VideoMediaImportThumbnail thumbnail, List<string> errors)
+        {
+            if (thumbnail == null)
+            {
+                errors.Add("Thumbnail is required when GenerateThumbnail is enabled.");
+                return;
+            }
+
+            if (!thumbnail.Enabled)
+            {
+                errors.Add("Thumbnail.Enabled must be true when GenerateThumbnail is enabled.");
+                return;
+            }
+
+            if (thumbnail.TimeSeconds.HasValue && thumbnail.TimeSeconds.Value < 0) errors.Add("Thumbnail.TimeSeconds cannot be negative.");
+
+            if (thumbnail.Destination == null)
+            {
+                errors.Add("Thumbnail.Destination is required when GenerateThumbnail is enabled.");
+                return;
+            }
+
+            if (String.IsNullOrWhiteSpace(thumbnail.Destination.MediaResourceId)) errors.Add("Thumbnail.Destination.MediaResourceId is required.");
+            ValidateUrl(errors, thumbnail.Destination.UploadUrl, "Thumbnail.Destination.UploadUrl");
+            if (String.IsNullOrWhiteSpace(thumbnail.Destination.StorageReferenceName)) errors.Add("Thumbnail.Destination.StorageReferenceName is required.");
+            if (String.IsNullOrWhiteSpace(thumbnail.Destination.FileName)) errors.Add("Thumbnail.Destination.FileName is required.");
+            if (String.IsNullOrWhiteSpace(thumbnail.Destination.ContentType)) errors.Add("Thumbnail.Destination.ContentType is required.");
         }
 
         private static void ValidateLimits(VideoAssemblyLimits limits, List<string> errors)

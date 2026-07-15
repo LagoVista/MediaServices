@@ -69,6 +69,7 @@ namespace LagoVista.VideoAssembly
         {
             await FlushAsync();
             var callback = CreateCallback(VideoAssemblyCallbackType.Completed, VideoAssemblyStage.Completed, "Video assembly completed.");
+            callback.Outputs = result?.Outputs ?? new System.Collections.Generic.List<VideoProcessorOutputArtifact>();
             callback.VimeoVideoUri = result?.VimeoVideoUri;
             callback.VimeoVideoId = result?.VimeoVideoId;
             callback.OutputSizeBytes = result?.OutputSizeBytes;

@@ -18,17 +18,21 @@ namespace LagoVista.VideoAssembly
         private readonly FfprobeMediaInspectionService _inspectionService;
         private readonly ProcessRunner _processRunner;
         private readonly AssSubtitleDocumentBuilder _subtitleBuilder;
+        private readonly AzureBlobSasUploader _azureBlobSasUploader;
+        private readonly VideoThumbnailExtractor _thumbnailExtractor;
         private readonly VimeoUploadSessionClient _vimeoUploadSessionClient;
         private readonly TusVideoUploader _tusVideoUploader;
         private readonly VideoAssemblyOptions _options;
 
-        public FfmpegVideoAssemblyService(VideoAssemblyWorkspaceFactory workspaceFactory, VideoAssemblySourceDownloader sourceDownloader, FfprobeMediaInspectionService inspectionService, ProcessRunner processRunner, AssSubtitleDocumentBuilder subtitleBuilder, VimeoUploadSessionClient vimeoUploadSessionClient, TusVideoUploader tusVideoUploader, VideoAssemblyOptions options)
+        public FfmpegVideoAssemblyService(VideoAssemblyWorkspaceFactory workspaceFactory, VideoAssemblySourceDownloader sourceDownloader, FfprobeMediaInspectionService inspectionService, ProcessRunner processRunner, AssSubtitleDocumentBuilder subtitleBuilder, AzureBlobSasUploader azureBlobSasUploader, VideoThumbnailExtractor thumbnailExtractor, VimeoUploadSessionClient vimeoUploadSessionClient, TusVideoUploader tusVideoUploader, VideoAssemblyOptions options)
         {
             _workspaceFactory = workspaceFactory ?? throw new ArgumentNullException(nameof(workspaceFactory));
             _sourceDownloader = sourceDownloader ?? throw new ArgumentNullException(nameof(sourceDownloader));
             _inspectionService = inspectionService ?? throw new ArgumentNullException(nameof(inspectionService));
             _processRunner = processRunner ?? throw new ArgumentNullException(nameof(processRunner));
             _subtitleBuilder = subtitleBuilder ?? throw new ArgumentNullException(nameof(subtitleBuilder));
+            _azureBlobSasUploader = azureBlobSasUploader ?? throw new ArgumentNullException(nameof(azureBlobSasUploader));
+            _thumbnailExtractor = thumbnailExtractor ?? throw new ArgumentNullException(nameof(thumbnailExtractor));
             _vimeoUploadSessionClient = vimeoUploadSessionClient ?? throw new ArgumentNullException(nameof(vimeoUploadSessionClient));
             _tusVideoUploader = tusVideoUploader ?? throw new ArgumentNullException(nameof(tusVideoUploader));
             _options = options ?? throw new ArgumentNullException(nameof(options));
@@ -69,8 +73,63 @@ namespace LagoVista.VideoAssembly
 
                 var sha256 = await CalculateSha256Async(workspace.OutputPath, executionTimeout.Token);
                 var outputDurationSeconds = (int)Math.Round(outputInspection.DurationSeconds);
+                var outputs = new List<VideoProcessorOutputArtifact>();
                 string vimeoVideoUri = null;
                 string vimeoVideoId = null;
+
+                if (request.ExecutionOptions?.UploadToAzure == true)
+                {
+                    progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.UploadingToAzure, PercentComplete = 0, Message = "Uploading assembled video to Azure.", BytesCompleted = 0, BytesTotal = outputInspection.SizeBytes });
+                    await _azureBlobSasUploader.UploadAsync(workspace.OutputPath, request.AzureVideoDestination, executionTimeout.Token);
+
+                    outputs.Add(new VideoProcessorOutputArtifact
+                    {
+                        Type = VideoProcessorOutputArtifactType.Video,
+                        MediaResourceId = request.AzureVideoDestination.MediaResourceId,
+                        StorageReferenceName = request.AzureVideoDestination.StorageReferenceName,
+                        FileName = request.AzureVideoDestination.FileName,
+                        ContentType = request.AzureVideoDestination.ContentType,
+                        SizeBytes = outputInspection.SizeBytes,
+                        DurationSeconds = outputDurationSeconds,
+                        Width = outputInspection.Width,
+                        Height = outputInspection.Height,
+                        Sha256 = sha256
+                    });
+
+                    progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.UploadingToAzure, PercentComplete = 100, Message = "Assembled video uploaded to Azure.", BytesCompleted = outputInspection.SizeBytes, BytesTotal = outputInspection.SizeBytes });
+                }
+
+                if (request.ExecutionOptions?.GenerateThumbnail == true)
+                {
+                    progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.GeneratingThumbnail, PercentComplete = 0, Message = "Generating assembled video thumbnail." });
+
+                    var thumbnailTimeSeconds = request.Thumbnail.TimeSeconds ?? 1.0;
+                    await _thumbnailExtractor.ExtractAsync(workspace.OutputPath, workspace.ThumbnailPath, thumbnailTimeSeconds, outputInspection.DurationSeconds, executionTimeout.Token);
+
+                    var thumbnailInspection = await _inspectionService.InspectAsync(workspace.ThumbnailPath, executionTimeout.Token);
+                    var thumbnailSha256 = await CalculateSha256Async(workspace.ThumbnailPath, executionTimeout.Token);
+                    var thumbnailFileInfo = new FileInfo(workspace.ThumbnailPath);
+
+                    progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.GeneratingThumbnail, PercentComplete = 100, Message = "Assembled video thumbnail generated." });
+                    progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.UploadingThumbnail, PercentComplete = 0, Message = "Uploading assembled video thumbnail to Azure.", BytesCompleted = 0, BytesTotal = thumbnailFileInfo.Length });
+
+                    await _azureBlobSasUploader.UploadAsync(workspace.ThumbnailPath, request.Thumbnail.Destination, executionTimeout.Token);
+
+                    outputs.Add(new VideoProcessorOutputArtifact
+                    {
+                        Type = VideoProcessorOutputArtifactType.Thumbnail,
+                        MediaResourceId = request.Thumbnail.Destination.MediaResourceId,
+                        StorageReferenceName = request.Thumbnail.Destination.StorageReferenceName,
+                        FileName = request.Thumbnail.Destination.FileName,
+                        ContentType = request.Thumbnail.Destination.ContentType,
+                        SizeBytes = thumbnailFileInfo.Length,
+                        Width = thumbnailInspection.Width,
+                        Height = thumbnailInspection.Height,
+                        Sha256 = thumbnailSha256
+                    });
+
+                    progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.UploadingThumbnail, PercentComplete = 100, Message = "Assembled video thumbnail uploaded to Azure.", BytesCompleted = thumbnailFileInfo.Length, BytesTotal = thumbnailFileInfo.Length });
+                }
 
                 if (request.ExecutionOptions?.UploadToVimeo == true)
                 {
@@ -89,10 +148,34 @@ namespace LagoVista.VideoAssembly
 
                     progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.UploadingToVimeo, PercentComplete = 0, Message = "Uploading assembled video to Vimeo.", BytesCompleted = 0, BytesTotal = outputInspection.SizeBytes });
                     await _tusVideoUploader.UploadAsync(uploadUrl, workspace.OutputPath, progress, executionTimeout.Token);
+
+                    outputs.Add(new VideoProcessorOutputArtifact
+                    {
+                        Type = VideoProcessorOutputArtifactType.Video,
+                        MediaResourceId = request.VimeoUpload.MediaResourceId,
+                        ContentType = "video/mp4",
+                        SizeBytes = outputInspection.SizeBytes,
+                        DurationSeconds = outputDurationSeconds,
+                        Width = outputInspection.Width,
+                        Height = outputInspection.Height,
+                        Sha256 = sha256,
+                        ExternalUri = vimeoVideoUri,
+                        ExternalId = vimeoVideoId
+                    });
                 }
 
-                progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.Completed, PercentComplete = 100, Message = request.ExecutionOptions?.UploadToVimeo == true ? "Assembly and Vimeo upload completed." : $"Assembly completed. Output: {workspace.OutputPath}" });
-                return new VideoAssemblyResult { Successful = true, OutputFilePath = workspace.OutputPath, VimeoVideoUri = vimeoVideoUri, VimeoVideoId = vimeoVideoId, OutputSizeBytes = outputInspection.SizeBytes, OutputDurationSeconds = outputDurationSeconds, Sha256 = sha256 };
+                progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.Completed, PercentComplete = 100, Message = "Video assembly and configured uploads completed." });
+                return new VideoAssemblyResult
+                {
+                    Successful = true,
+                    OutputFilePath = workspace.OutputPath,
+                    Outputs = outputs,
+                    VimeoVideoUri = vimeoVideoUri,
+                    VimeoVideoId = vimeoVideoId,
+                    OutputSizeBytes = outputInspection.SizeBytes,
+                    OutputDurationSeconds = outputDurationSeconds,
+                    Sha256 = sha256
+                };
             }
             catch (Exception ex)
             {

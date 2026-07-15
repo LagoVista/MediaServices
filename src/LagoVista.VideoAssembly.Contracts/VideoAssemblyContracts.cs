@@ -29,6 +29,8 @@ namespace LagoVista.VideoAssembly.Contracts
         NormalizingMedia,
         Encoding,
         UploadingToAzure,
+        GeneratingThumbnail,
+        UploadingThumbnail,
         UploadingToVimeo,
         Completed,
         Failed
@@ -77,6 +79,7 @@ namespace LagoVista.VideoAssembly.Contracts
         public string ProductionId { get; set; }
         public List<VideoAssemblyBlock> Blocks { get; set; } = new List<VideoAssemblyBlock>();
         public VideoMediaImportDestination AzureVideoDestination { get; set; }
+        public VideoMediaImportThumbnail Thumbnail { get; set; } = new VideoMediaImportThumbnail();
         public VideoAssemblyVimeoUpload VimeoUpload { get; set; }
         public VideoAssemblyCallbackSettings Callback { get; set; }
         public VideoAssemblyLimits Limits { get; set; } = new VideoAssemblyLimits();
@@ -268,6 +271,7 @@ namespace LagoVista.VideoAssembly.Contracts
     public sealed class VideoAssemblyExecutionOptions
     {
         public bool UploadToAzure { get; set; } = true;
+        public bool GenerateThumbnail { get; set; } = true;
         public bool UploadToVimeo { get; set; } = true;
         public bool SendCallbacks { get; set; } = true;
         public bool PreserveOutputFile { get; set; }

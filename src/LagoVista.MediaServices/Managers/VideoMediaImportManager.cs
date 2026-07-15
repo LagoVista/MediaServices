@@ -18,13 +18,15 @@ namespace LagoVista.MediaServices.Managers
         private readonly IVideoProductionRepo _videoProductionRepo;
         private readonly IMediaServicesManager _mediaServicesManager;
         private readonly IHeyGenVideoService _heyGenVideoService;
+        private readonly IVideoProcessorStorageUrlService _videoProcessorStorageUrlService;
         private readonly INotificationPublisher _notificationPublisher;
 
-        public VideoMediaImportManager(IVideoProductionRepo videoProductionRepo, IMediaServicesManager mediaServicesManager, IHeyGenVideoService heyGenVideoService, ICoreAppServices coreAppServices)
+        public VideoMediaImportManager(IVideoProductionRepo videoProductionRepo, IMediaServicesManager mediaServicesManager, IHeyGenVideoService heyGenVideoService, IVideoProcessorStorageUrlService videoProcessorStorageUrlService, ICoreAppServices coreAppServices)
         {
             _videoProductionRepo = videoProductionRepo ?? throw new ArgumentNullException(nameof(videoProductionRepo));
             _mediaServicesManager = mediaServicesManager ?? throw new ArgumentNullException(nameof(mediaServicesManager));
             _heyGenVideoService = heyGenVideoService ?? throw new ArgumentNullException(nameof(heyGenVideoService));
+            _videoProcessorStorageUrlService = videoProcessorStorageUrlService ?? throw new ArgumentNullException(nameof(videoProcessorStorageUrlService));
             _notificationPublisher = coreAppServices?.NotificationPublisher ?? throw new ArgumentNullException(nameof(coreAppServices.NotificationPublisher));
         }
 
@@ -159,6 +161,31 @@ namespace LagoVista.MediaServices.Managers
             }
 
             var pendingRevision = PreparePendingRevision(mediaResource, user);
+            var videoContentType = String.IsNullOrWhiteSpace(pendingRevision.MimeType) ? "video/mp4" : pendingRevision.MimeType;
+            var videoWriteDestinationResult = await _videoProcessorStorageUrlService.CreateWriteDestinationAsync(org.Id, pendingRevision.StorageReferenceName, videoContentType, cancellationToken);
+            if (!videoWriteDestinationResult.Successful)
+            {
+                await ApplyPreparationFailureAsync(production, videoWriteDestinationResult.Errors[0].Message);
+                return videoWriteDestinationResult.ToInvokeResult<VideoMediaImportPreparationResult>();
+            }
+
+            var generateThumbnail = !String.IsNullOrWhiteSpace(pendingRevision.ThumbnailStorageReferenceName);
+            VideoProcessorStorageDestination thumbnailWriteDestination = null;
+
+            if (generateThumbnail)
+            {
+                var thumbnailWriteDestinationResult = await _videoProcessorStorageUrlService.CreateWriteDestinationAsync(org.Id, pendingRevision.ThumbnailStorageReferenceName, "image/jpeg", cancellationToken);
+                if (!thumbnailWriteDestinationResult.Successful)
+                {
+                    await ApplyPreparationFailureAsync(production, thumbnailWriteDestinationResult.Errors[0].Message);
+                    return thumbnailWriteDestinationResult.ToInvokeResult<VideoMediaImportPreparationResult>();
+                }
+
+                thumbnailWriteDestination = thumbnailWriteDestinationResult.Result;
+            }
+
+            mediaResource.Link = videoWriteDestinationResult.Result.BlobUrl;
+            mediaResource.ThumbnailUrl = thumbnailWriteDestination?.BlobUrl;
 
             if (isNewMediaResource)
             {
@@ -192,6 +219,8 @@ namespace LagoVista.MediaServices.Managers
             await _videoProductionRepo.UpdateVideoProductionAsync(production);
             await PublishVideoProductionUpdatedAsync(production);
 
+
+          
             var request = new VideoMediaImportRequest
             {
                 RequestId = requestId,
@@ -205,25 +234,32 @@ namespace LagoVista.MediaServices.Managers
                 },
                 VideoDestination = new VideoMediaImportDestination
                 {
+                    UploadUrl = videoWriteDestinationResult.Result.UploadUrl,
+                    MediaResourceId = mediaResource.Id,
                     StorageReferenceName = pendingRevision.StorageReferenceName,
                     FileName = pendingRevision.FileName,
                     ContentType = String.IsNullOrWhiteSpace(pendingRevision.MimeType) ? "video/mp4" : pendingRevision.MimeType
                 },
                 Thumbnail = new VideoMediaImportThumbnail
                 {
-                    Enabled = !String.IsNullOrWhiteSpace(pendingRevision.ThumbnailStorageReferenceName),
+                    Enabled = generateThumbnail,
                     TimeSeconds = thumbnailTimeSeconds,
-                    Destination = String.IsNullOrWhiteSpace(pendingRevision.ThumbnailStorageReferenceName)
-                      ? null
-                      : new VideoMediaImportDestination
-                      {
-                          StorageReferenceName = pendingRevision.ThumbnailStorageReferenceName,
-                          FileName = CreateThumbnailFileName(pendingRevision, mediaResource.Id),
-                          ContentType = "image/jpeg"
-                      }
+                    Destination = !generateThumbnail
+                        ? null
+                        : new VideoMediaImportDestination
+                        {
+                            UploadUrl = thumbnailWriteDestination.UploadUrl,
+                            MediaResourceId = mediaResource.Id,
+                            StorageReferenceName = pendingRevision.ThumbnailStorageReferenceName,
+                            FileName = CreateThumbnailFileName(pendingRevision, mediaResource.Id),
+                            ContentType = "image/jpeg"
+                        }
+                },
+                ExecutionOptions = new VideoMediaImportExecutionOptions
+                {
+                    SendCallbacks = true
                 }
             };
-
             return InvokeResult<VideoMediaImportPreparationResult>.Create(new VideoMediaImportPreparationResult
             {
                 Production = production,
