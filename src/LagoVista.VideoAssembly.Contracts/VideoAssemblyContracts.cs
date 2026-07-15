@@ -28,6 +28,7 @@ namespace LagoVista.VideoAssembly.Contracts
         RenderingLabels,
         NormalizingMedia,
         Encoding,
+        UploadingToAzure,
         UploadingToVimeo,
         Completed,
         Failed
@@ -75,6 +76,7 @@ namespace LagoVista.VideoAssembly.Contracts
         public string AttemptId { get; set; }
         public string ProductionId { get; set; }
         public List<VideoAssemblyBlock> Blocks { get; set; } = new List<VideoAssemblyBlock>();
+        public VideoMediaImportDestination AzureVideoDestination { get; set; }
         public VideoAssemblyVimeoUpload VimeoUpload { get; set; }
         public VideoAssemblyCallbackSettings Callback { get; set; }
         public VideoAssemblyLimits Limits { get; set; } = new VideoAssemblyLimits();
@@ -135,6 +137,7 @@ namespace LagoVista.VideoAssembly.Contracts
 
     public sealed class VideoAssemblyVimeoUpload
     {
+        public string MediaResourceId { get; set; }
         public string UploadUrl { get; set; }
         public string SessionRequestUrl { get; set; }
         public string SessionAccessToken { get; set; }
@@ -188,6 +191,7 @@ namespace LagoVista.VideoAssembly.Contracts
 
     public sealed class VideoMediaImportDestination
     {
+        public string MediaResourceId { get; set; }
         public string UploadUrl { get; set; }
         public string StorageReferenceName { get; set; }
         public string FileName { get; set; }
@@ -263,6 +267,7 @@ namespace LagoVista.VideoAssembly.Contracts
 
     public sealed class VideoAssemblyExecutionOptions
     {
+        public bool UploadToAzure { get; set; } = true;
         public bool UploadToVimeo { get; set; } = true;
         public bool SendCallbacks { get; set; } = true;
         public bool PreserveOutputFile { get; set; }
@@ -282,6 +287,7 @@ namespace LagoVista.VideoAssembly.Contracts
         public long? BytesTotal { get; set; }
         public int? ProcessedDurationSeconds { get; set; }
         public int? TotalDurationSeconds { get; set; }
+        public List<VideoProcessorOutputArtifact> Outputs { get; set; } = new List<VideoProcessorOutputArtifact>();
         public string VimeoVideoUri { get; set; }
         public string VimeoVideoId { get; set; }
         public long? OutputSizeBytes { get; set; }
@@ -295,6 +301,7 @@ namespace LagoVista.VideoAssembly.Contracts
     {
         public bool Successful { get; set; }
         public string OutputFilePath { get; set; }
+        public List<VideoProcessorOutputArtifact> Outputs { get; set; } = new List<VideoProcessorOutputArtifact>();
         public string VimeoVideoUri { get; set; }
         public string VimeoVideoId { get; set; }
         public long? OutputSizeBytes { get; set; }

@@ -828,4 +828,7 @@
   <data name="MediaResourceStatus_Obsolete" xml:space="preserve">
     <value>Obsolete</value>
   </data>
+  <data name="MediaResourceType_RawVideo" xml:space="preserve">
+    <value>Raw Video</value>
+  </data>
 </root>
