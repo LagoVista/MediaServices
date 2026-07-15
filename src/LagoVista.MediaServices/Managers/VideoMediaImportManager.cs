@@ -142,6 +142,7 @@ namespace LagoVista.MediaServices.Managers
             await PublishVideoProductionUpdatedAsync(production);
 
             MediaResource mediaResource;
+            var isNewMediaResource = false;
 
             if (production.FinalVideoMediaResource != null && !String.IsNullOrWhiteSpace(production.FinalVideoMediaResource.Id))
             {
@@ -154,7 +155,13 @@ namespace LagoVista.MediaServices.Managers
             else
             {
                 mediaResource = CreateOutputMediaResource(production, org, user);
+                isNewMediaResource = true;
+            }
 
+            var pendingRevision = PreparePendingRevision(mediaResource, user);
+
+            if (isNewMediaResource)
+            {
                 var addResult = await _mediaServicesManager.AddMediaResourceRecordAsync(mediaResource, org, user);
                 if (!addResult.Successful)
                 {
@@ -164,11 +171,20 @@ namespace LagoVista.MediaServices.Managers
 
                 production.FinalVideoMediaResource = mediaResource.ToEntityHeader();
             }
+            else
+            {
+                var updateResult = await _mediaServicesManager.UpdateMediaResourceRecordAsync(mediaResource, org, user);
+                if (!updateResult.Successful)
+                {
+                    await ApplyPreparationFailureAsync(production, updateResult.Errors[0].Message);
+                    return updateResult.ToInvokeResult<VideoMediaImportPreparationResult>();
+                }
+            }
 
             var requestId = String.IsNullOrWhiteSpace(production.ProviderVideoImportRequestId) ? Guid.NewGuid().ToId().Value : production.ProviderVideoImportRequestId;
 
             production.ProviderVideoImportRequestId = requestId;
-            production.ProviderVideoImportMessage = "Media resource created. Preparing secure video and thumbnail upload destinations.";
+            production.ProviderVideoImportMessage = "Raw video resource created. Preparing secure video and thumbnail upload destinations.";
             production.ProviderVideoImportPercentComplete = 5;
             production.ProviderVideoImportLastUpdatedUtc = UtcTimestamp.Now;
             production.ErrorMessage = null;
@@ -184,25 +200,25 @@ namespace LagoVista.MediaServices.Managers
                 Source = new VideoAssemblySource
                 {
                     Url = providerResult.Result.VideoUrl,
-                    FileName = mediaResource.FileName,
-                    ContentType = String.IsNullOrWhiteSpace(mediaResource.MimeType) ? "video/mp4" : mediaResource.MimeType
+                    FileName = pendingRevision.FileName,
+                    ContentType = String.IsNullOrWhiteSpace(pendingRevision.MimeType) ? "video/mp4" : pendingRevision.MimeType
                 },
                 VideoDestination = new VideoMediaImportDestination
                 {
-                    StorageReferenceName = mediaResource.StorageReferenceName,
-                    FileName = mediaResource.FileName,
-                    ContentType = String.IsNullOrWhiteSpace(mediaResource.MimeType) ? "video/mp4" : mediaResource.MimeType
+                    StorageReferenceName = pendingRevision.StorageReferenceName,
+                    FileName = pendingRevision.FileName,
+                    ContentType = String.IsNullOrWhiteSpace(pendingRevision.MimeType) ? "video/mp4" : pendingRevision.MimeType
                 },
                 Thumbnail = new VideoMediaImportThumbnail
                 {
-                    Enabled = !String.IsNullOrWhiteSpace(mediaResource.ThumbnailStorageReferenceName),
+                    Enabled = !String.IsNullOrWhiteSpace(pendingRevision.ThumbnailStorageReferenceName),
                     TimeSeconds = thumbnailTimeSeconds,
-                    Destination = String.IsNullOrWhiteSpace(mediaResource.ThumbnailStorageReferenceName)
+                    Destination = String.IsNullOrWhiteSpace(pendingRevision.ThumbnailStorageReferenceName)
                       ? null
                       : new VideoMediaImportDestination
                       {
-                          StorageReferenceName = mediaResource.ThumbnailStorageReferenceName,
-                          FileName = CreateThumbnailFileName(mediaResource),
+                          StorageReferenceName = pendingRevision.ThumbnailStorageReferenceName,
+                          FileName = CreateThumbnailFileName(pendingRevision, mediaResource.Id),
                           ContentType = "image/jpeg"
                       }
                 }
@@ -216,14 +232,49 @@ namespace LagoVista.MediaServices.Managers
             });
         }
 
-        private static string CreateThumbnailFileName(MediaResource mediaResource)
+        private static MediaResourceHistory PreparePendingRevision(MediaResource mediaResource, EntityHeader user)
         {
-            if (!String.IsNullOrWhiteSpace(mediaResource.FileName))
+            var pendingRevision = mediaResource.GetPendingRevision();
+            if (pendingRevision == null || pendingRevision.Status?.Value != MediaResourceStatus.Pending)
             {
-                return $"{System.IO.Path.GetFileNameWithoutExtension(mediaResource.FileName)}-thumbnail.jpg";
+                pendingRevision = new MediaResourceHistory
+                {
+                    Name = $"Raw video import {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}",
+                    CreatedBy = user,
+                    CreationDate = UtcTimestamp.Now,
+                    StorageReferenceName = $"{Guid.NewGuid().ToId()}.mp4",
+                    ThumbnailStorageReferenceName = $"{Guid.NewGuid().ToId()}.jpg",
+                    FileName = String.IsNullOrWhiteSpace(mediaResource.FileName) ? $"{mediaResource.Id}.mp4" : mediaResource.FileName,
+                    MimeType = "video/mp4",
+                    Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Pending)
+                };
+
+                mediaResource.History.Add(pendingRevision);
+                mediaResource.PendingRevision = pendingRevision.Id;
             }
 
-            return $"{mediaResource.Id}-thumbnail.jpg";
+            mediaResource.ProcessingStartedUtc = UtcTimestamp.Now;
+            mediaResource.ProcessingCompletedUtc = null;
+            mediaResource.ProcessingErrorMessage = null;
+            mediaResource.LastUpdatedDate = UtcTimestamp.Now;
+            mediaResource.LastUpdatedBy = user;
+
+            if (String.IsNullOrWhiteSpace(mediaResource.CurrentRevision))
+            {
+                mediaResource.Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Pending);
+            }
+
+            return pendingRevision;
+        }
+
+        private static string CreateThumbnailFileName(MediaResourceHistory revision, string mediaResourceId)
+        {
+            if (!String.IsNullOrWhiteSpace(revision.FileName))
+            {
+                return $"{System.IO.Path.GetFileNameWithoutExtension(revision.FileName)}-thumbnail.jpg";
+            }
+
+            return $"{mediaResourceId}-thumbnail.jpg";
         }
 
         public async Task<InvokeResult<VideoProduction>> ApplyVideoMediaImportCallbackAsync(VideoMediaImportCallback callback, CancellationToken cancellationToken = default)
@@ -317,10 +368,15 @@ namespace LagoVista.MediaServices.Managers
             {
                 Id = id,
                 Name = String.IsNullOrWhiteSpace(production.VideoName) ? production.Name : production.VideoName,
-                Key = $"video{DateTime.UtcNow.Ticks}",
+                Key = $"rawvideo{DateTime.UtcNow.Ticks}",
                 Description = production.Description,
                 FileName = fileName,
-                IsFileUpload = true,
+                IsFileUpload = false,
+                Link = null,
+                MimeType = "video/mp4",
+                ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.RawVideo),
+                Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Pending),
+                ProcessingStartedUtc = now,
                 OwnerOrganization = org,
                 CreatedBy = user,
                 LastUpdatedBy = user,
@@ -331,11 +387,6 @@ namespace LagoVista.MediaServices.Managers
                 OriginalUrl = production.ProviderVideoUrl,
                 DurationSeconds = production.ActualDurationSeconds
             };
-
-            mediaResource.SetContentType("video/mp4", id);
-            mediaResource.ThumbnailStorageReferenceName = $"{Guid.NewGuid().ToId()}.jpg";
-            mediaResource.ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Video);
-            mediaResource.MimeType = "video/mp4";
 
             return mediaResource;
         }
