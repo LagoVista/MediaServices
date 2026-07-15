@@ -19,6 +19,7 @@ namespace LagoVista.MediaServices.CloudRepos
             services.AddTransient<IMediaServicesRepo, MediaServicesRepo>();
             services.AddTransient<IVideoProcessorStorageUrlService, VideoProcessorStorageUrlService>();
             services.AddTransient<IVideoProcessorRequestStore, VideoProcessorRequestStore>();
+            services.AddTransient<IVideoProcessorCallbackRegistrationStore, VideoProcessorCallbackRegistrationStore>();
 
             services.AddTransient<IVideoAvatarRepo, VideoAvatarRepo>();
             services.AddTransient<IVideoProductionRepo, VideoProductionRepo>();

@@ -80,7 +80,15 @@ namespace LagoVista.VideoAssembly
                 if (request.ExecutionOptions?.UploadToAzure == true)
                 {
                     progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.UploadingToAzure, PercentComplete = 0, Message = "Uploading assembled video to Azure.", BytesCompleted = 0, BytesTotal = outputInspection.SizeBytes });
-                    await _azureBlobSasUploader.UploadAsync(workspace.OutputPath, request.AzureVideoDestination, executionTimeout.Token);
+                    var azureVideoProgress = new InlineProgress<AzureBlobUploadProgress>(upload => progress?.Report(new VideoAssemblyProgress
+                    {
+                        Stage = VideoAssemblyStage.UploadingToAzure,
+                        PercentComplete = upload.PercentComplete,
+                        Message = "Uploading assembled video to Azure.",
+                        BytesCompleted = upload.BytesCompleted,
+                        BytesTotal = upload.BytesTotal
+                    }));
+                    await _azureBlobSasUploader.UploadAsync(workspace.OutputPath, request.AzureVideoDestination, executionTimeout.Token, azureVideoProgress);
 
                     outputs.Add(new VideoProcessorOutputArtifact
                     {
@@ -113,7 +121,15 @@ namespace LagoVista.VideoAssembly
                     progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.GeneratingThumbnail, PercentComplete = 100, Message = "Assembled video thumbnail generated." });
                     progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.UploadingThumbnail, PercentComplete = 0, Message = "Uploading assembled video thumbnail to Azure.", BytesCompleted = 0, BytesTotal = thumbnailFileInfo.Length });
 
-                    await _azureBlobSasUploader.UploadAsync(workspace.ThumbnailPath, request.Thumbnail.Destination, executionTimeout.Token);
+                    var thumbnailUploadProgress = new InlineProgress<AzureBlobUploadProgress>(upload => progress?.Report(new VideoAssemblyProgress
+                    {
+                        Stage = VideoAssemblyStage.UploadingThumbnail,
+                        PercentComplete = upload.PercentComplete,
+                        Message = "Uploading assembled video thumbnail to Azure.",
+                        BytesCompleted = upload.BytesCompleted,
+                        BytesTotal = upload.BytesTotal
+                    }));
+                    await _azureBlobSasUploader.UploadAsync(workspace.ThumbnailPath, request.Thumbnail.Destination, executionTimeout.Token, thumbnailUploadProgress);
 
                     outputs.Add(new VideoProcessorOutputArtifact
                     {

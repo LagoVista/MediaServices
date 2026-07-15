@@ -5,6 +5,7 @@ using LagoVista.IoT.Web.Common.Controllers;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
 using LagoVista.UserAdmin.Models.Users;
+using LagoVista.VideoAssembly.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -37,10 +38,26 @@ namespace LagoVista.MediaServices.Rest.Controllers
         }
 
         [AllowAnonymous]
-        [HttpPost("/api/media/webhooks/video-import")]
-        public Task<InvokeResult<VideoProduction>> ApplyVideoMediaImportCallbackAsync([FromBody] VideoMediaImportCallback callback, CancellationToken cancellationToken = default)
+        [HttpPost("/api/media/webhooks/video-processor")]
+        public Task<InvokeResult<VideoProduction>> ApplyVideoProcessorCallbackAsync([FromBody] VideoProcessorJobCallback callback, CancellationToken cancellationToken = default)
         {
-            return _manager.ApplyVideoMediaImportCallbackAsync(callback, cancellationToken);
+            var authorizationHeader = Request.Headers["Authorization"].ToString();
+            var accessToken = GetBearerToken(authorizationHeader);
+
+            return _manager.ApplyVideoProcessorCallbackAsync(callback, accessToken, cancellationToken);
+        }
+
+        private static string GetBearerToken(string authorizationHeader)
+        {
+            const string bearerPrefix = "Bearer ";
+
+            if (String.IsNullOrWhiteSpace(authorizationHeader) || !authorizationHeader.StartsWith(bearerPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            var accessToken = authorizationHeader.Substring(bearerPrefix.Length).Trim();
+            return String.IsNullOrWhiteSpace(accessToken) ? null : accessToken;
         }
     }
 }

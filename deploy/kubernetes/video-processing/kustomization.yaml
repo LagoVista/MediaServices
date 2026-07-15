@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - worker-service-account.yaml
+  - launcher-role.yaml
+  - resource-quota.yaml
+  - limit-range.yaml
+
+# Apply these separately after replacing their placeholder values:
+# kubectl apply -f secret.yaml
+# kubectl apply -f launcher-role-binding.yaml
+#
+# job-template.yaml is documentation and a development example.
+# Production jobs should be created dynamically by the main portal API.

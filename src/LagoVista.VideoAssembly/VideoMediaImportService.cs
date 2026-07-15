@@ -25,6 +25,8 @@ namespace LagoVista.VideoAssembly
         private readonly VideoProcessorCallbackClient _callbackClient;
         private readonly VideoProcessorNotificationPublisher _notificationPublisher;
         private readonly VideoAssemblyOptions _options;
+        private readonly object _notificationSyncRoot = new object();
+        private Task _pendingUploadNotification = Task.CompletedTask;
         private long _sequence;
 
         public VideoMediaImportService(HttpClient httpClient, FfprobeMediaInspectionService inspectionService, VideoThumbnailExtractor thumbnailExtractor, AzureBlobSasUploader azureUploader, VideoProcessorCallbackClient callbackClient, VideoProcessorNotificationPublisher notificationPublisher, VideoAssemblyOptions options)
@@ -67,7 +69,8 @@ namespace LagoVista.VideoAssembly
 
                 currentStage = VideoMediaImportStage.UploadingVideo;
                 await SendCallbackSafelyAsync(request, VideoAssemblyCallbackType.Progress, currentStage, "Uploading source video to Azure.", outputs, null, timeout.Token);
-                await _azureUploader.UploadAsync(sourcePath, request.VideoDestination, timeout.Token);
+                await _azureUploader.UploadAsync(sourcePath, request.VideoDestination, timeout.Token, CreateUploadProgress(request, currentStage, "Uploading source video to Azure."));
+                await FlushUploadNotificationsAsync();
 
                 outputs.Add(new VideoProcessorOutputArtifact
                 {
@@ -95,7 +98,8 @@ namespace LagoVista.VideoAssembly
 
                     currentStage = VideoMediaImportStage.UploadingThumbnail;
                     await SendCallbackSafelyAsync(request, VideoAssemblyCallbackType.Progress, currentStage, "Uploading video thumbnail to Azure.", outputs, null, timeout.Token);
-                    var thumbnailSize = await _azureUploader.UploadAsync(thumbnailPath, request.Thumbnail.Destination, timeout.Token);
+                    var thumbnailSize = await _azureUploader.UploadAsync(thumbnailPath, request.Thumbnail.Destination, timeout.Token, CreateUploadProgress(request, currentStage, "Uploading video thumbnail to Azure."));
+                    await FlushUploadNotificationsAsync();
 
                     outputs.Add(new VideoProcessorOutputArtifact
                     {
@@ -159,6 +163,39 @@ namespace LagoVista.VideoAssembly
 
             await destinationStream.FlushAsync(cancellationToken);
             return totalBytes;
+        }
+
+        private IProgress<AzureBlobUploadProgress> CreateUploadProgress(VideoMediaImportRequest request, VideoMediaImportStage stage, string message)
+        {
+            return new InlineProgress<AzureBlobUploadProgress>(upload =>
+            {
+                Console.WriteLine($"[{stage}] {upload.PercentComplete}% {upload.BytesCompleted}/{upload.BytesTotal} bytes {message}");
+
+                var liveProgress = new VideoProcessorLiveProgress
+                {
+                    JobType = VideoProcessorJobType.VideoMediaImport,
+                    RequestId = request.RequestId,
+                    AttemptId = request.AttemptId,
+                    ProductionId = request.ProductionId,
+                    MediaResourceId = request.MediaResourceId,
+                    Stage = stage.ToString(),
+                    PercentComplete = upload.PercentComplete,
+                    Message = message,
+                    BytesCompleted = upload.BytesCompleted,
+                    BytesTotal = upload.BytesTotal,
+                    TimestampUtc = DateTime.UtcNow.ToString("O")
+                };
+
+                lock (_notificationSyncRoot)
+                {
+                    _pendingUploadNotification = _pendingUploadNotification.ContinueWith(_ => _notificationPublisher.TryPublishAsync(request.ProductionId, message, liveProgress, CancellationToken.None), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
+                }
+            });
+        }
+
+        private Task FlushUploadNotificationsAsync()
+        {
+            lock (_notificationSyncRoot) return _pendingUploadNotification;
         }
 
         private async Task SendCallbackSafelyAsync(VideoMediaImportRequest request, VideoAssemblyCallbackType type, VideoMediaImportStage stage, string message, List<VideoProcessorOutputArtifact> outputs, string errorMessage, CancellationToken cancellationToken)
