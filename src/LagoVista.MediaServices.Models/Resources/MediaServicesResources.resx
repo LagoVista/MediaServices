@@ -624,4 +624,193 @@
   <data name="VideoProductionStatus_Cancelled" xml:space="preserve">
   <value>Cancelled</value>
 </data>
+  <data name="VideoComposition_Title" xml:space="preserve">
+    <value>Video Composition</value>
+  </data>
+  <data name="VideoCompositions_Title" xml:space="preserve">
+    <value>Video Compositions</value>
+  </data>
+  <data name="VideoComposition_Help" xml:space="preserve">
+    <value>Create a finished video by arranging reusable image and video media resources.</value>
+  </data>
+  <data name="VideoComposition_Description" xml:space="preserve">
+    <value>Defines an ordered set of image and video media resources, labels, transitions, assembly progress, and the resulting output media resource.</value>
+  </data>
+  <data name="VideoComposition_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="VideoComposition_OutputMediaResource" xml:space="preserve">
+    <value>Output Media Resource</value>
+  </data>
+  <data name="VideoComposition_ErrorMessage" xml:space="preserve">
+    <value>Error Message</value>
+  </data>
+  <data name="VideoCompositionStatus_Draft" xml:space="preserve">
+    <value>Draft</value>
+  </data>
+  <data name="VideoCompositionStatus_Preparing" xml:space="preserve">
+    <value>Preparing</value>
+  </data>
+  <data name="VideoCompositionStatus_Queued" xml:space="preserve">
+    <value>Queued</value>
+  </data>
+  <data name="VideoCompositionStatus_Assembling" xml:space="preserve">
+    <value>Assembling</value>
+  </data>
+  <data name="VideoCompositionStatus_Uploading" xml:space="preserve">
+    <value>Uploading</value>
+  </data>
+  <data name="VideoCompositionStatus_ProcessingAtVimeo" xml:space="preserve">
+    <value>Processing at Vimeo</value>
+  </data>
+  <data name="VideoCompositionStatus_Completed" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="VideoCompositionStatus_Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="VideoCompositionStatus_Cancelled" xml:space="preserve">
+    <value>Cancelled</value>
+  </data>
+  <data name="VideoCompositionBlockType_Image" xml:space="preserve">
+    <value>Image</value>
+  </data>
+  <data name="VideoCompositionBlockType_Video" xml:space="preserve">
+    <value>Video</value>
+  </data>
+  <data name="VideoCompositionTextAlignment_Left" xml:space="preserve">
+    <value>Left</value>
+  </data>
+  <data name="VideoCompositionTextAlignment_Center" xml:space="preserve">
+    <value>Center</value>
+  </data>
+  <data name="VideoCompositionTextAlignment_Right" xml:space="preserve">
+    <value>Right</value>
+  </data>
+  <data name="VideoCompositionAssemblyStage_None" xml:space="preserve">
+    <value>Not Started</value>
+  </data>
+  <data name="VideoCompositionAssemblyStage_Queued" xml:space="preserve">
+    <value>Queued</value>
+  </data>
+  <data name="VideoCompositionAssemblyStage_DownloadingMedia" xml:space="preserve">
+    <value>Downloading Media</value>
+  </data>
+  <data name="VideoCompositionAssemblyStage_InspectingMedia" xml:space="preserve">
+    <value>Inspecting Media</value>
+  </data>
+  <data name="VideoCompositionAssemblyStage_RenderingLabels" xml:space="preserve">
+    <value>Rendering Labels</value>
+  </data>
+  <data name="VideoCompositionAssemblyStage_NormalizingMedia" xml:space="preserve">
+    <value>Normalizing Media</value>
+  </data>
+  <data name="VideoCompositionAssemblyStage_Encoding" xml:space="preserve">
+    <value>Encoding</value>
+  </data>
+  <data name="VideoCompositionAssemblyStage_UploadingToAzure" xml:space="preserve">
+    <value>Uploading to Azure</value>
+  </data>
+  <data name="VideoCompositionAssemblyStage_UploadingToVimeo" xml:space="preserve">
+    <value>Uploading to Vimeo</value>
+  </data>
+  <data name="VideoCompositionAssemblyStage_Completed" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="VideoCompositionAssemblyStage_Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="VideoComposition_Blocks" xml:space="preserve">
+    <value>Video Blocks</value>
+  </data>
+  <data name="VideoCompositionBlock_Title" xml:space="preserve">
+    <value>Video Composition Block</value>
+  </data>
+  <data name="VideoCompositionBlock_Help" xml:space="preserve">
+    <value>Add an image or video media resource to the ordered video composition.</value>
+  </data>
+  <data name="VideoCompositionBlock_Description" xml:space="preserve">
+    <value>Defines one ordered image or video segment, its duration, transitions, source media resource, and optional text labels.</value>
+  </data>
+  <data name="VideoCompositionBlock_Key" xml:space="preserve">
+    <value>Block Key</value>
+  </data>
+  <data name="VideoCompositionBlock_SortOrder" xml:space="preserve">
+    <value>Sort Order</value>
+  </data>
+  <data name="VideoCompositionBlock_Type" xml:space="preserve">
+    <value>Block Type</value>
+  </data>
+  <data name="VideoCompositionBlock_MediaResource" xml:space="preserve">
+    <value>Media Resource</value>
+  </data>
+  <data name="VideoCompositionBlock_MediaResourceFileName" xml:space="preserve">
+    <value>Media File Name</value>
+  </data>
+  <data name="VideoCompositionBlock_MediaResourceMimeType" xml:space="preserve">
+    <value>Media MIME Type</value>
+  </data>
+  <data name="VideoCompositionBlock_DurationSeconds" xml:space="preserve">
+    <value>Duration in Seconds</value>
+  </data>
+  <data name="VideoCompositionBlock_FadeInSeconds" xml:space="preserve">
+    <value>Fade In Seconds</value>
+  </data>
+  <data name="VideoCompositionBlock_FadeOutSeconds" xml:space="preserve">
+    <value>Fade Out Seconds</value>
+  </data>
+  <data name="VideoCompositionBlock_Labels" xml:space="preserve">
+    <value>Text Labels</value>
+  </data>
+  <data name="VideoCompositionTextLabel_Title" xml:space="preserve">
+    <value>Video Composition Text Label</value>
+  </data>
+  <data name="VideoCompositionTextLabel_Help" xml:space="preserve">
+    <value>Add timed text to an image block in the video composition.</value>
+  </data>
+  <data name="VideoCompositionTextLabel_Description" xml:space="preserve">
+    <value>Defines text content, position, typography, alignment, width, timing, and fade behavior for a video composition label.</value>
+  </data>
+  <data name="VideoCompositionTextLabel_Text" xml:space="preserve">
+    <value>Text</value>
+  </data>
+  <data name="VideoCompositionTextLabel_X" xml:space="preserve">
+    <value>X Position</value>
+  </data>
+  <data name="VideoCompositionTextLabel_Y" xml:space="preserve">
+    <value>Y Position</value>
+  </data>
+  <data name="VideoCompositionTextLabel_FontSize" xml:space="preserve">
+    <value>Font Size</value>
+  </data>
+  <data name="VideoCompositionTextLabel_Bold" xml:space="preserve">
+    <value>Bold</value>
+  </data>
+  <data name="VideoCompositionTextLabel_Color" xml:space="preserve">
+    <value>Text Color</value>
+  </data>
+  <data name="VideoCompositionTextLabel_Alignment" xml:space="preserve">
+    <value>Text Alignment</value>
+  </data>
+  <data name="VideoCompositionTextLabel_MaxWidth" xml:space="preserve">
+    <value>Maximum Width</value>
+  </data>
+  <data name="VideoCompositionTextLabel_DelaySeconds" xml:space="preserve">
+    <value>Delay Seconds</value>
+  </data>
+  <data name="VideoCompositionTextLabel_VisibleDurationSeconds" xml:space="preserve">
+    <value>Visible Duration Seconds</value>
+  </data>
+  <data name="VideoCompositionTextLabel_FadeInSeconds" xml:space="preserve">
+    <value>Fade In Seconds</value>
+  </data>
+  <data name="VideoCompositionTextLabel_FadeOutSeconds" xml:space="preserve">
+    <value>Fade Out Seconds</value>
+  </data>
+  <data name="VideoProductionStatus_ImportingProviderVideo" xml:space="preserve">
+    <value>Importing Generated Video</value>
+  </data>
+  <data name="VideoProductionStatus_ProviderVideoReady" xml:space="preserve">
+    <value>Generated Video Ready</value>
+  </data>
 </root>

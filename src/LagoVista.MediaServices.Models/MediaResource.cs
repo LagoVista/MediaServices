@@ -67,6 +67,14 @@ namespace LagoVista.MediaServices.Models
 
         public string MediaTypeKey { get; set; }
 
+        public string SourceEntityType { get; set; }
+
+        public EntityHeader SourceEntity { get; set; }
+
+        public string ThumbnailStorageReferenceName { get; set; }
+
+        public int? DurationSeconds { get; set; }
+
         [FormField(LabelResource: MediaServicesResources.Names.MediaResources_FileName, FieldType: FieldTypes.FileUpload, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public string FileName { get; set; }
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_IsFileUpload, HelpResource: Resources.MediaServicesResources.Names.MediaResource_IsFileUpload_Help, FieldType: FieldTypes.CheckBox, ResourceType: typeof(MediaServicesResources))]
@@ -216,9 +224,9 @@ namespace LagoVista.MediaServices.Models
             }
             else if (contentType.ToLower().Contains("mp4"))
             {
-                ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Audio);
+                ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Video);
                 if (String.IsNullOrEmpty(StorageReferenceName)) StorageReferenceName = $"{id}.mp4";
-                MimeType = "audio/mp4";
+                MimeType = "video/mp4";
             }
             else if (contentType.ToLower().Contains("ogg"))
             {

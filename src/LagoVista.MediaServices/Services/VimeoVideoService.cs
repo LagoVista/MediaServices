@@ -72,6 +72,49 @@ namespace LagoVista.MediaServices.Services
             return InvokeResult<VimeoVideo>.Create(video);
         }
 
+        public async Task<InvokeResult<VimeoVideo>> CreateTusUploadAsync(string accessToken, VimeoTusUploadRequest uploadRequest, CancellationToken cancellationToken = default)
+        {
+            if (String.IsNullOrWhiteSpace(accessToken))
+            {
+                return InvokeResult<VimeoVideo>.FromError("The Vimeo access token is required.");
+            }
+
+            if (uploadRequest == null)
+            {
+                return InvokeResult<VimeoVideo>.FromError("The Vimeo TUS upload request is required.");
+            }
+
+            if (uploadRequest.Upload == null || uploadRequest.Upload.Size <= 0)
+            {
+                return InvokeResult<VimeoVideo>.FromError("The Vimeo TUS upload size must be greater than zero.");
+            }
+
+            var json = JsonConvert.SerializeObject(uploadRequest);
+            using var request = new HttpRequestMessage(HttpMethod.Post, "me/videos");
+            ApplyHeaders(request, accessToken.Trim());
+            request.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            var content = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                return InvokeResult<VimeoVideo>.FromError($"Vimeo TUS upload creation failed with status {(int)response.StatusCode}: {content}");
+            }
+
+            var video = JsonConvert.DeserializeObject<VimeoVideo>(content);
+            if (video == null || String.IsNullOrWhiteSpace(video.Uri))
+            {
+                return InvokeResult<VimeoVideo>.FromError("Vimeo accepted the TUS upload request but did not return a video URI.");
+            }
+
+            if (String.IsNullOrWhiteSpace(video.Upload?.UploadLink))
+            {
+                return InvokeResult<VimeoVideo>.FromError("Vimeo accepted the TUS upload request but did not return an upload link.");
+            }
+
+            return InvokeResult<VimeoVideo>.Create(video);
+        }
+
         public async Task<InvokeResult> AddVideoToFolderAsync(string videoUri, string folderUri, string accessToken, CancellationToken cancellationToken = default)
         {
             if (String.IsNullOrWhiteSpace(videoUri))

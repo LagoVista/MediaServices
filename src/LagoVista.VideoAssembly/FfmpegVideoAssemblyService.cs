@@ -18,15 +18,19 @@ namespace LagoVista.VideoAssembly
         private readonly FfprobeMediaInspectionService _inspectionService;
         private readonly ProcessRunner _processRunner;
         private readonly AssSubtitleDocumentBuilder _subtitleBuilder;
+        private readonly VimeoUploadSessionClient _vimeoUploadSessionClient;
+        private readonly TusVideoUploader _tusVideoUploader;
         private readonly VideoAssemblyOptions _options;
 
-        public FfmpegVideoAssemblyService(VideoAssemblyWorkspaceFactory workspaceFactory, VideoAssemblySourceDownloader sourceDownloader, FfprobeMediaInspectionService inspectionService, ProcessRunner processRunner, AssSubtitleDocumentBuilder subtitleBuilder, VideoAssemblyOptions options)
+        public FfmpegVideoAssemblyService(VideoAssemblyWorkspaceFactory workspaceFactory, VideoAssemblySourceDownloader sourceDownloader, FfprobeMediaInspectionService inspectionService, ProcessRunner processRunner, AssSubtitleDocumentBuilder subtitleBuilder, VimeoUploadSessionClient vimeoUploadSessionClient, TusVideoUploader tusVideoUploader, VideoAssemblyOptions options)
         {
             _workspaceFactory = workspaceFactory ?? throw new ArgumentNullException(nameof(workspaceFactory));
             _sourceDownloader = sourceDownloader ?? throw new ArgumentNullException(nameof(sourceDownloader));
             _inspectionService = inspectionService ?? throw new ArgumentNullException(nameof(inspectionService));
             _processRunner = processRunner ?? throw new ArgumentNullException(nameof(processRunner));
             _subtitleBuilder = subtitleBuilder ?? throw new ArgumentNullException(nameof(subtitleBuilder));
+            _vimeoUploadSessionClient = vimeoUploadSessionClient ?? throw new ArgumentNullException(nameof(vimeoUploadSessionClient));
+            _tusVideoUploader = tusVideoUploader ?? throw new ArgumentNullException(nameof(tusVideoUploader));
             _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
@@ -64,8 +68,31 @@ namespace LagoVista.VideoAssembly
                 if (outputInspection.DurationSeconds > request.Limits.MaxOutputDurationSeconds) throw new InvalidOperationException($"Output duration of {outputInspection.DurationSeconds:F1} seconds exceeds the limit of {request.Limits.MaxOutputDurationSeconds} seconds.");
 
                 var sha256 = await CalculateSha256Async(workspace.OutputPath, executionTimeout.Token);
-                progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.Completed, PercentComplete = 100, Message = $"Assembly completed. Output: {workspace.OutputPath}" });
-                return new VideoAssemblyResult { Successful = true, OutputFilePath = workspace.OutputPath, OutputSizeBytes = outputInspection.SizeBytes, OutputDurationSeconds = (int)Math.Round(outputInspection.DurationSeconds), Sha256 = sha256 };
+                var outputDurationSeconds = (int)Math.Round(outputInspection.DurationSeconds);
+                string vimeoVideoUri = null;
+                string vimeoVideoId = null;
+
+                if (request.ExecutionOptions?.UploadToVimeo == true)
+                {
+                    var uploadUrl = request.VimeoUpload.UploadUrl;
+                    vimeoVideoUri = request.VimeoUpload.VideoUri;
+                    vimeoVideoId = request.VimeoUpload.VideoId;
+
+                    if (String.IsNullOrWhiteSpace(uploadUrl))
+                    {
+                        progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.UploadingToVimeo, Message = "Requesting Vimeo upload session." });
+                        var session = await _vimeoUploadSessionClient.CreateSessionAsync(request, outputInspection.SizeBytes, outputDurationSeconds, sha256, executionTimeout.Token);
+                        uploadUrl = session.UploadUrl;
+                        vimeoVideoUri = session.VideoUri;
+                        vimeoVideoId = session.VideoId;
+                    }
+
+                    progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.UploadingToVimeo, PercentComplete = 0, Message = "Uploading assembled video to Vimeo.", BytesCompleted = 0, BytesTotal = outputInspection.SizeBytes });
+                    await _tusVideoUploader.UploadAsync(uploadUrl, workspace.OutputPath, progress, executionTimeout.Token);
+                }
+
+                progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.Completed, PercentComplete = 100, Message = request.ExecutionOptions?.UploadToVimeo == true ? "Assembly and Vimeo upload completed." : $"Assembly completed. Output: {workspace.OutputPath}" });
+                return new VideoAssemblyResult { Successful = true, OutputFilePath = workspace.OutputPath, VimeoVideoUri = vimeoVideoUri, VimeoVideoId = vimeoVideoId, OutputSizeBytes = outputInspection.SizeBytes, OutputDurationSeconds = outputDurationSeconds, Sha256 = sha256 };
             }
             catch (Exception ex)
             {

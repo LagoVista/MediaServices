@@ -310,6 +310,9 @@ namespace LagoVista.MediaServices.Services
         [JsonProperty("thumbnail_url")]
         public string ThumbnailUrl { get; set; }
 
+        [JsonProperty("caption_url")]
+        public string CaptionUrl { get; set; }
+
         [JsonProperty("duration")]
         public decimal? Duration { get; set; }
 
@@ -342,6 +345,30 @@ namespace LagoVista.MediaServices.Services
 
         [JsonProperty("link")]
         public string Link { get; set; }
+    }
+
+    public class VimeoTusUploadRequest
+    {
+        [JsonProperty("upload")]
+        public VimeoTusUploadSource Upload { get; set; }
+
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonProperty("description")]
+        public string Description { get; set; }
+
+        [JsonProperty("privacy")]
+        public VimeoPrivacySettings Privacy { get; set; }
+    }
+
+    public class VimeoTusUploadSource
+    {
+        [JsonProperty("approach")]
+        public string Approach { get; set; } = "tus";
+
+        [JsonProperty("size")]
+        public long Size { get; set; }
     }
 
     public class VimeoPrivacySettings
@@ -378,6 +405,9 @@ namespace LagoVista.MediaServices.Services
 
         [JsonProperty("error")]
         public string Error { get; set; }
+
+        [JsonProperty("upload_link")]
+        public string UploadLink { get; set; }
     }
 
     public class VimeoTranscodeState

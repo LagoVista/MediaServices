@@ -39,6 +39,8 @@ namespace LagoVista.VideoAssembly.Worker
             builder.Services.AddSingleton<FfprobeMediaInspectionService>();
             builder.Services.AddHttpClient<RequestLoader>(client => client.Timeout = TimeSpan.FromMinutes(options.HttpTimeoutMinutes));
             builder.Services.AddHttpClient<VideoAssemblySourceDownloader>(client => client.Timeout = TimeSpan.FromMinutes(options.HttpTimeoutMinutes));
+            builder.Services.AddHttpClient<VimeoUploadSessionClient>(client => client.Timeout = TimeSpan.FromMinutes(options.HttpTimeoutMinutes));
+            builder.Services.AddHttpClient<TusVideoUploader>(client => client.Timeout = Timeout.InfiniteTimeSpan);
             builder.Services.AddSingleton<IVideoAssemblyService, FfmpegVideoAssemblyService>();
 
             using var host = builder.Build();
@@ -68,6 +70,8 @@ namespace LagoVista.VideoAssembly.Worker
                 Console.WriteLine($"Duration: {result.OutputDurationSeconds} seconds");
                 Console.WriteLine($"Size: {result.OutputSizeBytes} bytes");
                 Console.WriteLine($"SHA-256: {result.Sha256}");
+                if (!String.IsNullOrWhiteSpace(result.VimeoVideoUri)) Console.WriteLine($"Vimeo URI: {result.VimeoVideoUri}");
+                if (!String.IsNullOrWhiteSpace(result.VimeoVideoId)) Console.WriteLine($"Vimeo ID: {result.VimeoVideoId}");
                 return 0;
             }
             catch (OperationCanceledException)

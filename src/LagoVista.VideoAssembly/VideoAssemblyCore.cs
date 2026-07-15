@@ -20,8 +20,12 @@ namespace LagoVista.VideoAssembly
         public bool PreserveFailedWorkspace { get; set; }
         public int HttpTimeoutMinutes { get; set; } = 15;
         public int CallbackTimeoutSeconds { get; set; } = 30;
+        public string CallbackBaseUrl { get; set; }
+        public int CallbackMaxAttempts { get; set; } = 3;
+        public int CallbackRetryDelaySeconds { get; set; } = 2;
         public string FontFamily { get; set; } = "Manrope";
         public string FontDirectory { get; set; }
+        public int TusChunkSizeBytes { get; set; } = 16777216;
     }
 
     public sealed class VideoAssemblyProgress
@@ -66,8 +70,19 @@ namespace LagoVista.VideoAssembly
             var executionOptions = request.ExecutionOptions ?? new VideoAssemblyExecutionOptions();
             if (executionOptions.UploadToVimeo)
             {
-                if (request.VimeoUpload == null) errors.Add("VimeoUpload is required when UploadToVimeo is enabled.");
-                else ValidateUrl(errors, request.VimeoUpload.UploadUrl, "VimeoUpload.UploadUrl");
+                if (request.VimeoUpload == null)
+                {
+                    errors.Add("VimeoUpload is required when UploadToVimeo is enabled.");
+                }
+                else if (!String.IsNullOrWhiteSpace(request.VimeoUpload.UploadUrl))
+                {
+                    ValidateUrl(errors, request.VimeoUpload.UploadUrl, "VimeoUpload.UploadUrl");
+                }
+                else
+                {
+                    ValidateUrl(errors, request.VimeoUpload.SessionRequestUrl, "VimeoUpload.SessionRequestUrl");
+                    if (String.IsNullOrWhiteSpace(request.VimeoUpload.SessionAccessToken)) errors.Add("VimeoUpload.SessionAccessToken is required when VimeoUpload.UploadUrl is not supplied.");
+                }
             }
 
             if (executionOptions.SendCallbacks)
@@ -75,7 +90,9 @@ namespace LagoVista.VideoAssembly
                 if (request.Callback == null) errors.Add("Callback is required when SendCallbacks is enabled.");
                 else
                 {
-                    ValidateUrl(errors, request.Callback.Url, "Callback.Url");
+                    if (String.IsNullOrWhiteSpace(request.Callback.Url) && String.IsNullOrWhiteSpace(request.Callback.Path)) errors.Add("Callback.Url or Callback.Path is required when SendCallbacks is enabled.");
+                    if (!String.IsNullOrWhiteSpace(request.Callback.Url)) ValidateUrl(errors, request.Callback.Url, "Callback.Url");
+                    if (!String.IsNullOrWhiteSpace(request.Callback.Path) && !request.Callback.Path.StartsWith("/", StringComparison.Ordinal)) errors.Add("Callback.Path must begin with '/'.");
                     if (String.IsNullOrWhiteSpace(request.Callback.AccessToken)) errors.Add("Callback.AccessToken is required when SendCallbacks is enabled.");
                 }
             }

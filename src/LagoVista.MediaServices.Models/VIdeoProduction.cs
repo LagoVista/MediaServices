@@ -41,6 +41,12 @@ namespace LagoVista.MediaServices.Models
         [EnumLabel(VideoProduction.Status_ProviderCompleted, MediaServicesResources.Names.VideoProductionStatus_ProviderCompleted, typeof(MediaServicesResources))]
         ProviderCompleted,
 
+        [EnumLabel(VideoProduction.Status_ImportingProviderVideo, MediaServicesResources.Names.VideoProductionStatus_ImportingProviderVideo, typeof(MediaServicesResources))]
+        ImportingProviderVideo,
+
+        [EnumLabel(VideoProduction.Status_ProviderVideoReady, MediaServicesResources.Names.VideoProductionStatus_ProviderVideoReady, typeof(MediaServicesResources))]
+        ProviderVideoReady,
+
         [EnumLabel(VideoProduction.Status_ImportingToVimeo, MediaServicesResources.Names.VideoProductionStatus_ImportingToVimeo, typeof(MediaServicesResources))]
         ImportingToVimeo,
 
@@ -86,6 +92,8 @@ namespace LagoVista.MediaServices.Models
         public const string Status_Submitted = "submitted";
         public const string Status_Rendering = "rendering";
         public const string Status_ProviderCompleted = "provider-completed";
+        public const string Status_ImportingProviderVideo = "importing-provider-video";
+        public const string Status_ProviderVideoReady = "provider-video-ready";
         public const string Status_ImportingToVimeo = "importing-to-vimeo";
         public const string Status_ProcessingAtVimeo = "processing-at-vimeo";
         public const string Status_UpdatingEntity = "updating-entity";
@@ -190,6 +198,16 @@ namespace LagoVista.MediaServices.Models
         public string SubmittedUtc { get; set; }
         public string CompletedUtc { get; set; }
         public string LastStatusCheckUtc { get; set; }
+
+        public string ProviderVideoImportRequestId { get; set; }
+        public string ProviderVideoImportStage { get; set; }
+        public string ProviderVideoImportMessage { get; set; }
+        public int? ProviderVideoImportPercentComplete { get; set; }
+        public long? ProviderVideoImportBytesCompleted { get; set; }
+        public long? ProviderVideoImportBytesTotal { get; set; }
+        public string ProviderVideoImportStartedUtc { get; set; }
+        public string ProviderVideoImportLastUpdatedUtc { get; set; }
+        public string ProviderVideoImportCompletedUtc { get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoProduction_ErrorMessage, FieldType: FieldTypes.MultiLineText, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: false)]
         public string ErrorMessage { get; set; }

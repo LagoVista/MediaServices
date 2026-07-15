@@ -98,6 +98,25 @@ namespace LagoVista.VideoAssembly.Contracts
     public sealed class VideoAssemblyVimeoUpload
     {
         public string UploadUrl { get; set; }
+        public string SessionRequestUrl { get; set; }
+        public string SessionAccessToken { get; set; }
+        public string VideoUri { get; set; }
+        public string VideoId { get; set; }
+    }
+
+    public sealed class VideoAssemblyVimeoSessionRequest
+    {
+        public string RequestId { get; set; }
+        public string AttemptId { get; set; }
+        public string ProductionId { get; set; }
+        public long OutputSizeBytes { get; set; }
+        public int OutputDurationSeconds { get; set; }
+        public string Sha256 { get; set; }
+    }
+
+    public sealed class VideoAssemblyVimeoSessionResponse
+    {
+        public string UploadUrl { get; set; }
         public string VideoUri { get; set; }
         public string VideoId { get; set; }
     }
@@ -105,6 +124,7 @@ namespace LagoVista.VideoAssembly.Contracts
     public sealed class VideoAssemblyCallbackSettings
     {
         public string Url { get; set; }
+        public string Path { get; set; }
         public string AccessToken { get; set; }
     }
 

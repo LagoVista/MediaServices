@@ -200,7 +200,11 @@
     }
   ],
   "vimeoUpload": null,
-  "callback": null,
+  "callback": {
+    "url": null,
+    "path": "/api/media/video-assembly/callback",
+    "accessToken": "replace-with-short-lived-job-token"
+  },
   "limits": {
     "maxSourceFileBytes": 4294967296,
     "maxTotalInputBytes": 4294967296,
@@ -212,7 +216,7 @@
   },
   "executionOptions": {
     "uploadToVimeo": false,
-    "sendCallbacks": false,
+    "sendCallbacks": true,
     "preserveOutputFile": true
   }
 }

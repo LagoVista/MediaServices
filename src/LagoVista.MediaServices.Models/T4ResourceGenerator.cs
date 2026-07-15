@@ -1,4 +1,4 @@
-﻿/*7/13/2026 10:32:17 AM*/
+﻿/*7/15/2026 4:50:23 PM*/
 using System.Globalization;
 using System.Reflection;
 
@@ -414,6 +414,189 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:VideoAvatarStatus_WaitingForProvider
 
 		public static string VideoAvatarStatus_WaitingForProvider { get { return GetResourceString("VideoAvatarStatus_WaitingForProvider"); } }
+//Resources:MediaServicesResources:VideoComposition_Blocks
+
+		public static string VideoComposition_Blocks { get { return GetResourceString("VideoComposition_Blocks"); } }
+//Resources:MediaServicesResources:VideoComposition_Description
+
+		public static string VideoComposition_Description { get { return GetResourceString("VideoComposition_Description"); } }
+//Resources:MediaServicesResources:VideoComposition_ErrorMessage
+
+		public static string VideoComposition_ErrorMessage { get { return GetResourceString("VideoComposition_ErrorMessage"); } }
+//Resources:MediaServicesResources:VideoComposition_Help
+
+		public static string VideoComposition_Help { get { return GetResourceString("VideoComposition_Help"); } }
+//Resources:MediaServicesResources:VideoComposition_OutputMediaResource
+
+		public static string VideoComposition_OutputMediaResource { get { return GetResourceString("VideoComposition_OutputMediaResource"); } }
+//Resources:MediaServicesResources:VideoComposition_Status
+
+		public static string VideoComposition_Status { get { return GetResourceString("VideoComposition_Status"); } }
+//Resources:MediaServicesResources:VideoComposition_Title
+
+		public static string VideoComposition_Title { get { return GetResourceString("VideoComposition_Title"); } }
+//Resources:MediaServicesResources:VideoCompositionAssemblyStage_Completed
+
+		public static string VideoCompositionAssemblyStage_Completed { get { return GetResourceString("VideoCompositionAssemblyStage_Completed"); } }
+//Resources:MediaServicesResources:VideoCompositionAssemblyStage_DownloadingMedia
+
+		public static string VideoCompositionAssemblyStage_DownloadingMedia { get { return GetResourceString("VideoCompositionAssemblyStage_DownloadingMedia"); } }
+//Resources:MediaServicesResources:VideoCompositionAssemblyStage_Encoding
+
+		public static string VideoCompositionAssemblyStage_Encoding { get { return GetResourceString("VideoCompositionAssemblyStage_Encoding"); } }
+//Resources:MediaServicesResources:VideoCompositionAssemblyStage_Failed
+
+		public static string VideoCompositionAssemblyStage_Failed { get { return GetResourceString("VideoCompositionAssemblyStage_Failed"); } }
+//Resources:MediaServicesResources:VideoCompositionAssemblyStage_InspectingMedia
+
+		public static string VideoCompositionAssemblyStage_InspectingMedia { get { return GetResourceString("VideoCompositionAssemblyStage_InspectingMedia"); } }
+//Resources:MediaServicesResources:VideoCompositionAssemblyStage_None
+
+		public static string VideoCompositionAssemblyStage_None { get { return GetResourceString("VideoCompositionAssemblyStage_None"); } }
+//Resources:MediaServicesResources:VideoCompositionAssemblyStage_NormalizingMedia
+
+		public static string VideoCompositionAssemblyStage_NormalizingMedia { get { return GetResourceString("VideoCompositionAssemblyStage_NormalizingMedia"); } }
+//Resources:MediaServicesResources:VideoCompositionAssemblyStage_Queued
+
+		public static string VideoCompositionAssemblyStage_Queued { get { return GetResourceString("VideoCompositionAssemblyStage_Queued"); } }
+//Resources:MediaServicesResources:VideoCompositionAssemblyStage_RenderingLabels
+
+		public static string VideoCompositionAssemblyStage_RenderingLabels { get { return GetResourceString("VideoCompositionAssemblyStage_RenderingLabels"); } }
+//Resources:MediaServicesResources:VideoCompositionAssemblyStage_UploadingToAzure
+
+		public static string VideoCompositionAssemblyStage_UploadingToAzure { get { return GetResourceString("VideoCompositionAssemblyStage_UploadingToAzure"); } }
+//Resources:MediaServicesResources:VideoCompositionAssemblyStage_UploadingToVimeo
+
+		public static string VideoCompositionAssemblyStage_UploadingToVimeo { get { return GetResourceString("VideoCompositionAssemblyStage_UploadingToVimeo"); } }
+//Resources:MediaServicesResources:VideoCompositionBlock_Description
+
+		public static string VideoCompositionBlock_Description { get { return GetResourceString("VideoCompositionBlock_Description"); } }
+//Resources:MediaServicesResources:VideoCompositionBlock_DurationSeconds
+
+		public static string VideoCompositionBlock_DurationSeconds { get { return GetResourceString("VideoCompositionBlock_DurationSeconds"); } }
+//Resources:MediaServicesResources:VideoCompositionBlock_FadeInSeconds
+
+		public static string VideoCompositionBlock_FadeInSeconds { get { return GetResourceString("VideoCompositionBlock_FadeInSeconds"); } }
+//Resources:MediaServicesResources:VideoCompositionBlock_FadeOutSeconds
+
+		public static string VideoCompositionBlock_FadeOutSeconds { get { return GetResourceString("VideoCompositionBlock_FadeOutSeconds"); } }
+//Resources:MediaServicesResources:VideoCompositionBlock_Help
+
+		public static string VideoCompositionBlock_Help { get { return GetResourceString("VideoCompositionBlock_Help"); } }
+//Resources:MediaServicesResources:VideoCompositionBlock_Key
+
+		public static string VideoCompositionBlock_Key { get { return GetResourceString("VideoCompositionBlock_Key"); } }
+//Resources:MediaServicesResources:VideoCompositionBlock_Labels
+
+		public static string VideoCompositionBlock_Labels { get { return GetResourceString("VideoCompositionBlock_Labels"); } }
+//Resources:MediaServicesResources:VideoCompositionBlock_MediaResource
+
+		public static string VideoCompositionBlock_MediaResource { get { return GetResourceString("VideoCompositionBlock_MediaResource"); } }
+//Resources:MediaServicesResources:VideoCompositionBlock_MediaResourceFileName
+
+		public static string VideoCompositionBlock_MediaResourceFileName { get { return GetResourceString("VideoCompositionBlock_MediaResourceFileName"); } }
+//Resources:MediaServicesResources:VideoCompositionBlock_MediaResourceMimeType
+
+		public static string VideoCompositionBlock_MediaResourceMimeType { get { return GetResourceString("VideoCompositionBlock_MediaResourceMimeType"); } }
+//Resources:MediaServicesResources:VideoCompositionBlock_SortOrder
+
+		public static string VideoCompositionBlock_SortOrder { get { return GetResourceString("VideoCompositionBlock_SortOrder"); } }
+//Resources:MediaServicesResources:VideoCompositionBlock_Title
+
+		public static string VideoCompositionBlock_Title { get { return GetResourceString("VideoCompositionBlock_Title"); } }
+//Resources:MediaServicesResources:VideoCompositionBlock_Type
+
+		public static string VideoCompositionBlock_Type { get { return GetResourceString("VideoCompositionBlock_Type"); } }
+//Resources:MediaServicesResources:VideoCompositionBlockType_Image
+
+		public static string VideoCompositionBlockType_Image { get { return GetResourceString("VideoCompositionBlockType_Image"); } }
+//Resources:MediaServicesResources:VideoCompositionBlockType_Video
+
+		public static string VideoCompositionBlockType_Video { get { return GetResourceString("VideoCompositionBlockType_Video"); } }
+//Resources:MediaServicesResources:VideoCompositions_Title
+
+		public static string VideoCompositions_Title { get { return GetResourceString("VideoCompositions_Title"); } }
+//Resources:MediaServicesResources:VideoCompositionStatus_Assembling
+
+		public static string VideoCompositionStatus_Assembling { get { return GetResourceString("VideoCompositionStatus_Assembling"); } }
+//Resources:MediaServicesResources:VideoCompositionStatus_Cancelled
+
+		public static string VideoCompositionStatus_Cancelled { get { return GetResourceString("VideoCompositionStatus_Cancelled"); } }
+//Resources:MediaServicesResources:VideoCompositionStatus_Completed
+
+		public static string VideoCompositionStatus_Completed { get { return GetResourceString("VideoCompositionStatus_Completed"); } }
+//Resources:MediaServicesResources:VideoCompositionStatus_Draft
+
+		public static string VideoCompositionStatus_Draft { get { return GetResourceString("VideoCompositionStatus_Draft"); } }
+//Resources:MediaServicesResources:VideoCompositionStatus_Failed
+
+		public static string VideoCompositionStatus_Failed { get { return GetResourceString("VideoCompositionStatus_Failed"); } }
+//Resources:MediaServicesResources:VideoCompositionStatus_Preparing
+
+		public static string VideoCompositionStatus_Preparing { get { return GetResourceString("VideoCompositionStatus_Preparing"); } }
+//Resources:MediaServicesResources:VideoCompositionStatus_ProcessingAtVimeo
+
+		public static string VideoCompositionStatus_ProcessingAtVimeo { get { return GetResourceString("VideoCompositionStatus_ProcessingAtVimeo"); } }
+//Resources:MediaServicesResources:VideoCompositionStatus_Queued
+
+		public static string VideoCompositionStatus_Queued { get { return GetResourceString("VideoCompositionStatus_Queued"); } }
+//Resources:MediaServicesResources:VideoCompositionStatus_Uploading
+
+		public static string VideoCompositionStatus_Uploading { get { return GetResourceString("VideoCompositionStatus_Uploading"); } }
+//Resources:MediaServicesResources:VideoCompositionTextAlignment_Center
+
+		public static string VideoCompositionTextAlignment_Center { get { return GetResourceString("VideoCompositionTextAlignment_Center"); } }
+//Resources:MediaServicesResources:VideoCompositionTextAlignment_Left
+
+		public static string VideoCompositionTextAlignment_Left { get { return GetResourceString("VideoCompositionTextAlignment_Left"); } }
+//Resources:MediaServicesResources:VideoCompositionTextAlignment_Right
+
+		public static string VideoCompositionTextAlignment_Right { get { return GetResourceString("VideoCompositionTextAlignment_Right"); } }
+//Resources:MediaServicesResources:VideoCompositionTextLabel_Alignment
+
+		public static string VideoCompositionTextLabel_Alignment { get { return GetResourceString("VideoCompositionTextLabel_Alignment"); } }
+//Resources:MediaServicesResources:VideoCompositionTextLabel_Bold
+
+		public static string VideoCompositionTextLabel_Bold { get { return GetResourceString("VideoCompositionTextLabel_Bold"); } }
+//Resources:MediaServicesResources:VideoCompositionTextLabel_Color
+
+		public static string VideoCompositionTextLabel_Color { get { return GetResourceString("VideoCompositionTextLabel_Color"); } }
+//Resources:MediaServicesResources:VideoCompositionTextLabel_DelaySeconds
+
+		public static string VideoCompositionTextLabel_DelaySeconds { get { return GetResourceString("VideoCompositionTextLabel_DelaySeconds"); } }
+//Resources:MediaServicesResources:VideoCompositionTextLabel_Description
+
+		public static string VideoCompositionTextLabel_Description { get { return GetResourceString("VideoCompositionTextLabel_Description"); } }
+//Resources:MediaServicesResources:VideoCompositionTextLabel_FadeInSeconds
+
+		public static string VideoCompositionTextLabel_FadeInSeconds { get { return GetResourceString("VideoCompositionTextLabel_FadeInSeconds"); } }
+//Resources:MediaServicesResources:VideoCompositionTextLabel_FadeOutSeconds
+
+		public static string VideoCompositionTextLabel_FadeOutSeconds { get { return GetResourceString("VideoCompositionTextLabel_FadeOutSeconds"); } }
+//Resources:MediaServicesResources:VideoCompositionTextLabel_FontSize
+
+		public static string VideoCompositionTextLabel_FontSize { get { return GetResourceString("VideoCompositionTextLabel_FontSize"); } }
+//Resources:MediaServicesResources:VideoCompositionTextLabel_Help
+
+		public static string VideoCompositionTextLabel_Help { get { return GetResourceString("VideoCompositionTextLabel_Help"); } }
+//Resources:MediaServicesResources:VideoCompositionTextLabel_MaxWidth
+
+		public static string VideoCompositionTextLabel_MaxWidth { get { return GetResourceString("VideoCompositionTextLabel_MaxWidth"); } }
+//Resources:MediaServicesResources:VideoCompositionTextLabel_Text
+
+		public static string VideoCompositionTextLabel_Text { get { return GetResourceString("VideoCompositionTextLabel_Text"); } }
+//Resources:MediaServicesResources:VideoCompositionTextLabel_Title
+
+		public static string VideoCompositionTextLabel_Title { get { return GetResourceString("VideoCompositionTextLabel_Title"); } }
+//Resources:MediaServicesResources:VideoCompositionTextLabel_VisibleDurationSeconds
+
+		public static string VideoCompositionTextLabel_VisibleDurationSeconds { get { return GetResourceString("VideoCompositionTextLabel_VisibleDurationSeconds"); } }
+//Resources:MediaServicesResources:VideoCompositionTextLabel_X
+
+		public static string VideoCompositionTextLabel_X { get { return GetResourceString("VideoCompositionTextLabel_X"); } }
+//Resources:MediaServicesResources:VideoCompositionTextLabel_Y
+
+		public static string VideoCompositionTextLabel_Y { get { return GetResourceString("VideoCompositionTextLabel_Y"); } }
 //Resources:MediaServicesResources:VideoProduction_BackgroundMediaResource
 
 		public static string VideoProduction_BackgroundMediaResource { get { return GetResourceString("VideoProduction_BackgroundMediaResource"); } }
@@ -492,6 +675,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:VideoProductionStatus_GeneratingPreviewAudio
 
 		public static string VideoProductionStatus_GeneratingPreviewAudio { get { return GetResourceString("VideoProductionStatus_GeneratingPreviewAudio"); } }
+//Resources:MediaServicesResources:VideoProductionStatus_ImportingProviderVideo
+
+		public static string VideoProductionStatus_ImportingProviderVideo { get { return GetResourceString("VideoProductionStatus_ImportingProviderVideo"); } }
 //Resources:MediaServicesResources:VideoProductionStatus_ImportingToVimeo
 
 		public static string VideoProductionStatus_ImportingToVimeo { get { return GetResourceString("VideoProductionStatus_ImportingToVimeo"); } }
@@ -507,6 +693,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:VideoProductionStatus_ProviderCompleted
 
 		public static string VideoProductionStatus_ProviderCompleted { get { return GetResourceString("VideoProductionStatus_ProviderCompleted"); } }
+//Resources:MediaServicesResources:VideoProductionStatus_ProviderVideoReady
+
+		public static string VideoProductionStatus_ProviderVideoReady { get { return GetResourceString("VideoProductionStatus_ProviderVideoReady"); } }
 //Resources:MediaServicesResources:VideoProductionStatus_Rendering
 
 		public static string VideoProductionStatus_Rendering { get { return GetResourceString("VideoProductionStatus_Rendering"); } }
@@ -648,6 +837,67 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string VideoAvatarStatus_Preparing = "VideoAvatarStatus_Preparing";
 			public const string VideoAvatarStatus_Ready = "VideoAvatarStatus_Ready";
 			public const string VideoAvatarStatus_WaitingForProvider = "VideoAvatarStatus_WaitingForProvider";
+			public const string VideoComposition_Blocks = "VideoComposition_Blocks";
+			public const string VideoComposition_Description = "VideoComposition_Description";
+			public const string VideoComposition_ErrorMessage = "VideoComposition_ErrorMessage";
+			public const string VideoComposition_Help = "VideoComposition_Help";
+			public const string VideoComposition_OutputMediaResource = "VideoComposition_OutputMediaResource";
+			public const string VideoComposition_Status = "VideoComposition_Status";
+			public const string VideoComposition_Title = "VideoComposition_Title";
+			public const string VideoCompositionAssemblyStage_Completed = "VideoCompositionAssemblyStage_Completed";
+			public const string VideoCompositionAssemblyStage_DownloadingMedia = "VideoCompositionAssemblyStage_DownloadingMedia";
+			public const string VideoCompositionAssemblyStage_Encoding = "VideoCompositionAssemblyStage_Encoding";
+			public const string VideoCompositionAssemblyStage_Failed = "VideoCompositionAssemblyStage_Failed";
+			public const string VideoCompositionAssemblyStage_InspectingMedia = "VideoCompositionAssemblyStage_InspectingMedia";
+			public const string VideoCompositionAssemblyStage_None = "VideoCompositionAssemblyStage_None";
+			public const string VideoCompositionAssemblyStage_NormalizingMedia = "VideoCompositionAssemblyStage_NormalizingMedia";
+			public const string VideoCompositionAssemblyStage_Queued = "VideoCompositionAssemblyStage_Queued";
+			public const string VideoCompositionAssemblyStage_RenderingLabels = "VideoCompositionAssemblyStage_RenderingLabels";
+			public const string VideoCompositionAssemblyStage_UploadingToAzure = "VideoCompositionAssemblyStage_UploadingToAzure";
+			public const string VideoCompositionAssemblyStage_UploadingToVimeo = "VideoCompositionAssemblyStage_UploadingToVimeo";
+			public const string VideoCompositionBlock_Description = "VideoCompositionBlock_Description";
+			public const string VideoCompositionBlock_DurationSeconds = "VideoCompositionBlock_DurationSeconds";
+			public const string VideoCompositionBlock_FadeInSeconds = "VideoCompositionBlock_FadeInSeconds";
+			public const string VideoCompositionBlock_FadeOutSeconds = "VideoCompositionBlock_FadeOutSeconds";
+			public const string VideoCompositionBlock_Help = "VideoCompositionBlock_Help";
+			public const string VideoCompositionBlock_Key = "VideoCompositionBlock_Key";
+			public const string VideoCompositionBlock_Labels = "VideoCompositionBlock_Labels";
+			public const string VideoCompositionBlock_MediaResource = "VideoCompositionBlock_MediaResource";
+			public const string VideoCompositionBlock_MediaResourceFileName = "VideoCompositionBlock_MediaResourceFileName";
+			public const string VideoCompositionBlock_MediaResourceMimeType = "VideoCompositionBlock_MediaResourceMimeType";
+			public const string VideoCompositionBlock_SortOrder = "VideoCompositionBlock_SortOrder";
+			public const string VideoCompositionBlock_Title = "VideoCompositionBlock_Title";
+			public const string VideoCompositionBlock_Type = "VideoCompositionBlock_Type";
+			public const string VideoCompositionBlockType_Image = "VideoCompositionBlockType_Image";
+			public const string VideoCompositionBlockType_Video = "VideoCompositionBlockType_Video";
+			public const string VideoCompositions_Title = "VideoCompositions_Title";
+			public const string VideoCompositionStatus_Assembling = "VideoCompositionStatus_Assembling";
+			public const string VideoCompositionStatus_Cancelled = "VideoCompositionStatus_Cancelled";
+			public const string VideoCompositionStatus_Completed = "VideoCompositionStatus_Completed";
+			public const string VideoCompositionStatus_Draft = "VideoCompositionStatus_Draft";
+			public const string VideoCompositionStatus_Failed = "VideoCompositionStatus_Failed";
+			public const string VideoCompositionStatus_Preparing = "VideoCompositionStatus_Preparing";
+			public const string VideoCompositionStatus_ProcessingAtVimeo = "VideoCompositionStatus_ProcessingAtVimeo";
+			public const string VideoCompositionStatus_Queued = "VideoCompositionStatus_Queued";
+			public const string VideoCompositionStatus_Uploading = "VideoCompositionStatus_Uploading";
+			public const string VideoCompositionTextAlignment_Center = "VideoCompositionTextAlignment_Center";
+			public const string VideoCompositionTextAlignment_Left = "VideoCompositionTextAlignment_Left";
+			public const string VideoCompositionTextAlignment_Right = "VideoCompositionTextAlignment_Right";
+			public const string VideoCompositionTextLabel_Alignment = "VideoCompositionTextLabel_Alignment";
+			public const string VideoCompositionTextLabel_Bold = "VideoCompositionTextLabel_Bold";
+			public const string VideoCompositionTextLabel_Color = "VideoCompositionTextLabel_Color";
+			public const string VideoCompositionTextLabel_DelaySeconds = "VideoCompositionTextLabel_DelaySeconds";
+			public const string VideoCompositionTextLabel_Description = "VideoCompositionTextLabel_Description";
+			public const string VideoCompositionTextLabel_FadeInSeconds = "VideoCompositionTextLabel_FadeInSeconds";
+			public const string VideoCompositionTextLabel_FadeOutSeconds = "VideoCompositionTextLabel_FadeOutSeconds";
+			public const string VideoCompositionTextLabel_FontSize = "VideoCompositionTextLabel_FontSize";
+			public const string VideoCompositionTextLabel_Help = "VideoCompositionTextLabel_Help";
+			public const string VideoCompositionTextLabel_MaxWidth = "VideoCompositionTextLabel_MaxWidth";
+			public const string VideoCompositionTextLabel_Text = "VideoCompositionTextLabel_Text";
+			public const string VideoCompositionTextLabel_Title = "VideoCompositionTextLabel_Title";
+			public const string VideoCompositionTextLabel_VisibleDurationSeconds = "VideoCompositionTextLabel_VisibleDurationSeconds";
+			public const string VideoCompositionTextLabel_X = "VideoCompositionTextLabel_X";
+			public const string VideoCompositionTextLabel_Y = "VideoCompositionTextLabel_Y";
 			public const string VideoProduction_BackgroundMediaResource = "VideoProduction_BackgroundMediaResource";
 			public const string VideoProduction_Description = "VideoProduction_Description";
 			public const string VideoProduction_ErrorMessage = "VideoProduction_ErrorMessage";
@@ -674,11 +924,13 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string VideoProductionStatus_Draft = "VideoProductionStatus_Draft";
 			public const string VideoProductionStatus_Failed = "VideoProductionStatus_Failed";
 			public const string VideoProductionStatus_GeneratingPreviewAudio = "VideoProductionStatus_GeneratingPreviewAudio";
+			public const string VideoProductionStatus_ImportingProviderVideo = "VideoProductionStatus_ImportingProviderVideo";
 			public const string VideoProductionStatus_ImportingToVimeo = "VideoProductionStatus_ImportingToVimeo";
 			public const string VideoProductionStatus_PreparingAvatar = "VideoProductionStatus_PreparingAvatar";
 			public const string VideoProductionStatus_PreviewAudioReady = "VideoProductionStatus_PreviewAudioReady";
 			public const string VideoProductionStatus_ProcessingAtVimeo = "VideoProductionStatus_ProcessingAtVimeo";
 			public const string VideoProductionStatus_ProviderCompleted = "VideoProductionStatus_ProviderCompleted";
+			public const string VideoProductionStatus_ProviderVideoReady = "VideoProductionStatus_ProviderVideoReady";
 			public const string VideoProductionStatus_Rendering = "VideoProductionStatus_Rendering";
 			public const string VideoProductionStatus_Submitted = "VideoProductionStatus_Submitted";
 			public const string VideoProductionStatus_Submitting = "VideoProductionStatus_Submitting";

@@ -1,0 +1,515 @@
+using LagoVista.Core;
+using LagoVista.Core.Attributes;
+using LagoVista.Core.Interfaces;
+using LagoVista.Core.Models;
+using LagoVista.Core.Models.UIMetaData;
+using LagoVista.Core.Validation;
+using LagoVista.MediaServices.Models.Resources;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace LagoVista.MediaServices.Models
+{
+    public enum VideoCompositionStatus
+    {
+        [EnumLabel(VideoComposition.Status_Draft, MediaServicesResources.Names.VideoCompositionStatus_Draft, typeof(MediaServicesResources))]
+        Draft,
+
+        [EnumLabel(VideoComposition.Status_Preparing, MediaServicesResources.Names.VideoCompositionStatus_Preparing, typeof(MediaServicesResources))]
+        Preparing,
+
+        [EnumLabel(VideoComposition.Status_Queued, MediaServicesResources.Names.VideoCompositionStatus_Queued, typeof(MediaServicesResources))]
+        Queued,
+
+        [EnumLabel(VideoComposition.Status_Assembling, MediaServicesResources.Names.VideoCompositionStatus_Assembling, typeof(MediaServicesResources))]
+        Assembling,
+
+        [EnumLabel(VideoComposition.Status_Uploading, MediaServicesResources.Names.VideoCompositionStatus_Uploading, typeof(MediaServicesResources))]
+        Uploading,
+
+        [EnumLabel(VideoComposition.Status_ProcessingAtVimeo, MediaServicesResources.Names.VideoCompositionStatus_ProcessingAtVimeo, typeof(MediaServicesResources))]
+        ProcessingAtVimeo,
+
+        [EnumLabel(VideoComposition.Status_Completed, MediaServicesResources.Names.VideoCompositionStatus_Completed, typeof(MediaServicesResources))]
+        Completed,
+
+        [EnumLabel(VideoComposition.Status_Failed, MediaServicesResources.Names.VideoCompositionStatus_Failed, typeof(MediaServicesResources))]
+        Failed,
+
+        [EnumLabel(VideoComposition.Status_Cancelled, MediaServicesResources.Names.VideoCompositionStatus_Cancelled, typeof(MediaServicesResources))]
+        Cancelled
+    }
+
+    public enum VideoCompositionBlockType
+    {
+        [EnumLabel(VideoComposition.BlockType_Image, MediaServicesResources.Names.VideoCompositionBlockType_Image, typeof(MediaServicesResources))]
+        Image,
+
+        [EnumLabel(VideoComposition.BlockType_Video, MediaServicesResources.Names.VideoCompositionBlockType_Video, typeof(MediaServicesResources))]
+        Video
+    }
+
+    public enum VideoCompositionTextAlignment
+    {
+        [EnumLabel(VideoComposition.TextAlignment_Left, MediaServicesResources.Names.VideoCompositionTextAlignment_Left, typeof(MediaServicesResources))]
+        Left,
+
+        [EnumLabel(VideoComposition.TextAlignment_Center, MediaServicesResources.Names.VideoCompositionTextAlignment_Center, typeof(MediaServicesResources))]
+        Center,
+
+        [EnumLabel(VideoComposition.TextAlignment_Right, MediaServicesResources.Names.VideoCompositionTextAlignment_Right, typeof(MediaServicesResources))]
+        Right
+    }
+
+    public enum VideoCompositionAssemblyStage
+    {
+        [EnumLabel(VideoComposition.AssemblyStage_None, MediaServicesResources.Names.VideoCompositionAssemblyStage_None, typeof(MediaServicesResources))]
+        None,
+
+        [EnumLabel(VideoComposition.AssemblyStage_Queued, MediaServicesResources.Names.VideoCompositionAssemblyStage_Queued, typeof(MediaServicesResources))]
+        Queued,
+
+        [EnumLabel(VideoComposition.AssemblyStage_DownloadingMedia, MediaServicesResources.Names.VideoCompositionAssemblyStage_DownloadingMedia, typeof(MediaServicesResources))]
+        DownloadingMedia,
+
+        [EnumLabel(VideoComposition.AssemblyStage_InspectingMedia, MediaServicesResources.Names.VideoCompositionAssemblyStage_InspectingMedia, typeof(MediaServicesResources))]
+        InspectingMedia,
+
+        [EnumLabel(VideoComposition.AssemblyStage_RenderingLabels, MediaServicesResources.Names.VideoCompositionAssemblyStage_RenderingLabels, typeof(MediaServicesResources))]
+        RenderingLabels,
+
+        [EnumLabel(VideoComposition.AssemblyStage_NormalizingMedia, MediaServicesResources.Names.VideoCompositionAssemblyStage_NormalizingMedia, typeof(MediaServicesResources))]
+        NormalizingMedia,
+
+        [EnumLabel(VideoComposition.AssemblyStage_Encoding, MediaServicesResources.Names.VideoCompositionAssemblyStage_Encoding, typeof(MediaServicesResources))]
+        Encoding,
+
+        [EnumLabel(VideoComposition.AssemblyStage_UploadingToAzure, MediaServicesResources.Names.VideoCompositionAssemblyStage_UploadingToAzure, typeof(MediaServicesResources))]
+        UploadingToAzure,
+
+        [EnumLabel(VideoComposition.AssemblyStage_UploadingToVimeo, MediaServicesResources.Names.VideoCompositionAssemblyStage_UploadingToVimeo, typeof(MediaServicesResources))]
+        UploadingToVimeo,
+
+        [EnumLabel(VideoComposition.AssemblyStage_Completed, MediaServicesResources.Names.VideoCompositionAssemblyStage_Completed, typeof(MediaServicesResources))]
+        Completed,
+
+        [EnumLabel(VideoComposition.AssemblyStage_Failed, MediaServicesResources.Names.VideoCompositionAssemblyStage_Failed, typeof(MediaServicesResources))]
+        Failed
+    }
+
+    [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.VideoComposition_Title, MediaServicesResources.Names.VideoComposition_Help, MediaServicesResources.Names.VideoComposition_Description,
+        EntityDescriptionAttribute.EntityTypes.CoreIoTModel, typeof(MediaServicesResources), Icon: "lago-icon://system/nuvos-semantic-icon/video-production-default",
+        ListUIUrl: "/contentmanagement/videocompositions", EditUIUrl: "/contentmanagement/videocomposition/{id}", CreateUIUrl: "/contentmanagement/videocomposition/add",
+        PreviewUIUrl: "/contentmanagement/videocomposition/{id}",
+        GetListUrl: "/api/media/videocompositions", SaveUrl: "/api/media/videocomposition", GetUrl: "/api/media/videocomposition/{id}", FactoryUrl: "/api/media/videocomposition/factory", DeleteUrl: "/api/media/videocomposition/{id}",
+        ClusterKey: "video", ModelType: EntityDescriptionAttribute.ModelTypes.Document, Shape: EntityDescriptionAttribute.EntityShapes.Entity, Lifecycle: EntityDescriptionAttribute.Lifecycles.RunTime,
+        Sensitivity: EntityDescriptionAttribute.Sensitivities.Internal, IndexInclude: true, IndexTier: EntityDescriptionAttribute.IndexTiers.Primary, IndexPriority: 80, IndexTagsCsv: "media,video,composition,assembly,vimeo")]
+    public class VideoComposition : EntityBase, IValidateable, IFormDescriptor, IFormDescriptorCol2, ISummaryFactory
+    {
+        public const string Status_Draft = "draft";
+        public const string Status_Preparing = "preparing";
+        public const string Status_Queued = "queued";
+        public const string Status_Assembling = "assembling";
+        public const string Status_Uploading = "uploading";
+        public const string Status_ProcessingAtVimeo = "processing-at-vimeo";
+        public const string Status_Completed = "completed";
+        public const string Status_Failed = "failed";
+        public const string Status_Cancelled = "cancelled";
+
+        public const string BlockType_Image = "image";
+        public const string BlockType_Video = "video";
+
+        public const string TextAlignment_Left = "left";
+        public const string TextAlignment_Center = "center";
+        public const string TextAlignment_Right = "right";
+
+        public const string AssemblyStage_None = "none";
+        public const string AssemblyStage_Queued = "queued";
+        public const string AssemblyStage_DownloadingMedia = "downloading-media";
+        public const string AssemblyStage_InspectingMedia = "inspecting-media";
+        public const string AssemblyStage_RenderingLabels = "rendering-labels";
+        public const string AssemblyStage_NormalizingMedia = "normalizing-media";
+        public const string AssemblyStage_Encoding = "encoding";
+        public const string AssemblyStage_UploadingToAzure = "uploading-to-azure";
+        public const string AssemblyStage_UploadingToVimeo = "uploading-to-vimeo";
+        public const string AssemblyStage_Completed = "completed";
+        public const string AssemblyStage_Failed = "failed";
+
+        public VideoComposition()
+        {
+            Icon = "lago-icon://system/nuvos-semantic-icon/video-production-default";
+            Status = EntityHeader<VideoCompositionStatus>.Create(VideoCompositionStatus.Draft);
+        }
+
+        [FormField(LabelResource: MediaServicesResources.Names.Common_Name, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
+        public new string Name { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.Common_Description, FieldType: FieldTypes.HtmlEditor, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
+        public new string Description { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoComposition_Status, FieldType: FieldTypes.Picker, EnumType: typeof(VideoCompositionStatus), ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: false)]
+        public EntityHeader<VideoCompositionStatus> Status { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoComposition_OutputMediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: false)]
+        public EntityHeader OutputMediaResource { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoComposition_Blocks, FieldType: FieldTypes.ChildListInline, ChildListDisplayMembers: "key,mediaResourceFileName,type,durationSeconds", ChildListDisplayMember: nameof(VideoCompositionBlock.Key), IsReferenceField: false, FactoryUrl: "/api/media/videocomposition/block/factory", ResourceType: typeof(MediaServicesResources), IsUserEditable: true)]
+        public List<VideoCompositionBlock> Blocks { get; set; } = new List<VideoCompositionBlock>();
+
+        public VideoCompositionAssemblyState AssemblyState { get; set; } = new VideoCompositionAssemblyState();
+
+        public string VimeoFolderUri { get; set; }
+
+        public string VimeoFolderAssignedUtc { get; set; }
+
+        public string VimeoVideoId { get; set; }
+
+        public string VimeoVideoUri { get; set; }
+
+        public string VimeoVideoUrl { get; set; }
+
+        public string AssemblyRequestStorageReferenceName { get; set; }
+
+        public string SubmittedUtc { get; set; }
+
+        public string CompletedUtc { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoComposition_ErrorMessage, FieldType: FieldTypes.MultiLineText, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: false)]
+        public string ErrorMessage { get; set; }
+
+        public List<string> GetFormFields()
+        {
+            return new List<string>()
+            {
+                nameof(Name),
+                nameof(Key),
+                nameof(Icon),
+                nameof(Description),
+                nameof(Blocks)
+            };
+        }
+
+        public List<string> GetFormFieldsCol2()
+        {
+            return new List<string>()
+            {
+                nameof(Status),
+                nameof(OutputMediaResource),
+                nameof(ErrorMessage)
+            };
+        }
+
+        public void Validate(ValidationResult result)
+        {
+            if (Status == null)
+            {
+                result.AddUserError("Video composition status is required.");
+            }
+
+            if (Status?.Value != VideoCompositionStatus.Draft && (Blocks == null || Blocks.Count == 0))
+            {
+                result.AddUserError("At least one video composition block is required.");
+                return;
+            }
+
+            if (Blocks == null || Blocks.Count == 0)
+            {
+                return;
+            }
+
+            var duplicateKeys = Blocks.Where(block => !String.IsNullOrWhiteSpace(block.Key)).GroupBy(block => block.Key, StringComparer.OrdinalIgnoreCase).Where(group => group.Count() > 1).Select(group => group.Key).ToList();
+            if (duplicateKeys.Count > 0)
+            {
+                result.AddUserError($"Video composition block keys must be unique. Duplicate keys: {String.Join(", ", duplicateKeys)}.");
+            }
+
+            foreach (var block in Blocks)
+            {
+                block.Validate(result);
+            }
+        }
+
+        public VideoCompositionSummary CreateSummary()
+        {
+            var summary = new VideoCompositionSummary
+            {
+                Status = Status,
+                OutputMediaResource = OutputMediaResource,
+                BlockCount = Blocks?.Count ?? 0,
+                TotalDurationSeconds = CalculateKnownDurationSeconds(),
+                VimeoVideoUrl = VimeoVideoUrl,
+                SubmittedUtc = SubmittedUtc,
+                CompletedUtc = CompletedUtc
+            };
+
+            summary.Populate(this);
+            return summary;
+        }
+
+        ISummaryData ISummaryFactory.CreateSummary()
+        {
+            return CreateSummary();
+        }
+
+        private int? CalculateKnownDurationSeconds()
+        {
+            if (Blocks == null || Blocks.Count == 0 || Blocks.Any(block => !block.DurationSeconds.HasValue))
+            {
+                return null;
+            }
+
+            return Convert.ToInt32(Math.Ceiling(Blocks.Sum(block => block.DurationSeconds.Value)));
+        }
+    }
+
+    [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.VideoCompositionBlock_Title, MediaServicesResources.Names.VideoCompositionBlock_Help, MediaServicesResources.Names.VideoCompositionBlock_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, typeof(MediaServicesResources),
+        Icon: "lago-icon://system/nuvos-semantic-icon/video-production-default", FactoryUrl: "/api/media/videocomposition/block/factory")]
+    public sealed class VideoCompositionBlock : IFormDescriptor
+    {
+        public VideoCompositionBlock()
+        {
+            Id = Guid.NewGuid().ToId();
+        }
+
+        public string Id { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_Key, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
+        public string Key { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_SortOrder, FieldType: FieldTypes.Integer, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
+        public int SortOrder { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_Type, FieldType: FieldTypes.Picker, EnumType: typeof(VideoCompositionBlockType), ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
+        public VideoCompositionBlockType Type { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_MediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
+        public EntityHeader MediaResource { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_MediaResourceFileName, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: false)]
+        public string MediaResourceFileName { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_MediaResourceMimeType, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: false)]
+        public string MediaResourceMimeType { get; set; }
+
+        public string ThumbnailUrl { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_DurationSeconds, FieldType: FieldTypes.Decimal, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
+        public double? DurationSeconds { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_FadeInSeconds, FieldType: FieldTypes.Decimal, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
+        public double FadeInSeconds { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_FadeOutSeconds, FieldType: FieldTypes.Decimal, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
+        public double FadeOutSeconds { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_Labels, FieldType: FieldTypes.ChildListInline, ChildListDisplayMembers: "text,fontSize,alignment", ChildListDisplayMember: nameof(VideoCompositionTextLabel.Text), IsReferenceField: false, FactoryUrl: "/api/media/videocomposition/label/factory", ResourceType: typeof(MediaServicesResources), IsUserEditable: true)]
+        public List<VideoCompositionTextLabel> Labels { get; set; } = new List<VideoCompositionTextLabel>();
+
+        public List<string> GetFormFields()
+        {
+            return new List<string>()
+            {
+                nameof(Key),
+                nameof(SortOrder),
+                nameof(Type),
+                nameof(MediaResource),
+                nameof(MediaResourceFileName),
+                nameof(MediaResourceMimeType),
+                nameof(DurationSeconds),
+                nameof(FadeInSeconds),
+                nameof(FadeOutSeconds),
+                nameof(Labels)
+            };
+        }
+
+        public void Validate(ValidationResult result)
+        {
+            if (String.IsNullOrWhiteSpace(Id))
+            {
+                result.AddUserError("Every video composition block must have an ID.");
+            }
+
+            if (String.IsNullOrWhiteSpace(Key))
+            {
+                result.AddUserError("Every video composition block must have a key.");
+            }
+
+            if (MediaResource == null || String.IsNullOrWhiteSpace(MediaResource.Id))
+            {
+                result.AddUserError($"Video composition block '{Key}' must reference a media resource.");
+            }
+
+            if (FadeInSeconds < 0 || FadeOutSeconds < 0)
+            {
+                result.AddUserError($"Video composition block '{Key}' cannot have negative fade durations.");
+            }
+
+            if (Type == VideoCompositionBlockType.Image && (!DurationSeconds.HasValue || DurationSeconds.Value <= 0))
+            {
+                result.AddUserError($"Image block '{Key}' must have a duration greater than zero.");
+            }
+
+            foreach (var label in Labels ?? new List<VideoCompositionTextLabel>())
+            {
+                label.Validate(result, Key);
+            }
+        }
+    }
+
+    [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.VideoCompositionTextLabel_Title, MediaServicesResources.Names.VideoCompositionTextLabel_Help, MediaServicesResources.Names.VideoCompositionTextLabel_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, typeof(MediaServicesResources),
+        Icon: "lago-icon://system/nuvos-semantic-icon/video-production-default", FactoryUrl: "/api/media/videocomposition/label/factory")]
+    public sealed class VideoCompositionTextLabel : IFormDescriptor
+    {
+        public VideoCompositionTextLabel()
+        {
+            Id = Guid.NewGuid().ToId();
+        }
+
+        public string Id { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTextLabel_Text, FieldType: FieldTypes.MultiLineText, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
+        public string Text { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTextLabel_X, FieldType: FieldTypes.Integer, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
+        public int X { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTextLabel_Y, FieldType: FieldTypes.Integer, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
+        public int Y { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTextLabel_FontSize, FieldType: FieldTypes.Integer, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
+        public int FontSize { get; set; } = 48;
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTextLabel_Bold, FieldType: FieldTypes.CheckBox, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
+        public bool Bold { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTextLabel_Color, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
+        public string Color { get; set; } = "#FFFFFF";
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTextLabel_Alignment, FieldType: FieldTypes.Picker, EnumType: typeof(VideoCompositionTextAlignment), ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
+        public VideoCompositionTextAlignment Alignment { get; set; } = VideoCompositionTextAlignment.Left;
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTextLabel_MaxWidth, FieldType: FieldTypes.Integer, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
+        public int? MaxWidth { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTextLabel_DelaySeconds, FieldType: FieldTypes.Decimal, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
+        public double DelaySeconds { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTextLabel_VisibleDurationSeconds, FieldType: FieldTypes.Decimal, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
+        public double? VisibleDurationSeconds { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTextLabel_FadeInSeconds, FieldType: FieldTypes.Decimal, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
+        public double FadeInSeconds { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTextLabel_FadeOutSeconds, FieldType: FieldTypes.Decimal, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
+        public double FadeOutSeconds { get; set; }
+
+        public List<string> GetFormFields()
+        {
+            return new List<string>()
+            {
+                nameof(Text),
+                nameof(X),
+                nameof(Y),
+                nameof(FontSize),
+                nameof(Bold),
+                nameof(Color),
+                nameof(Alignment),
+                nameof(MaxWidth),
+                nameof(DelaySeconds),
+                nameof(VisibleDurationSeconds),
+                nameof(FadeInSeconds),
+                nameof(FadeOutSeconds)
+            };
+        }
+
+        public void Validate(ValidationResult result, string blockKey)
+        {
+            if (String.IsNullOrWhiteSpace(Text))
+            {
+                result.AddUserError($"A label on block '{blockKey}' does not contain text.");
+            }
+
+            if (FontSize <= 0)
+            {
+                result.AddUserError($"A label on block '{blockKey}' must have a font size greater than zero.");
+            }
+
+            if (DelaySeconds < 0 || FadeInSeconds < 0 || FadeOutSeconds < 0)
+            {
+                result.AddUserError($"A label on block '{blockKey}' cannot have negative timing values.");
+            }
+
+            if (VisibleDurationSeconds.HasValue && VisibleDurationSeconds.Value <= 0)
+            {
+                result.AddUserError($"A label on block '{blockKey}' must have a visible duration greater than zero.");
+            }
+
+            if (String.IsNullOrWhiteSpace(Color) || Color.Length != 7 || Color[0] != '#')
+            {
+                result.AddUserError($"A label on block '{blockKey}' must use a six-digit hexadecimal color such as #FFFFFF.");
+            }
+        }
+    }
+
+    public sealed class VideoCompositionAssemblyState
+    {
+        public string RequestId { get; set; }
+
+        public string AttemptId { get; set; }
+
+        public string ContractVersion { get; set; }
+
+        public VideoCompositionAssemblyStage Stage { get; set; }
+
+        public int? PercentComplete { get; set; }
+
+        public string Message { get; set; }
+
+        public long LastSequence { get; set; }
+
+        public long? BytesCompleted { get; set; }
+
+        public long? BytesTotal { get; set; }
+
+        public int? ProcessedDurationSeconds { get; set; }
+
+        public int? TotalDurationSeconds { get; set; }
+
+        public long? OutputSizeBytes { get; set; }
+
+        public int? OutputDurationSeconds { get; set; }
+
+        public string OutputSha256 { get; set; }
+
+        public string StartedUtc { get; set; }
+
+        public string LastUpdatedUtc { get; set; }
+
+        public string CompletedUtc { get; set; }
+
+        public string ErrorMessage { get; set; }
+    }
+
+    [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.VideoCompositions_Title, MediaServicesResources.Names.VideoComposition_Help, MediaServicesResources.Names.VideoComposition_Description,
+        EntityDescriptionAttribute.EntityTypes.Dto, typeof(MediaServicesResources), Icon: "lago-icon://system/nuvos-semantic-icon/video-production-default",
+        ListUIUrl: "/contentmanagement/videocompositions", EditUIUrl: "/contentmanagement/videocomposition/{id}", CreateUIUrl: "/contentmanagement/videocomposition/add",
+        PreviewUIUrl: "/contentmanagement/videocomposition/{id}",
+        GetListUrl: "/api/media/videocompositions", SaveUrl: "/api/media/videocomposition", GetUrl: "/api/media/videocomposition/{id}", FactoryUrl: "/api/media/videocomposition/factory", DeleteUrl: "/api/media/videocomposition/{id}")]
+    public class VideoCompositionSummary : SummaryData
+    {
+        public EntityHeader<VideoCompositionStatus> Status { get; set; }
+
+        public EntityHeader OutputMediaResource { get; set; }
+
+        public int BlockCount { get; set; }
+
+        public int? TotalDurationSeconds { get; set; }
+
+        public string VimeoVideoUrl { get; set; }
+
+        public string SubmittedUtc { get; set; }
+
+        public string CompletedUtc { get; set; }
+    }
+}

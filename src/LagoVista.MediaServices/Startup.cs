@@ -19,6 +19,8 @@ namespace LagoVista.MediaServices
 
             services.AddTransient<IVideoAvatarManager, VideoAvatarManager>();
             services.AddTransient<IVideoProductionManager, VideoProductionManager>();
+            services.AddTransient<IVideoCompositionManager, VideoCompositionManager>();
+            services.AddTransient<IVideoMediaImportManager, VideoMediaImportManager>();
             services.AddSingleton<IVimeoVideoService, VimeoVideoService>();
             services.AddTransient<ILagoVistaIconStyleProfileProvider, LagoVistaIconStyleProfileProvider>();
             services.AddTransient<ILagoVistaIconPromptBuilder, LagoVistaIconPromptBuilder>();
