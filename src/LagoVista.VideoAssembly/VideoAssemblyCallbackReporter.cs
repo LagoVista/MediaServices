@@ -9,7 +9,7 @@ namespace LagoVista.VideoAssembly
     {
         private readonly object _syncRoot = new object();
         private readonly VideoAssemblyRequest _request;
-        private readonly VideoAssemblyCallbackClient _callbackClient;
+        private readonly VideoProcessorCallbackClient _callbackClient;
         private readonly VideoProcessorNotificationPublisher _notificationPublisher;
         private readonly CancellationToken _cancellationToken;
         private Task _pendingCallback = Task.CompletedTask;
@@ -17,7 +17,7 @@ namespace LagoVista.VideoAssembly
         private VideoAssemblyStage? _lastReportedStage;
         private long _sequence;
 
-        public VideoAssemblyCallbackReporter(VideoAssemblyRequest request, VideoAssemblyCallbackClient callbackClient, VideoProcessorNotificationPublisher notificationPublisher, CancellationToken cancellationToken)
+        public VideoAssemblyCallbackReporter(VideoAssemblyRequest request, VideoProcessorCallbackClient callbackClient, VideoProcessorNotificationPublisher notificationPublisher, CancellationToken cancellationToken)
         {
             _request = request ?? throw new ArgumentNullException(nameof(request));
             _callbackClient = callbackClient ?? throw new ArgumentNullException(nameof(callbackClient));
@@ -52,10 +52,9 @@ namespace LagoVista.VideoAssembly
                 if (_lastReportedStage == progress.Stage) return;
                 _lastReportedStage = progress.Stage;
                 var callback = CreateCallback(VideoAssemblyCallbackType.Progress, progress.Stage, progress.Message);
+                callback.PercentComplete = progress.PercentComplete;
                 callback.BytesCompleted = progress.BytesCompleted;
                 callback.BytesTotal = progress.BytesTotal;
-                callback.ProcessedDurationSeconds = progress.ProcessedDurationSeconds;
-                callback.TotalDurationSeconds = progress.TotalDurationSeconds;
                 _pendingCallback = _pendingCallback.ContinueWith(_ => SendSafelyAsync(callback), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
             }
         }
@@ -69,12 +68,8 @@ namespace LagoVista.VideoAssembly
         {
             await FlushAsync();
             var callback = CreateCallback(VideoAssemblyCallbackType.Completed, VideoAssemblyStage.Completed, "Video assembly completed.");
+            callback.PercentComplete = 100;
             callback.Outputs = result?.Outputs ?? new System.Collections.Generic.List<VideoProcessorOutputArtifact>();
-            callback.VimeoVideoUri = result?.VimeoVideoUri;
-            callback.VimeoVideoId = result?.VimeoVideoId;
-            callback.OutputSizeBytes = result?.OutputSizeBytes;
-            callback.OutputDurationSeconds = result?.OutputDurationSeconds;
-            callback.Sha256 = result?.Sha256;
             await SendSafelyAsync(callback);
         }
 
@@ -91,26 +86,28 @@ namespace LagoVista.VideoAssembly
             lock (_syncRoot) return Task.WhenAll(_pendingCallback, _pendingNotification);
         }
 
-        private VideoAssemblyCallback CreateCallback(VideoAssemblyCallbackType type, VideoAssemblyStage stage, string message)
+        private VideoProcessorJobCallback CreateCallback(VideoAssemblyCallbackType type, VideoAssemblyStage stage, string message)
         {
-            return new VideoAssemblyCallback
+            return new VideoProcessorJobCallback
             {
+                Version = _request.Version,
+                JobType = VideoProcessorJobType.VideoAssembly,
                 RequestId = _request.RequestId,
                 AttemptId = _request.AttemptId,
                 ProductionId = _request.ProductionId,
                 Sequence = Interlocked.Increment(ref _sequence),
                 Type = type,
-                Stage = stage,
+                Stage = stage.ToString(),
                 Message = message,
                 TimestampUtc = DateTime.UtcNow.ToString("O")
             };
         }
 
-        private async Task SendSafelyAsync(VideoAssemblyCallback callback)
+        private async Task SendSafelyAsync(VideoProcessorJobCallback callback)
         {
             try
             {
-                await _callbackClient.SendAsync(_request, callback, _cancellationToken);
+                await _callbackClient.SendAsync(_request.Callback, callback, _cancellationToken);
             }
             catch (OperationCanceledException) when (_cancellationToken.IsCancellationRequested)
             {

@@ -48,7 +48,6 @@ namespace LagoVista.VideoAssembly.Worker
             builder.Services.AddHttpClient<VideoMediaImportService>(client => client.Timeout = TimeSpan.FromMinutes(options.HttpTimeoutMinutes));
             builder.Services.AddHttpClient<AzureBlobSasUploader>(client => client.Timeout = Timeout.InfiniteTimeSpan);
             builder.Services.AddHttpClient<VideoProcessorCallbackClient>(client => client.Timeout = TimeSpan.FromSeconds(options.CallbackTimeoutSeconds));
-            builder.Services.AddHttpClient<VideoAssemblyCallbackClient>(client => client.Timeout = TimeSpan.FromSeconds(options.CallbackTimeoutSeconds));
             builder.Services.AddHttpClient<VimeoUploadSessionClient>(client => client.Timeout = TimeSpan.FromMinutes(options.HttpTimeoutMinutes));
             builder.Services.AddHttpClient<TusVideoUploader>(client => client.Timeout = Timeout.InfiniteTimeSpan);
             builder.Services.AddSingleton<IVideoAssemblyService, FfmpegVideoAssemblyService>();
@@ -93,7 +92,7 @@ namespace LagoVista.VideoAssembly.Worker
             }
 
             Console.WriteLine($"Loaded assembly request '{request.RequestId}', attempt '{request.AttemptId}', production '{request.ProductionId}'.");
-            var callbackReporter = new VideoAssemblyCallbackReporter(request, services.GetRequiredService<VideoAssemblyCallbackClient>(), services.GetRequiredService<VideoProcessorNotificationPublisher>(), cancellationToken);
+            var callbackReporter = new VideoAssemblyCallbackReporter(request, services.GetRequiredService<VideoProcessorCallbackClient>(), services.GetRequiredService<VideoProcessorNotificationPublisher>(), cancellationToken);
             await callbackReporter.SendStartedAsync();
 
             var result = await services.GetRequiredService<IVideoAssemblyService>().AssembleAsync(request, callbackReporter, cancellationToken);
