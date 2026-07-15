@@ -19,14 +19,16 @@ namespace LagoVista.MediaServices.Managers
         private readonly IMediaServicesManager _mediaServicesManager;
         private readonly IHeyGenVideoService _heyGenVideoService;
         private readonly IVideoProcessorStorageUrlService _videoProcessorStorageUrlService;
+        private readonly IVideoProcessorRequestStore _videoProcessorRequestStore;
         private readonly INotificationPublisher _notificationPublisher;
 
-        public VideoMediaImportManager(IVideoProductionRepo videoProductionRepo, IMediaServicesManager mediaServicesManager, IHeyGenVideoService heyGenVideoService, IVideoProcessorStorageUrlService videoProcessorStorageUrlService, ICoreAppServices coreAppServices)
+        public VideoMediaImportManager(IVideoProductionRepo videoProductionRepo, IMediaServicesManager mediaServicesManager, IHeyGenVideoService heyGenVideoService, IVideoProcessorStorageUrlService videoProcessorStorageUrlService, IVideoProcessorRequestStore videoProcessorRequestStore, ICoreAppServices coreAppServices)
         {
             _videoProductionRepo = videoProductionRepo ?? throw new ArgumentNullException(nameof(videoProductionRepo));
             _mediaServicesManager = mediaServicesManager ?? throw new ArgumentNullException(nameof(mediaServicesManager));
             _heyGenVideoService = heyGenVideoService ?? throw new ArgumentNullException(nameof(heyGenVideoService));
             _videoProcessorStorageUrlService = videoProcessorStorageUrlService ?? throw new ArgumentNullException(nameof(videoProcessorStorageUrlService));
+            _videoProcessorRequestStore = videoProcessorRequestStore ?? throw new ArgumentNullException(nameof(videoProcessorRequestStore));
             _notificationPublisher = coreAppServices?.NotificationPublisher ?? throw new ArgumentNullException(nameof(coreAppServices.NotificationPublisher));
         }
 
@@ -209,8 +211,10 @@ namespace LagoVista.MediaServices.Managers
             }
 
             var requestId = String.IsNullOrWhiteSpace(production.ProviderVideoImportRequestId) ? Guid.NewGuid().ToId().Value : production.ProviderVideoImportRequestId;
+            var attemptId = Guid.NewGuid().ToId().Value;
 
             production.ProviderVideoImportRequestId = requestId;
+            production.ProviderVideoImportAttemptId = attemptId;
             production.ProviderVideoImportMessage = "Raw video resource created. Preparing secure video and thumbnail upload destinations.";
             production.ProviderVideoImportPercentComplete = 5;
             production.ProviderVideoImportLastUpdatedUtc = UtcTimestamp.Now;
@@ -224,6 +228,7 @@ namespace LagoVista.MediaServices.Managers
             var request = new VideoMediaImportRequest
             {
                 RequestId = requestId,
+                AttemptId = attemptId,
                 ProductionId = production.Id,
                 MediaResourceId = mediaResource.Id,
                 Source = new VideoAssemblySource
@@ -257,14 +262,37 @@ namespace LagoVista.MediaServices.Managers
                 },
                 ExecutionOptions = new VideoMediaImportExecutionOptions
                 {
+                    GenerateThumbnail = generateThumbnail,
                     SendCallbacks = true
                 }
             };
+
+            var storedRequestResult = await _videoProcessorRequestStore.SaveAsync(org.Id, request.JobType.ToString(), requestId, attemptId, request, cancellationToken);
+            if (!storedRequestResult.Successful)
+            {
+                await ApplyPreparationFailureAsync(production, storedRequestResult.Errors[0].Message);
+                return storedRequestResult.ToInvokeResult<VideoMediaImportPreparationResult>();
+            }
+
+            production.ProviderVideoImportRequestStorageReferenceName = storedRequestResult.Result.StorageReferenceName;
+            production.ProviderVideoImportRequestBlobUrl = storedRequestResult.Result.BlobUrl;
+            production.ProviderVideoImportRequestUrl = storedRequestResult.Result.RequestUrl;
+            production.ProviderVideoImportMessage = "Video import request prepared and ready for launch.";
+            production.ProviderVideoImportPercentComplete = 7;
+            production.ProviderVideoImportLastUpdatedUtc = UtcTimestamp.Now;
+
+            await _videoProductionRepo.UpdateVideoProductionAsync(production);
+            await PublishVideoProductionUpdatedAsync(production);
+
             return InvokeResult<VideoMediaImportPreparationResult>.Create(new VideoMediaImportPreparationResult
             {
                 Production = production,
                 MediaResource = mediaResource,
-                Request = request
+                Request = request,
+                AttemptId = attemptId,
+                RequestStorageReferenceName = storedRequestResult.Result.StorageReferenceName,
+                RequestBlobUrl = storedRequestResult.Result.BlobUrl,
+                RequestUrl = storedRequestResult.Result.RequestUrl
             });
         }
 

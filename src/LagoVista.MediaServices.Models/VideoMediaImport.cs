@@ -10,6 +10,22 @@ namespace LagoVista.MediaServices.Models
         public MediaResource MediaResource { get; set; }
 
         public VideoMediaImportRequest Request { get; set; }
+
+        public string AttemptId { get; set; }
+
+        public string RequestStorageReferenceName { get; set; }
+
+        public string RequestBlobUrl { get; set; }
+
+        public string RequestUrl { get; set; }
+
+        public string AttemptId { get; set; }
+
+        public string RequestStorageReferenceName { get; set; }
+
+        public string RequestBlobUrl { get; set; }
+
+        public string RequestUrl { get; set; }
     }
 
     public sealed class VideoMediaImportCallback
