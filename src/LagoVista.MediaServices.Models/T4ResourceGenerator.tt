@@ -54,7 +54,7 @@ using System.Globalization;
 using System.Reflection;
 
 <#
-try{
+try{ 
 	AllEntries = new List<ResourceEntry>();
 	FindResourceFilesRecursivlyAndRecordEntries(Project.ProjectItems, "");
 	AllEntries.Sort( new Comparison<ResourceEntry>( (e1, e2) => (e1.Path + e1.File + e1.Name).CompareTo(e2.Path + e2.File + e2.Name)));

@@ -23,16 +23,18 @@ namespace LagoVista.VideoAssembly
         private readonly VideoThumbnailExtractor _thumbnailExtractor;
         private readonly AzureBlobSasUploader _azureUploader;
         private readonly VideoProcessorCallbackClient _callbackClient;
+        private readonly VideoProcessorNotificationPublisher _notificationPublisher;
         private readonly VideoAssemblyOptions _options;
         private long _sequence;
 
-        public VideoMediaImportService(HttpClient httpClient, FfprobeMediaInspectionService inspectionService, VideoThumbnailExtractor thumbnailExtractor, AzureBlobSasUploader azureUploader, VideoProcessorCallbackClient callbackClient, VideoAssemblyOptions options)
+        public VideoMediaImportService(HttpClient httpClient, FfprobeMediaInspectionService inspectionService, VideoThumbnailExtractor thumbnailExtractor, AzureBlobSasUploader azureUploader, VideoProcessorCallbackClient callbackClient, VideoProcessorNotificationPublisher notificationPublisher, VideoAssemblyOptions options)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _inspectionService = inspectionService ?? throw new ArgumentNullException(nameof(inspectionService));
             _thumbnailExtractor = thumbnailExtractor ?? throw new ArgumentNullException(nameof(thumbnailExtractor));
             _azureUploader = azureUploader ?? throw new ArgumentNullException(nameof(azureUploader));
             _callbackClient = callbackClient ?? throw new ArgumentNullException(nameof(callbackClient));
+            _notificationPublisher = notificationPublisher ?? throw new ArgumentNullException(nameof(notificationPublisher));
             _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
@@ -162,6 +164,19 @@ namespace LagoVista.VideoAssembly
         private async Task SendCallbackSafelyAsync(VideoMediaImportRequest request, VideoAssemblyCallbackType type, VideoMediaImportStage stage, string message, List<VideoProcessorOutputArtifact> outputs, string errorMessage, CancellationToken cancellationToken)
         {
             Console.WriteLine($"[{stage}] {message}");
+
+            await _notificationPublisher.TryPublishAsync(request.ProductionId, message, new VideoProcessorLiveProgress
+            {
+                JobType = VideoProcessorJobType.VideoMediaImport,
+                RequestId = request.RequestId,
+                AttemptId = request.AttemptId,
+                ProductionId = request.ProductionId,
+                MediaResourceId = request.MediaResourceId,
+                Stage = stage.ToString(),
+                Message = message,
+                TimestampUtc = DateTime.UtcNow.ToString("O")
+            }, cancellationToken);
+
             if (request.ExecutionOptions?.SendCallbacks != true) return;
 
             try

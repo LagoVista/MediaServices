@@ -15,6 +15,15 @@ using System.Linq;
 
 namespace LagoVista.MediaServices.Models
 {
+    public enum MediaResourceStatus
+    {
+        Pending,
+        Ready,
+        Failed,
+        Deprecated,
+        Obsolete
+    }
+
     public enum MediaResourceTypes
     {
         [EnumLabel(MediaResource.DeviceResourceTypes_Manual, MediaServicesResources.Names.MediaResourceType_Manual, typeof(Resources.MediaServicesResources))]
@@ -63,9 +72,22 @@ namespace LagoVista.MediaServices.Models
         {
             Icon = "lago-icon://system/nuvos-semantic-icon/media-resource-default";
             IsFileUpload = true;
+            Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Ready);
         }
 
         public string MediaTypeKey { get; set; }
+
+        public EntityHeader<MediaResourceStatus> Status { get; set; }
+
+        public string ProcessingStartedUtc { get; set; }
+
+        public string ProcessingCompletedUtc { get; set; }
+
+        public string ProcessingErrorMessage { get; set; }
+
+        public string ContentSha256 { get; set; }
+
+        public string ThumbnailUrl { get; set; }
 
         public string SourceEntityType { get; set; }
 
@@ -107,7 +129,10 @@ namespace LagoVista.MediaServices.Models
         public string HeyGenAssetId { get; set; }
 
         public string HeyGenAvatarId { get; set; }
+
         public string CurrentRevision { get; set; }
+
+        public string PendingRevision { get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_License, FieldType: FieldTypes.WebLink, IsUserEditable:false, ResourceType: typeof(MediaServicesResources))]
         public string License { get; set; }
@@ -127,6 +152,16 @@ namespace LagoVista.MediaServices.Models
 
         public string RevisedPrompt => GetCurrentRevision()?.RevisedPrompt ?? String.Empty;
 
+        public MediaResourceHistory GetPendingRevision()
+        {
+            if (History == null || History.Count == 0 || String.IsNullOrWhiteSpace(PendingRevision))
+            {
+                return null;
+            }
+
+            return History.FirstOrDefault(revision => revision.Id == PendingRevision);
+        }
+
         public MediaResourceHistory GetCurrentRevision()
         {
             if (History == null || History.Count == 0)
@@ -141,7 +176,7 @@ namespace LagoVista.MediaServices.Models
                 return revision;
             }
 
-            return History.FirstOrDefault();
+            return History.FirstOrDefault(revision => revision.Id != PendingRevision);
         }
 
         public void RegenerateStorageReferenceName()
@@ -453,9 +488,17 @@ namespace LagoVista.MediaServices.Models
         public string OriginalPrompt { get; set; }
         public string RevisedPrompt { get; set; }
         public string StorageReferenceName { get; set; }
+        public string ThumbnailStorageReferenceName { get; set; }
+        public string FileName { get; set; }
+        public string MimeType { get; set; }
         public long? ContentSize { get; set; }
+        public int? DurationSeconds { get; set; }
         public int? Width { get; set; }
         public int? Height { get; set; }
+        public string ContentSha256 { get; set; }
+        public EntityHeader<MediaResourceStatus> Status { get; set; }
+        public string ErrorMessage { get; set; }
+        public string CompletedUtc { get; set; }
         public string Notes { get; set; }
         public TextToSpeechRequest TextGenerationRequest { get; set; }
 

@@ -38,6 +38,10 @@ namespace LagoVista.MediaServices.Models
 
         public long? ContentSize { get; set; }
 
+        public string ContentSha256 { get; set; }
+
+        public string ThumbnailUrl { get; set; }
+
         public string CompletedUtc { get; set; }
 
         public string ErrorMessage { get; set; }

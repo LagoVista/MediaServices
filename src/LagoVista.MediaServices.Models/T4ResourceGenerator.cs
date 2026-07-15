@@ -1,4 +1,4 @@
-﻿/*7/15/2026 4:50:23 PM*/
+﻿/*7/15/2026 6:15:11 PM*/
 using System.Globalization;
 using System.Reflection;
 
@@ -291,6 +291,21 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:MediaResources_Title
 
 		public static string MediaResources_Title { get { return GetResourceString("MediaResources_Title"); } }
+//Resources:MediaServicesResources:MediaResourceStatus_Deprecated
+
+		public static string MediaResourceStatus_Deprecated { get { return GetResourceString("MediaResourceStatus_Deprecated"); } }
+//Resources:MediaServicesResources:MediaResourceStatus_Failed
+
+		public static string MediaResourceStatus_Failed { get { return GetResourceString("MediaResourceStatus_Failed"); } }
+//Resources:MediaServicesResources:MediaResourceStatus_Obsolete
+
+		public static string MediaResourceStatus_Obsolete { get { return GetResourceString("MediaResourceStatus_Obsolete"); } }
+//Resources:MediaServicesResources:MediaResourceStatus_Pending
+
+		public static string MediaResourceStatus_Pending { get { return GetResourceString("MediaResourceStatus_Pending"); } }
+//Resources:MediaServicesResources:MediaResourceStatus_Ready
+
+		public static string MediaResourceStatus_Ready { get { return GetResourceString("MediaResourceStatus_Ready"); } }
 //Resources:MediaServicesResources:MediaResourceType_CompressedFile
 
 		public static string MediaResourceType_CompressedFile { get { return GetResourceString("MediaResourceType_CompressedFile"); } }
@@ -796,6 +811,11 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string MediaResources_ResourceType = "MediaResources_ResourceType";
 			public const string MediaResources_ResourceType_Select = "MediaResources_ResourceType_Select";
 			public const string MediaResources_Title = "MediaResources_Title";
+			public const string MediaResourceStatus_Deprecated = "MediaResourceStatus_Deprecated";
+			public const string MediaResourceStatus_Failed = "MediaResourceStatus_Failed";
+			public const string MediaResourceStatus_Obsolete = "MediaResourceStatus_Obsolete";
+			public const string MediaResourceStatus_Pending = "MediaResourceStatus_Pending";
+			public const string MediaResourceStatus_Ready = "MediaResourceStatus_Ready";
 			public const string MediaResourceType_CompressedFile = "MediaResourceType_CompressedFile";
 			public const string MediaResourceType_Content = "MediaResourceType_Content";
 			public const string MediaResourceType_Manual = "MediaResourceType_Manual";

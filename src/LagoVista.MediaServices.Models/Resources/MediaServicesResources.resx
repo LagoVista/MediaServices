@@ -813,4 +813,19 @@
   <data name="VideoProductionStatus_ProviderVideoReady" xml:space="preserve">
     <value>Generated Video Ready</value>
   </data>
+  <data name="MediaResourceStatus_Pending" xml:space="preserve">
+    <value>Pending</value>
+  </data>
+  <data name="MediaResourceStatus_Ready" xml:space="preserve">
+    <value>Ready</value>
+  </data>
+  <data name="MediaResourceStatus_Failed" xml:space="preserve">
+    <value>Failed</value>
+  </data>
+  <data name="MediaResourceStatus_Deprecated" xml:space="preserve">
+    <value>Deprecated</value>
+  </data>
+  <data name="MediaResourceStatus_Obsolete" xml:space="preserve">
+    <value>Obsolete</value>
+  </data>
 </root>

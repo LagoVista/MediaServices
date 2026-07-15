@@ -31,8 +31,11 @@ namespace LagoVista.VideoAssembly.Worker
             var builder = Host.CreateApplicationBuilder(args);
             builder.Configuration.AddJsonFile("appsettings.json", true, false).AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", true, false).AddEnvironmentVariables().AddCommandLine(args);
             var options = builder.Configuration.GetSection("VideoAssembly").Get<VideoAssemblyOptions>() ?? new VideoAssemblyOptions();
+            var notificationSettings = builder.Configuration.GetSection("RabbitNotifications").Get<VideoProcessorNotificationSettings>() ?? new VideoProcessorNotificationSettings();
 
             builder.Services.AddSingleton(options);
+            builder.Services.AddSingleton(notificationSettings);
+            builder.Services.AddSingleton<VideoProcessorNotificationPublisher>();
             builder.Services.AddSingleton<VideoAssemblyRequestValidator>();
             builder.Services.AddSingleton<VideoMediaImportRequestValidator>();
             builder.Services.AddSingleton<VideoAssemblyWorkspaceFactory>();
@@ -90,7 +93,7 @@ namespace LagoVista.VideoAssembly.Worker
             }
 
             Console.WriteLine($"Loaded assembly request '{request.RequestId}', attempt '{request.AttemptId}', production '{request.ProductionId}'.");
-            var callbackReporter = new VideoAssemblyCallbackReporter(request, services.GetRequiredService<VideoAssemblyCallbackClient>(), cancellationToken);
+            var callbackReporter = new VideoAssemblyCallbackReporter(request, services.GetRequiredService<VideoAssemblyCallbackClient>(), services.GetRequiredService<VideoProcessorNotificationPublisher>(), cancellationToken);
             await callbackReporter.SendStartedAsync();
 
             var result = await services.GetRequiredService<IVideoAssemblyService>().AssembleAsync(request, callbackReporter, cancellationToken);
