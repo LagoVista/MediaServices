@@ -14,8 +14,8 @@ namespace LagoVista.MediaServices.CloudRepos
     public sealed class VideoProcessorStorageUrlService : IVideoProcessorStorageUrlService
     {
         private const string ContainerPrefix = "video-processor-";
-        private static readonly TimeSpan WriteUrlLifetime = TimeSpan.FromHours(6);
-        private static readonly TimeSpan ReadUrlLifetime = TimeSpan.FromHours(2);
+        private static readonly TimeSpan WriteUrlLifetime = TimeSpan.FromMinutes(60);
+        private static readonly TimeSpan ReadUrlLifetime = TimeSpan.FromMinutes(60);
 
         private readonly IConnectionSettings _connectionSettings;
         private readonly IAdminLogger _logger;
@@ -60,12 +60,13 @@ namespace LagoVista.MediaServices.CloudRepos
                     BlobContainerName = blobClient.BlobContainerName,
                     BlobName = blobClient.Name,
                     Resource = "b",
+                    Protocol = SasProtocol.Https,
                     StartsOn = startsOn,
                     ExpiresOn = expiresOn,
                     ContentType = contentType
                 };
 
-                sasBuilder.SetPermissions(BlobSasPermissions.Create | BlobSasPermissions.Write);
+                sasBuilder.SetPermissions(BlobSasPermissions.Create);
 
                 return InvokeResult<VideoProcessorStorageDestination>.Create(new VideoProcessorStorageDestination
                 {
@@ -103,6 +104,7 @@ namespace LagoVista.MediaServices.CloudRepos
                     BlobContainerName = blobClient.BlobContainerName,
                     BlobName = blobClient.Name,
                     Resource = "b",
+                    Protocol = SasProtocol.Https,
                     StartsOn = DateTimeOffset.UtcNow.AddMinutes(-5),
                     ExpiresOn = DateTimeOffset.UtcNow.Add(ReadUrlLifetime)
                 };
