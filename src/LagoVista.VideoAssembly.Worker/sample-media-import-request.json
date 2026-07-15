@@ -1,0 +1,43 @@
+{
+  "version": "2.0",
+  "jobType": "VideoMediaImport",
+  "requestId": "media-import-request-001",
+  "attemptId": "media-import-attempt-001",
+  "productionId": "video-production-001",
+  "mediaResourceId": "media-resource-001",
+  "source": {
+    "url": "https://replace-with-source-video-url/video.mp4",
+    "fileName": "source-video.mp4",
+    "contentType": "video/mp4"
+  },
+  "videoDestination": {
+    "uploadUrl": "https://replace-with-azure-blob-url/source-video.mp4?replace-with-write-sas",
+    "storageReferenceName": "source-video.mp4",
+    "fileName": "source-video.mp4",
+    "contentType": "video/mp4"
+  },
+  "thumbnail": {
+    "enabled": true,
+    "timeSeconds": 1.0,
+    "destination": {
+      "uploadUrl": "https://replace-with-azure-blob-url/source-video-thumbnail.jpg?replace-with-write-sas",
+      "storageReferenceName": "source-video-thumbnail.jpg",
+      "fileName": "source-video-thumbnail.jpg",
+      "contentType": "image/jpeg"
+    }
+  },
+  "callback": {
+    "url": null,
+    "path": "/api/media/video-processing/callback",
+    "accessToken": "replace-with-short-lived-job-token"
+  },
+  "limits": {
+    "maxSourceFileBytes": 4294967296,
+    "maxExecutionMinutes": 30
+  },
+  "executionOptions": {
+    "generateThumbnail": true,
+    "sendCallbacks": true,
+    "preserveDownloadedFile": false
+  }
+}

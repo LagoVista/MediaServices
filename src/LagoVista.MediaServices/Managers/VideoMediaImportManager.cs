@@ -6,6 +6,7 @@ using LagoVista.Core.Validation;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
 using LagoVista.MediaServices.Services;
+using LagoVista.VideoAssembly.Contracts;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,7 +28,7 @@ namespace LagoVista.MediaServices.Managers
             _notificationPublisher = coreAppServices?.NotificationPublisher ?? throw new ArgumentNullException(nameof(coreAppServices.NotificationPublisher));
         }
 
-        public async Task<InvokeResult<VideoMediaImportPreparationResult>> EnsureProviderVideoImportAsync(string productionId, int? thumbnailTimeSeconds, EntityHeader org, EntityHeader user, CancellationToken cancellationToken = default)
+        public async Task<InvokeResult<VideoMediaImportPreparationResult>> EnsureProviderVideoImportAsync(string productionId, double? thumbnailTimeSeconds, EntityHeader org, EntityHeader user, CancellationToken cancellationToken = default)
         {
             if (String.IsNullOrWhiteSpace(productionId))
             {
@@ -64,7 +65,7 @@ namespace LagoVista.MediaServices.Managers
             return await PrepareProviderVideoImportAsync(productionId, thumbnailTimeSeconds, org, user, cancellationToken);
         }
 
-        public async Task<InvokeResult<VideoMediaImportPreparationResult>> PrepareProviderVideoImportAsync(string productionId, int? thumbnailTimeSeconds, EntityHeader org, EntityHeader user, CancellationToken cancellationToken = default)
+        public async Task<InvokeResult<VideoMediaImportPreparationResult>> PrepareProviderVideoImportAsync(string productionId, double? thumbnailTimeSeconds, EntityHeader org, EntityHeader user, CancellationToken cancellationToken = default)
         {
             if (String.IsNullOrWhiteSpace(productionId))
             {
@@ -180,12 +181,31 @@ namespace LagoVista.MediaServices.Managers
                 RequestId = requestId,
                 ProductionId = production.Id,
                 MediaResourceId = mediaResource.Id,
-                SourceVideoUrl = providerResult.Result.VideoUrl,
-                DestinationStorageReferenceName = mediaResource.StorageReferenceName,
-                ThumbnailStorageReferenceName = mediaResource.ThumbnailStorageReferenceName,
-                ThumbnailTimeSeconds = thumbnailTimeSeconds,
-                Organization = org,
-                User = user
+                Source = new VideoAssemblySource
+                {
+                    Url = providerResult.Result.VideoUrl,
+                    FileName = mediaResource.FileName,
+                    ContentType = String.IsNullOrWhiteSpace(mediaResource.MimeType) ? "video/mp4" : mediaResource.MimeType
+                },
+                VideoDestination = new VideoMediaImportDestination
+                {
+                    StorageReferenceName = mediaResource.StorageReferenceName,
+                    FileName = mediaResource.FileName,
+                    ContentType = String.IsNullOrWhiteSpace(mediaResource.MimeType) ? "video/mp4" : mediaResource.MimeType
+                },
+                Thumbnail = new VideoMediaImportThumbnail
+                {
+                    Enabled = !String.IsNullOrWhiteSpace(mediaResource.ThumbnailStorageReferenceName),
+                    TimeSeconds = thumbnailTimeSeconds,
+                    Destination = String.IsNullOrWhiteSpace(mediaResource.ThumbnailStorageReferenceName)
+                      ? null
+                      : new VideoMediaImportDestination
+                      {
+                          StorageReferenceName = mediaResource.ThumbnailStorageReferenceName,
+                          FileName = CreateThumbnailFileName(mediaResource),
+                          ContentType = "image/jpeg"
+                      }
+                }
             };
 
             return InvokeResult<VideoMediaImportPreparationResult>.Create(new VideoMediaImportPreparationResult
@@ -194,6 +214,16 @@ namespace LagoVista.MediaServices.Managers
                 MediaResource = mediaResource,
                 Request = request
             });
+        }
+
+        private static string CreateThumbnailFileName(MediaResource mediaResource)
+        {
+            if (!String.IsNullOrWhiteSpace(mediaResource.FileName))
+            {
+                return $"{System.IO.Path.GetFileNameWithoutExtension(mediaResource.FileName)}-thumbnail.jpg";
+            }
+
+            return $"{mediaResource.Id}-thumbnail.jpg";
         }
 
         public async Task<InvokeResult<VideoProduction>> ApplyVideoMediaImportCallbackAsync(VideoMediaImportCallback callback, CancellationToken cancellationToken = default)

@@ -1,28 +1,8 @@
 using LagoVista.Core.Models;
+using LagoVista.VideoAssembly.Contracts;
 
 namespace LagoVista.MediaServices.Models
 {
-    public sealed class VideoMediaImportRequest
-    {
-        public string RequestId { get; set; }
-
-        public string ProductionId { get; set; }
-
-        public string MediaResourceId { get; set; }
-
-        public string SourceVideoUrl { get; set; }
-
-        public string DestinationStorageReferenceName { get; set; }
-
-        public string ThumbnailStorageReferenceName { get; set; }
-
-        public int? ThumbnailTimeSeconds { get; set; }
-
-        public EntityHeader Organization { get; set; }
-
-        public EntityHeader User { get; set; }
-    }
-
     public sealed class VideoMediaImportPreparationResult
     {
         public VideoProduction Production { get; set; }

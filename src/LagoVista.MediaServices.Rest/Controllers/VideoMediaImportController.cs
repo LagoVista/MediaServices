@@ -25,13 +25,13 @@ namespace LagoVista.MediaServices.Rest.Controllers
         }
 
         [HttpPost("/api/media/videoproduction/{id}/media/ensure")]
-        public Task<InvokeResult<VideoMediaImportPreparationResult>> EnsureProviderVideoImportAsync(string id, [FromQuery] int? thumbnailTimeSeconds = null, CancellationToken cancellationToken = default)
+        public Task<InvokeResult<VideoMediaImportPreparationResult>> EnsureProviderVideoImportAsync(string id, [FromQuery] double? thumbnailTimeSeconds = null, CancellationToken cancellationToken = default)
         {
             return _manager.EnsureProviderVideoImportAsync(id, thumbnailTimeSeconds, OrgEntityHeader, UserEntityHeader, cancellationToken);
         }
 
         [HttpPost("/api/media/videoproduction/{id}/media/prepare")]
-        public Task<InvokeResult<VideoMediaImportPreparationResult>> PrepareProviderVideoImportAsync(string id, [FromQuery] int? thumbnailTimeSeconds = null, CancellationToken cancellationToken = default)
+        public Task<InvokeResult<VideoMediaImportPreparationResult>> PrepareProviderVideoImportAsync(string id, [FromQuery] double? thumbnailTimeSeconds = null, CancellationToken cancellationToken = default)
         {
             return _manager.PrepareProviderVideoImportAsync(id, thumbnailTimeSeconds, OrgEntityHeader, UserEntityHeader, cancellationToken);
         }

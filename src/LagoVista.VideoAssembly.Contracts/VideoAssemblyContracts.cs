@@ -41,9 +41,36 @@ namespace LagoVista.VideoAssembly.Contracts
         Failed
     }
 
+    public enum VideoProcessorJobType
+    {
+        VideoAssembly = 1,
+        VideoMediaImport = 2
+    }
+
+    public enum VideoProcessorOutputArtifactType
+    {
+        Video = 1,
+        Thumbnail = 2,
+        Caption = 3,
+        Other = 99
+    }
+
+    public enum VideoMediaImportStage
+    {
+        Queued,
+        DownloadingSource,
+        InspectingSource,
+        GeneratingThumbnail,
+        UploadingVideo,
+        UploadingThumbnail,
+        Completed,
+        Failed
+    }
+
     public sealed class VideoAssemblyRequest
     {
         public string Version { get; set; } = VideoAssemblyContractVersions.Current;
+        public VideoProcessorJobType JobType { get; set; } = VideoProcessorJobType.VideoAssembly;
         public string RequestId { get; set; }
         public string AttemptId { get; set; }
         public string ProductionId { get; set; }
@@ -54,8 +81,19 @@ namespace LagoVista.VideoAssembly.Contracts
         public VideoAssemblyExecutionOptions ExecutionOptions { get; set; } = new VideoAssemblyExecutionOptions();
     }
 
+    public sealed class VideoProcessorExecutionRequest
+    {
+        public string Version { get; set; } = VideoAssemblyContractVersions.Current;
+        public VideoProcessorJobType JobType { get; set; }
+        public string RequestId { get; set; }
+        public string AttemptId { get; set; }
+        public string RequestUrl { get; set; }
+    }
+
     public sealed class VideoAssemblyExecutionRequest
     {
+        public string Version { get; set; } = VideoAssemblyContractVersions.Current;
+        public VideoProcessorJobType JobType { get; set; } = VideoProcessorJobType.VideoAssembly;
         public string RequestId { get; set; }
         public string AttemptId { get; set; }
         public string RequestUrl { get; set; }
@@ -121,11 +159,95 @@ namespace LagoVista.VideoAssembly.Contracts
         public string VideoId { get; set; }
     }
 
-    public sealed class VideoAssemblyCallbackSettings
+    public class VideoProcessorCallbackSettings
     {
         public string Url { get; set; }
         public string Path { get; set; }
         public string AccessToken { get; set; }
+    }
+
+    public sealed class VideoAssemblyCallbackSettings : VideoProcessorCallbackSettings
+    {
+    }
+
+    public sealed class VideoMediaImportRequest
+    {
+        public string Version { get; set; } = VideoAssemblyContractVersions.Current;
+        public VideoProcessorJobType JobType { get; set; } = VideoProcessorJobType.VideoMediaImport;
+        public string RequestId { get; set; }
+        public string AttemptId { get; set; }
+        public string ProductionId { get; set; }
+        public string MediaResourceId { get; set; }
+        public VideoAssemblySource Source { get; set; }
+        public VideoMediaImportDestination VideoDestination { get; set; }
+        public VideoMediaImportThumbnail Thumbnail { get; set; } = new VideoMediaImportThumbnail();
+        public VideoProcessorCallbackSettings Callback { get; set; }
+        public VideoMediaImportLimits Limits { get; set; } = new VideoMediaImportLimits();
+        public VideoMediaImportExecutionOptions ExecutionOptions { get; set; } = new VideoMediaImportExecutionOptions();
+    }
+
+    public sealed class VideoMediaImportDestination
+    {
+        public string UploadUrl { get; set; }
+        public string StorageReferenceName { get; set; }
+        public string FileName { get; set; }
+        public string ContentType { get; set; }
+    }
+
+    public sealed class VideoMediaImportThumbnail
+    {
+        public bool Enabled { get; set; } = true;
+        public double? TimeSeconds { get; set; }
+        public VideoMediaImportDestination Destination { get; set; }
+    }
+
+    public sealed class VideoMediaImportLimits
+    {
+        public long MaxSourceFileBytes { get; set; } = 4294967296;
+        public int MaxExecutionMinutes { get; set; } = 30;
+    }
+
+    public sealed class VideoMediaImportExecutionOptions
+    {
+        public bool GenerateThumbnail { get; set; } = true;
+        public bool SendCallbacks { get; set; } = true;
+        public bool PreserveDownloadedFile { get; set; }
+    }
+
+    public sealed class VideoProcessorJobCallback
+    {
+        public string Version { get; set; } = VideoAssemblyContractVersions.Current;
+        public VideoProcessorJobType JobType { get; set; }
+        public string RequestId { get; set; }
+        public string AttemptId { get; set; }
+        public string ProductionId { get; set; }
+        public string MediaResourceId { get; set; }
+        public long Sequence { get; set; }
+        public VideoAssemblyCallbackType Type { get; set; }
+        public string Stage { get; set; }
+        public int? PercentComplete { get; set; }
+        public string Message { get; set; }
+        public long? BytesCompleted { get; set; }
+        public long? BytesTotal { get; set; }
+        public List<VideoProcessorOutputArtifact> Outputs { get; set; } = new List<VideoProcessorOutputArtifact>();
+        public string ErrorMessage { get; set; }
+        public string TimestampUtc { get; set; }
+    }
+
+    public sealed class VideoProcessorOutputArtifact
+    {
+        public VideoProcessorOutputArtifactType Type { get; set; }
+        public string MediaResourceId { get; set; }
+        public string StorageReferenceName { get; set; }
+        public string FileName { get; set; }
+        public string ContentType { get; set; }
+        public long? SizeBytes { get; set; }
+        public int? DurationSeconds { get; set; }
+        public int? Width { get; set; }
+        public int? Height { get; set; }
+        public string Sha256 { get; set; }
+        public string ExternalUri { get; set; }
+        public string ExternalId { get; set; }
     }
 
     public sealed class VideoAssemblyLimits
