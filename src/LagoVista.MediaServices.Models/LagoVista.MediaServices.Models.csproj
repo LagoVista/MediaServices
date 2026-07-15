@@ -7,7 +7,7 @@
     <AssemblyOriginatorKeyFile>lagovista.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="LagoVista.UserAdmin" Version="3.0.3345.1428" />
+    <PackageReference Include="LagoVista.UserAdmin" Version="3.0.3346.0709" />
   </ItemGroup>
   <ItemGroup>
     <None Update="T4ResourceGenerator.tt">
@@ -24,5 +24,8 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>T4ResourceGenerator.tt</DependentUpon>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\LagoVista.VideoAssembly.Contracts\VideoAssemblyContracts.cs" Link="VideoAssembly\VideoAssemblyContracts.cs" />
   </ItemGroup>
 </Project>

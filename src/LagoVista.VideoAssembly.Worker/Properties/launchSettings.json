@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "LagoVista.VideoAssembly.Worker": {
+      "commandName": "Project",
+      "commandLineArgs": "-- --request-file sample-request.json"
+    }
+  }
+}

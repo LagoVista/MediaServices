@@ -1,0 +1,218 @@
+{
+  "version": "2.0",
+  "requestId": "local-request-002",
+  "attemptId": "local-attempt-001",
+  "productionId": "local-production-001",
+  "blocks": [
+    {
+      "key": "intro",
+      "type": "Image",
+      "source": {
+        "url": "https://nuviotdev.blob.core.windows.net/videoholding/standard-background.png",
+        "fileName": "intro-background.png",
+        "contentType": "image/png"
+      },
+      "durationSeconds": 4,
+      "fadeInSeconds": 0.5,
+      "fadeOutSeconds": 0.5,
+      "labels": [
+        {
+          "text": "Building an Agile Workforce",
+          "x": 960,
+          "y": 750,
+          "fontSize": 72,
+          "bold": true,
+          "color": "#000000",
+          "alignment": "Center",
+          "maxWidth": 1500,
+          "delaySeconds": 0.35,
+          "visibleDurationSeconds": 3.2,
+          "fadeInSeconds": 0.35,
+          "fadeOutSeconds": 0.35
+        },
+        {
+          "text": "Presented by Kevin Wolf",
+          "x": 960,
+          "y": 875,
+          "fontSize": 38,
+          "bold": false,
+          "color": "#303030",
+          "alignment": "Center",
+          "delaySeconds": 0.65,
+          "fadeInSeconds": 0.3,
+          "fadeOutSeconds": 0.35
+        },
+        {
+          "text": "July 2026",
+          "x": 960,
+          "y": 950,
+          "fontSize": 30,
+          "bold": false,
+          "color": "#303030",
+          "alignment": "Center",
+          "delaySeconds": 0.8,
+          "fadeInSeconds": 0.3,
+          "fadeOutSeconds": 0.35
+        }
+      ]
+    },
+    {
+      "key": "main",
+      "type": "Video",
+      "source": {
+        "url": "https://nuviotdev.blob.core.windows.net/videoholding/video_production_7_14_2026_10_26_42%E2%80%AFpm_v1%20(1080p).mp4",
+        "fileName": "main.mp4",
+        "contentType": "video/mp4"
+      },
+      "durationSeconds": null,
+      "fadeInSeconds": 0,
+      "fadeOutSeconds": 0,
+      "labels": []
+    },
+    {
+      "key": "bullets",
+      "type": "Image",
+      "source": {
+        "url": "https://nuviotdev.blob.core.windows.net/videoholding/standard-backgrond-withoutlogo.png",
+        "fileName": "outro-background.png",
+        "contentType": "image/png"
+      },
+      "durationSeconds": 6,
+      "fadeInSeconds": 0.5,
+      "fadeOutSeconds": 0.5,
+      "labels": [
+        {
+          "text": "Discover",
+          "x": 960,
+          "y": 200,
+          "fontSize": 64,
+          "bold": true,
+          "color": "#202020",
+          "alignment": "Center",
+          "maxWidth": 1500,
+          "delaySeconds": 0.35,
+          "fadeInSeconds": 0.35,
+          "fadeOutSeconds": 0.35
+        },
+         {
+          "text": "Discuss",
+          "x": 960,
+          "y": 400,
+          "fontSize": 64,
+          "bold": true,
+          "color": "#202020",
+          "alignment": "Center",
+          "maxWidth": 1500,
+          "delaySeconds": 1.25,
+          "fadeInSeconds": 0.35,
+          "fadeOutSeconds": 0.35
+        }, {
+          "text": "Plan",
+          "x": 960,
+          "y": 600,
+          "fontSize": 64,
+          "bold": true,
+          "color": "#202020",
+          "alignment": "Center",
+          "maxWidth": 1500,
+          "delaySeconds": 2.5,
+          "fadeInSeconds": 0.35,
+          "fadeOutSeconds": 0.35
+        }, {
+          "text": "Build",
+          "x": 960,
+          "y": 800,
+          "fontSize": 64,
+          "bold": true,
+          "color": "#202020",
+          "alignment": "Center",
+          "maxWidth": 1500,
+          "delaySeconds": 3.75,
+          "fadeInSeconds": 0.35,
+          "fadeOutSeconds": 0.35
+        }
+
+      ]
+    },
+    {
+      "key": "main",
+      "type": "Video",
+      "source": {
+        "url": "https://nuviotdev.blob.core.windows.net/videoholding/video_production_7_14_2026_10_26_42%E2%80%AFpm_v1%20(1080p).mp4",
+        "fileName": "main.mp4",
+        "contentType": "video/mp4"
+      },
+      "durationSeconds": null,
+      "fadeInSeconds": 0,
+      "fadeOutSeconds": 0,
+      "labels": []
+    },
+    {
+      "key": "outro",
+      "type": "Image",
+      "source": {
+        "url": "https://nuviotdev.blob.core.windows.net/videoholding/standard-background-logo-top-right.png",
+        "fileName": "outro-background.png",
+        "contentType": "image/png"
+      },
+      "durationSeconds": 5,
+      "fadeInSeconds": 0.5,
+      "fadeOutSeconds": 0.5,
+      "labels": [
+        {
+          "text": "Discover your Agile Workforce",
+          "x": 140,
+          "y": 280,
+          "fontSize": 64,
+          "bold": true,
+          "color": "#202020",
+          "alignment": "Left",
+          "maxWidth": 1500,
+          "delaySeconds": 0.35,
+          "fadeInSeconds": 0.35,
+          "fadeOutSeconds": 0.35
+        },
+        {
+          "text": "https://agileworkforce.com",
+          "x": 145,
+          "y": 410,
+          "fontSize": 36,
+          "bold": true,
+          "color": "#202020",
+          "alignment": "Left",
+          "delaySeconds": 0.75,
+          "fadeInSeconds": 0.3,
+          "fadeOutSeconds": 0.35
+        },
+        {
+          "text": "Copyright Software Logistics 2026",
+          "x": 145,
+          "y": 940,
+          "fontSize": 24,
+          "bold": false,
+          "color": "#202020",
+          "alignment": "Left",
+          "delaySeconds": 1,
+          "fadeInSeconds": 0.3,
+          "fadeOutSeconds": 0.35
+        }
+      ]
+    }
+  ],
+  "vimeoUpload": null,
+  "callback": null,
+  "limits": {
+    "maxSourceFileBytes": 4294967296,
+    "maxTotalInputBytes": 4294967296,
+    "maxOutputFileBytes": 4294967296,
+    "maxOutputDurationSeconds": 600,
+    "maxExecutionMinutes": 30,
+    "maxBlocks": 50,
+    "maxLabelsPerBlock": 20
+  },
+  "executionOptions": {
+    "uploadToVimeo": false,
+    "sendCallbacks": false,
+    "preserveOutputFile": true
+  }
+}
