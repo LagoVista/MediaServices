@@ -174,6 +174,20 @@ namespace LagoVista.MediaServices.Models
 
         public string AssemblyRequestStorageReferenceName { get; set; }
 
+        public string AssemblyRequestBlobUrl { get; set; }
+
+        public string AssemblyRequestUrl { get; set; }
+
+        public string AssemblyLaunchProvider { get; set; }
+
+        public string AssemblyLaunchId { get; set; }
+
+        public string AssemblyLaunchNamespace { get; set; }
+
+        public string AssemblyLaunchJobName { get; set; }
+
+        public string AssemblyLaunchedUtc { get; set; }
+
         public string SubmittedUtc { get; set; }
 
         public string CompletedUtc { get; set; }

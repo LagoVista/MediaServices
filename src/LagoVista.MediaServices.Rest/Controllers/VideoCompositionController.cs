@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace LagoVista.MediaServices.Rest.Controllers
@@ -19,10 +20,12 @@ namespace LagoVista.MediaServices.Rest.Controllers
     public class VideoCompositionController : LagoVistaBaseController
     {
         private readonly IVideoCompositionManager _manager;
+        private readonly IVideoAssemblyRequestManager _videoAssemblyRequestManager;
 
-        public VideoCompositionController(IVideoCompositionManager manager, UserManager<AppUser> userManager, IAdminLogger logger) : base(userManager, logger)
+        public VideoCompositionController(IVideoCompositionManager manager, IVideoAssemblyRequestManager videoAssemblyRequestManager, UserManager<AppUser> userManager, IAdminLogger logger) : base(userManager, logger)
         {
             _manager = manager ?? throw new ArgumentNullException(nameof(manager));
+            _videoAssemblyRequestManager = videoAssemblyRequestManager ?? throw new ArgumentNullException(nameof(videoAssemblyRequestManager));
         }
 
         [HttpGet("/api/media/videocomposition/factory")]
@@ -90,6 +93,12 @@ namespace LagoVista.MediaServices.Rest.Controllers
         {
             SetUpdatedProperties(composition);
             return _manager.UpdateVideoCompositionAsync(composition, OrgEntityHeader, UserEntityHeader);
+        }
+
+        [HttpPost("/api/media/videocomposition/{id}/assembly/prepare")]
+        public Task<InvokeResult<VideoAssemblyPreparationResult>> PrepareAssemblyRequestAsync(string id, [FromQuery] double? thumbnailTimeSeconds = null, CancellationToken cancellationToken = default)
+        {
+            return _videoAssemblyRequestManager.PrepareAssemblyRequestAsync(id, thumbnailTimeSeconds, OrgEntityHeader, UserEntityHeader, cancellationToken);
         }
 
         [HttpDelete("/api/media/videocomposition/{id}")]
