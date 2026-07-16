@@ -3,8 +3,8 @@ namespace LagoVista.MediaServices.Services
     public sealed class VideoProcessorLauncherOptions
     {
         public string Namespace { get; set; } = "video-processing";
-        public string Registry { get; set; } = "replace-with-registry";
-        public string ImageVersion { get; set; } = "replace-with-version";
-        public string JobTemplateResourceName { get; set; } = "LagoVista.MediaServices.Resources.VideoProcessorJob.yaml";
+        public string ConfigMapName { get; set; } = "video-processor-launcher-config";
+        public string WorkerImageConfigKey { get; set; } = "WorkerImage";
+        public string JobTemplateResourceName { get; set; } = "LagoVista.MediaServices.CloudRepos.Resources.VideoProcessorJob.yaml";
     }
 }

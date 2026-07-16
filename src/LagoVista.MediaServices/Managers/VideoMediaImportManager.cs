@@ -24,9 +24,10 @@ namespace LagoVista.MediaServices.Managers
         private readonly IVideoProcessorStorageUrlService _videoProcessorStorageUrlService;
         private readonly IVideoProcessorRequestStore _videoProcessorRequestStore;
         private readonly IVideoProcessorCallbackRegistrationStore _videoProcessorCallbackRegistrationStore;
+        private readonly IVideoProcessorLauncher _videoProcessorLauncher;
         private readonly INotificationPublisher _notificationPublisher;
 
-        public VideoMediaImportManager(IVideoProductionRepo videoProductionRepo, IMediaServicesManager mediaServicesManager, IHeyGenVideoService heyGenVideoService, IVideoProcessorStorageUrlService videoProcessorStorageUrlService, IVideoProcessorRequestStore videoProcessorRequestStore, IVideoProcessorCallbackRegistrationStore videoProcessorCallbackRegistrationStore, ICoreAppServices coreAppServices)
+        public VideoMediaImportManager(IVideoProductionRepo videoProductionRepo, IMediaServicesManager mediaServicesManager, IHeyGenVideoService heyGenVideoService, IVideoProcessorStorageUrlService videoProcessorStorageUrlService, IVideoProcessorRequestStore videoProcessorRequestStore, IVideoProcessorCallbackRegistrationStore videoProcessorCallbackRegistrationStore, IVideoProcessorLauncher videoProcessorLauncher, ICoreAppServices coreAppServices)
         {
             _videoProductionRepo = videoProductionRepo ?? throw new ArgumentNullException(nameof(videoProductionRepo));
             _mediaServicesManager = mediaServicesManager ?? throw new ArgumentNullException(nameof(mediaServicesManager));
@@ -34,6 +35,7 @@ namespace LagoVista.MediaServices.Managers
             _videoProcessorStorageUrlService = videoProcessorStorageUrlService ?? throw new ArgumentNullException(nameof(videoProcessorStorageUrlService));
             _videoProcessorRequestStore = videoProcessorRequestStore ?? throw new ArgumentNullException(nameof(videoProcessorRequestStore));
             _videoProcessorCallbackRegistrationStore = videoProcessorCallbackRegistrationStore ?? throw new ArgumentNullException(nameof(videoProcessorCallbackRegistrationStore));
+            _videoProcessorLauncher = videoProcessorLauncher ?? throw new ArgumentNullException(nameof(videoProcessorLauncher));
             _notificationPublisher = coreAppServices?.NotificationPublisher ?? throw new ArgumentNullException(nameof(coreAppServices.NotificationPublisher));
         }
 
@@ -310,6 +312,33 @@ namespace LagoVista.MediaServices.Managers
             production.ProviderVideoImportRequestUrl = storedRequestResult.Result.RequestUrl;
             production.ProviderVideoImportMessage = "Video import request prepared and ready for launch.";
             production.ProviderVideoImportPercentComplete = 7;
+            production.ProviderVideoImportLastUpdatedUtc = UtcTimestamp.Now;
+
+            await _videoProductionRepo.UpdateVideoProductionAsync(production);
+            await PublishVideoProductionUpdatedAsync(production);
+
+            var launchResult = await _videoProcessorLauncher.LaunchAsync(new VideoProcessorLaunchRequest
+            {
+                JobType = request.JobType,
+                ProductionId = production.Id,
+                RequestId = requestId,
+                AttemptId = attemptId,
+                RequestUrl = storedRequestResult.Result.RequestUrl
+            }, cancellationToken);
+
+            if (!launchResult.Successful)
+            {
+                await ApplyPreparationFailureAsync(production, launchResult.Errors[0].Message);
+                return launchResult.ToInvokeResult<VideoMediaImportPreparationResult>();
+            }
+
+            production.ProviderVideoImportLaunchProvider = launchResult.Result.Provider;
+            production.ProviderVideoImportLaunchId = launchResult.Result.LaunchId;
+            production.ProviderVideoImportLaunchNamespace = launchResult.Result.Namespace;
+            production.ProviderVideoImportLaunchJobName = launchResult.Result.JobName;
+            production.ProviderVideoImportLaunchedUtc = launchResult.Result.LaunchedUtc;
+            production.ProviderVideoImportMessage = "Video import processor launched.";
+            production.ProviderVideoImportPercentComplete = 8;
             production.ProviderVideoImportLastUpdatedUtc = UtcTimestamp.Now;
 
             await _videoProductionRepo.UpdateVideoProductionAsync(production);

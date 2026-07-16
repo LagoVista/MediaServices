@@ -204,6 +204,11 @@ namespace LagoVista.MediaServices.Models
         public string ProviderVideoImportRequestStorageReferenceName { get; set; }
         public string ProviderVideoImportRequestBlobUrl { get; set; }
         public string ProviderVideoImportRequestUrl { get; set; }
+        public string ProviderVideoImportLaunchProvider { get; set; }
+        public string ProviderVideoImportLaunchId { get; set; }
+        public string ProviderVideoImportLaunchNamespace { get; set; }
+        public string ProviderVideoImportLaunchJobName { get; set; }
+        public string ProviderVideoImportLaunchedUtc { get; set; }
         public string ProviderVideoImportStage { get; set; }
         public string ProviderVideoImportMessage { get; set; }
         public int? ProviderVideoImportPercentComplete { get; set; }
