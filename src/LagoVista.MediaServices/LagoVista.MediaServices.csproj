@@ -11,4 +11,7 @@
   <ItemGroup>
     <ProjectReference Include="..\LagoVista.MediaServices.Models\LagoVista.MediaServices.Models.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\VideoProcessorJob.yaml" />
+  </ItemGroup>
 </Project>

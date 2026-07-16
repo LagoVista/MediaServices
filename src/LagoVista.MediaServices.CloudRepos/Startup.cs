@@ -20,6 +20,8 @@ namespace LagoVista.MediaServices.CloudRepos
             services.AddTransient<IVideoProcessorStorageUrlService, VideoProcessorStorageUrlService>();
             services.AddTransient<IVideoProcessorRequestStore, VideoProcessorRequestStore>();
             services.AddTransient<IVideoProcessorCallbackRegistrationStore, VideoProcessorCallbackRegistrationStore>();
+            services.AddSingleton(new VideoProcessorLauncherOptions());
+            services.AddTransient<IVideoProcessorLauncher, KubernetesVideoProcessorLauncher>();
 
             services.AddTransient<IVideoAvatarRepo, VideoAvatarRepo>();
             services.AddTransient<IVideoProductionRepo, VideoProductionRepo>();
@@ -32,6 +34,9 @@ namespace LagoVista.MediaServices.CloudRepos
             services.AddTransient<ILagoVistaIconAssetPublisher, LagoVistaIconAssetPublisher>();
             services.AddTransient<ILagoVistaIconCatalogManager, LagoVistaIconCatalogManager>();
             services.AddSingleton<IMediaServicesConnectionSettings, MediaServicesConnectionSettings>();
+            services.AddSingleton(new VideoProcessorLauncherOptions());
+            services.AddTransient<IVideoProcessorLauncher, KubernetesVideoProcessorLauncher>();
+
         }
     }
 }
