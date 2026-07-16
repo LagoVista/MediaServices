@@ -36,7 +36,7 @@ namespace LagoVista.MediaServices.Managers
                 return await ResolveUploadedMediaAsync(mediaResource, orgId, cancellationToken);
             }
 
-            if (mediaResource.ResourceType?.Value == MediaResourceTypes.RawVideo)
+            if (!String.IsNullOrWhiteSpace(mediaResource.GetCurrentStorageReferenceName()))
             {
                 return await ResolveGeneratedVideoAsync(mediaResource, orgId, cancellationToken);
             }
@@ -78,6 +78,16 @@ namespace LagoVista.MediaServices.Managers
             if (!readUrlResult.Successful)
             {
                 return InvokeResult<VideoAssemblySource>.FromInvokeResult(readUrlResult.ToInvokeResult());
+            }
+
+            if (!Uri.TryCreate(readUrlResult.Result, UriKind.Absolute, out var readUri))
+            {
+                return InvokeResult<VideoAssemblySource>.FromError($"Generated media resource '{mediaResource.Id}' did not produce a valid absolute read URL.");
+            }
+
+            if (String.IsNullOrWhiteSpace(readUri.Query) || readUri.Query.IndexOf("sig=", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                return InvokeResult<VideoAssemblySource>.FromError($"Generated media resource '{mediaResource.Id}' did not produce a signed read URL.");
             }
 
             return InvokeResult<VideoAssemblySource>.Create(CreateSource(mediaResource, readUrlResult.Result));

@@ -95,7 +95,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return _manager.UpdateVideoCompositionAsync(composition, OrgEntityHeader, UserEntityHeader);
         }
 
-        [HttpPost("/api/media/videocomposition/{id}/assembly/prepare")]
+        [HttpPost("/api/media/videocomposition/{id}/assemble")]
         public Task<InvokeResult<VideoAssemblyPreparationResult>> PrepareAssemblyRequestAsync(string id, [FromQuery] double? thumbnailTimeSeconds = null, CancellationToken cancellationToken = default)
         {
             return _videoAssemblyRequestManager.PrepareAssemblyRequestAsync(id, thumbnailTimeSeconds, OrgEntityHeader, UserEntityHeader, cancellationToken);

@@ -2,7 +2,7 @@
   "profiles": {
     "LagoVista.VideoAssembly.Worker": {
       "commandName": "Project",
-      "commandLineArgs": "-- --request-url https://nuviotdev.blob.core.windows.net/video-processor-requests-c8ad4589f26842e7a1aefbaefc979c9b/videomediaimport/a256cd8c03d04cdf8ca470f138ed2fd4/eb38b41370364be0bce27ac2a471f71f.json?sv=2026-02-06&spr=https&st=2026-07-16T21%3A17%3A46Z&se=2026-07-16T22%3A22%3A46Z&sr=b&sp=r&sig=JirWQ4AhiQ7sEdSeGsAOLdJLPfIJcy0G1JB9UBWzDlI%3D"
+      "commandLineArgs": "-- --request-url https://nuviotdev.blob.core.windows.net/video-processor-requests-c8ad4589f26842e7a1aefbaefc979c9b/videoassembly/51a20f4deab748c9865affb5a587415e/a8e59f9068c845448c619886ce32b10e.json?sv=2026-02-06&spr=https&st=2026-07-16T22%3A39%3A49Z&se=2026-07-16T23%3A44%3A49Z&sr=b&sp=r&sig=TqkvXtJvlaMt9mqIphHPDHtgap2xUnj7V7IgPrthaFo%3D"
     }
   }
 }

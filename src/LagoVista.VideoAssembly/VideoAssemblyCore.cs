@@ -121,7 +121,7 @@ namespace LagoVista.VideoAssembly
             else ValidateUrl(errors, block.Source.Url, $"{prefix}.Source.Url");
 
             if (block.Type == VideoAssemblyBlockType.Image && (!block.DurationSeconds.HasValue || block.DurationSeconds.Value <= 0)) errors.Add($"{prefix}.DurationSeconds must be greater than zero for image blocks.");
-            if (block.Type == VideoAssemblyBlockType.Video && block.DurationSeconds.HasValue) errors.Add($"{prefix}.DurationSeconds must be omitted for video blocks.");
+            //if (block.Type == VideoAssemblyBlockType.Video && block.DurationSeconds.HasValue) errors.Add($"{prefix}.DurationSeconds must be omitted for video blocks.");
             if (block.FadeInSeconds < 0) errors.Add($"{prefix}.FadeInSeconds cannot be negative.");
             if (block.FadeOutSeconds < 0) errors.Add($"{prefix}.FadeOutSeconds cannot be negative.");
 
