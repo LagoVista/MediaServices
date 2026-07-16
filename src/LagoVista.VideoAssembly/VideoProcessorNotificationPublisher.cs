@@ -68,8 +68,8 @@ namespace LagoVista.VideoAssembly
             {
                 MessageId = Guid.NewGuid().ToString("N"),
                 DateStamp = DateTime.UtcNow.ToString("O"),
-                Channel = VideoProcessorNotificationHeader.Create("Jobs"),
-                Verbosity = VideoProcessorNotificationHeader.Create("Normal"),
+                Channel = VideoProcessorNotificationHeader.Create("org", "Org"),
+                Verbosity = VideoProcessorNotificationHeader.Create("normal", "Normal"),
                 ChannelId = channelId,
                 Text = text,
                 PayloadType = typeof(TPayload).Name,
@@ -219,9 +219,9 @@ namespace LagoVista.VideoAssembly
         [JsonPropertyName("_t")]
         public string Indexer { get; set; } = "eh";
 
-        public static VideoProcessorNotificationHeader Create(string value)
+        public static VideoProcessorNotificationHeader Create(string id, string value)
         {
-            return new VideoProcessorNotificationHeader { Id = value, Key = value, Text = value };
+            return new VideoProcessorNotificationHeader { Id = id, Key = value, Text = value };
         }
     }
 }

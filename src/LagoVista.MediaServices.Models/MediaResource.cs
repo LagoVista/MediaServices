@@ -90,6 +90,7 @@ namespace LagoVista.MediaServices.Models
 
         public string ContentSha256 { get; set; }
 
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_ThumbnailUrl, HelpResource: MediaServicesResources.Names.MediaResource_ThumbnailUrl_Help, FieldType: FieldTypes.WebLink, ResourceType: typeof(MediaServicesResources))]
         public string ThumbnailUrl { get; set; }
 
         public string SourceEntityType { get; set; }
@@ -116,7 +117,7 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Content, FieldType: FieldTypes.HtmlEditor, ResourceType: typeof(MediaServicesResources))]
         public string Content { get; set; }
 
-        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_MediaLibrary, FieldType: FieldTypes.Text, IsRequired: false, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
+        [FormField(LabelResource: MediaServicesResources.Names.MediaResource_MediaLibrary, EntityHeaderPickerUrl: "/api/media/libraries", FieldType: FieldTypes.EntityHeaderPicker, IsRequired: false, IsUserEditable: true, ResourceType: typeof(MediaServicesResources))]
         public EntityHeader MediaLibrary { get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.MediaResources_ResourceType, WaterMark: MediaServicesResources.Names.MediaResources_ResourceType_Select, HelpResource: Resources.MediaServicesResources.Names.MediaResource_ResourceType_Help, IsRequired: true, EnumType: typeof(MediaResourceTypes), FieldType: FieldTypes.Picker, ResourceType: typeof(MediaServicesResources))]
@@ -310,6 +311,9 @@ namespace LagoVista.MediaServices.Models
                 ResourceType = ResourceType.Text,
                 MimeType = MimeType,
                 ContentSize = ContentSize,
+                ThumbnailUrl = ThumbnailUrl,
+                MediaLibrary = MediaLibrary,
+                DurationSeconds = DurationSeconds,
                 Link = Link,
                 Name = Name,
                 IsFileUpload = IsFileUpload,
@@ -374,9 +378,10 @@ namespace LagoVista.MediaServices.Models
                 nameof(Category),
                 nameof(IsFileUpload),
                 nameof(ResourceType),
-                DetailsRow,
+                nameof(MediaLibrary),
                 nameof(Description),
                 nameof(Content),
+                nameof(ThumbnailUrl),
                 nameof(Link),
             };
         }
@@ -457,6 +462,10 @@ namespace LagoVista.MediaServices.Models
         public long? ContentSize { get; set; }
         public bool IsFileUpload { get; set; }
         public string Link { get; set; }
+
+        public EntityHeader MediaLibrary { get; set; }
+        public string ThumbnailUrl { get; set; }
+        public double? DurationSeconds { get; set; }
         public string DownloadPath { get; set; }
         public string MediaTypeKey { get; set; }
 

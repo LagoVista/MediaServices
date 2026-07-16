@@ -20,10 +20,14 @@ namespace LagoVista.MediaServices.Rest.Controllers
     public class VideoProductionController : LagoVistaBaseController
     {
         private readonly IVideoProductionManager _manager;
+        private readonly IMediaServicesManager _mediaServicesManager;
+        private readonly IVideoProcessorStorageUrlService _videoProcessorStorageUrlService;
 
-        public VideoProductionController(IVideoProductionManager manager, UserManager<AppUser> userManager, IAdminLogger logger) : base(userManager, logger)
+        public VideoProductionController(IVideoProductionManager manager, IMediaServicesManager mediaServicesManager, IVideoProcessorStorageUrlService videoProcessorStorageUrlService, UserManager<AppUser> userManager, IAdminLogger logger) : base(userManager, logger)
         {
             _manager = manager ?? throw new ArgumentNullException(nameof(manager));
+            _mediaServicesManager = mediaServicesManager ?? throw new ArgumentNullException(nameof(mediaServicesManager));
+            _videoProcessorStorageUrlService = videoProcessorStorageUrlService ?? throw new ArgumentNullException(nameof(videoProcessorStorageUrlService));
         }
 
         [HttpGet("/api/media/videoproduction/factory")]
@@ -104,6 +108,61 @@ namespace LagoVista.MediaServices.Rest.Controllers
         public Task<InvokeResult<VideoProduction>> RefreshVimeoVideoProductionStatusAsync(string id, CancellationToken cancellationToken = default)
         {
             return _manager.RefreshVimeoVideoProductionStatusAsync(id, OrgEntityHeader, UserEntityHeader, cancellationToken);
+        }
+
+        [HttpGet("/api/media/videoproduction/mediaresource/{mediaResourceId}/video")]
+        public Task<IActionResult> DownloadGeneratedVideoAsync(string mediaResourceId, CancellationToken cancellationToken = default)
+        {
+            return RedirectToVideoProductionMediaAsync(mediaResourceId, false, cancellationToken);
+        }
+
+        [HttpGet("/api/media/videoproduction/mediaresource/{mediaResourceId}/thumbnail")]
+        public Task<IActionResult> DownloadGeneratedVideoThumbnailAsync(string mediaResourceId, CancellationToken cancellationToken = default)
+        {
+            return RedirectToVideoProductionMediaAsync(mediaResourceId, true, cancellationToken);
+        }
+
+        private async Task<IActionResult> RedirectToVideoProductionMediaAsync(string mediaResourceId, bool thumbnail, CancellationToken cancellationToken)
+        {
+            if (String.IsNullOrWhiteSpace(mediaResourceId))
+            {
+                return BadRequest("Media resource ID is required.");
+            }
+
+            var mediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(mediaResourceId, OrgEntityHeader, UserEntityHeader);
+            if (mediaResource == null)
+            {
+                return NotFound();
+            }
+
+            if (mediaResource.ResourceType?.Value != MediaResourceTypes.RawVideo &&
+                mediaResource.ResourceType?.Value != MediaResourceTypes.Video)
+            {
+                return BadRequest($"The media resource is not a generated video-production resource, media type {mediaResource.ResourceType?.Value}.");
+            }
+
+            if (mediaResource.Status?.Value != MediaResourceStatus.Ready)
+            {
+                return Conflict("The generated video media resource is not ready.");
+            }
+
+            var currentRevision = mediaResource.GetCurrentRevision();
+            var storageReferenceName = thumbnail
+                ? currentRevision?.ThumbnailStorageReferenceName ?? mediaResource.ThumbnailStorageReferenceName
+                : currentRevision?.StorageReferenceName ?? mediaResource.StorageReferenceName;
+
+            if (String.IsNullOrWhiteSpace(storageReferenceName))
+            {
+                return NotFound(thumbnail ? "The generated video thumbnail is not available." : "The generated video file is not available.");
+            }
+
+            var readUrlResult = await _videoProcessorStorageUrlService.CreateReadUrlAsync(OrgEntityHeader.Id, storageReferenceName, cancellationToken);
+            if (!readUrlResult.Successful)
+            {
+                return BadRequest(readUrlResult.Errors[0].Message);
+            }
+
+            return Redirect(readUrlResult.Result);
         }
     }
 }

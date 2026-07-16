@@ -708,6 +708,12 @@
   <data name="VideoCompositionAssemblyStage_Encoding" xml:space="preserve">
     <value>Encoding</value>
   </data>
+  <data name="VideoCompositionAssemblyStage_GeneratingThumbnail" xml:space="preserve">
+    <value>Generating Thumbnail</value>
+  </data>
+  <data name="VideoCompositionAssemblyStage_UploadingThumbnail" xml:space="preserve">
+    <value>Uploading Thumbnail</value>
+  </data>
   <data name="VideoCompositionAssemblyStage_UploadingToAzure" xml:space="preserve">
     <value>Uploading to Azure</value>
   </data>
@@ -830,5 +836,13 @@
   </data>
   <data name="MediaResourceType_RawVideo" xml:space="preserve">
     <value>Raw Video</value>
+  </data>
+
+
+  <data name="MediaResource_ThumbnailUrl" xml:space="preserve">
+    <value>Thumbnail Url</value>
+  </data>
+  <data name="MediaResource_ThumbnailUrl_Help" xml:space="preserve">
+    <value>Link to download a smaller representation of the image or video, not alaways available</value>
   </data>
 </root>

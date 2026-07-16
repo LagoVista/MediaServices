@@ -9,6 +9,7 @@ using LagoVista.MediaServices.Models;
 using LagoVista.UserAdmin.Models.Users;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 using System;
 using System.Threading.Tasks;
 
@@ -81,7 +82,6 @@ namespace LagoVista.MediaServices.Rest.Controllers
         [HttpPost("/api/media/videocomposition")]
         public Task<InvokeResult> AddVideoCompositionAsync([FromBody] VideoComposition composition)
         {
-            SetAuditProperties(composition);
             return _manager.AddVideoCompositionAsync(composition, OrgEntityHeader, UserEntityHeader);
         }
 

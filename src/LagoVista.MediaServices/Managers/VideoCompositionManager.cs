@@ -7,6 +7,7 @@ using LagoVista.Core.PlatformSupport;
 using LagoVista.Core.Validation;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
+using Newtonsoft.Json;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -29,9 +30,11 @@ namespace LagoVista.MediaServices.Managers
             NormalizeVideoComposition(composition);
 
             ValidationCheck(composition, Actions.Create);
+
             await AuthorizeAsync(composition, AuthorizeResult.AuthorizeActions.Create, user, org);
 
             await _repo.AddVideoCompositionAsync(composition);
+
             await PublishVideoCompositionUpdatedAsync(composition);
 
             return InvokeResult.Success;
@@ -82,15 +85,13 @@ namespace LagoVista.MediaServices.Managers
 
         private static void NormalizeVideoComposition(VideoComposition composition)
         {
-            if (composition == null)
-            {
-                return;
-            }
+            if (composition == null) throw new ArgumentException(nameof(composition));
 
             if (composition.Status == null)
             {
                 composition.Status = EntityHeader<VideoCompositionStatus>.Create(VideoCompositionStatus.Draft);
             }
+
 
             composition.Blocks = composition.Blocks ?? new System.Collections.Generic.List<VideoCompositionBlock>();
 
@@ -98,13 +99,14 @@ namespace LagoVista.MediaServices.Managers
             for (var index = 0; index < orderedBlocks.Count; index++)
             {
                 var block = orderedBlocks[index];
-                block.Id = String.IsNullOrWhiteSpace(block.Id) ? Guid.NewGuid().ToId().Value : block.Id;
-                block.Key = String.IsNullOrWhiteSpace(block.Key) ? $"block-{index + 1}" : block.Key.Trim().ToLowerInvariant();
-                block.SortOrder = index;
-                block.Labels = block.Labels ?? new System.Collections.Generic.List<VideoCompositionTextLabel>();
-            }
 
+                block.Id = String.IsNullOrWhiteSpace(block.Id) ? Guid.NewGuid().ToId().Value : block.Id;
+                block.Key = String.IsNullOrWhiteSpace(block.Key) ? $"block{index + 1}" : block.Key.Trim().ToLowerInvariant();
+                block.SortOrder = index;
+                block.CompositionLabels = block.CompositionLabels ?? new System.Collections.Generic.List<VideoCompositionTextLabel>();
+            }
             composition.Blocks = orderedBlocks;
+
             composition.AssemblyState = composition.AssemblyState ?? new VideoCompositionAssemblyState();
         }
 

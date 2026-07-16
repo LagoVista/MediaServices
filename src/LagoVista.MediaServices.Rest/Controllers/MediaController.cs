@@ -33,6 +33,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
     {
 
         IMediaServicesManager _mediaServicesManager;
+        IMediaLibraryManager _libraryManager;
 
         /// <summary>
         /// The Media Controller will let users upload images and download them.
@@ -40,9 +41,10 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// <param name="userManager"></param>
         /// <param name="logger"></param>
         /// <param name="mediaServiceManager"></param>
-        public MediaController(UserManager<AppUser> userManager, IAdminLogger logger, IMediaServicesManager mediaServiceManager) : base(userManager, logger)
+        public MediaController(UserManager<AppUser> userManager, IAdminLogger logger, IMediaLibraryManager libraryManager, IMediaServicesManager mediaServiceManager) : base(userManager, logger)
         {
             _mediaServicesManager = mediaServiceManager;
+            _libraryManager = libraryManager;
         }
 
         /// <summary>
@@ -58,6 +60,18 @@ namespace LagoVista.MediaServices.Rest.Controllers
             SetOwnedProperties(response.Model);
             return response;
         }
+
+        [HttpGet("/api/media/library/{libraryid}/resource/factory")]
+        public async Task<DetailResponse<MediaResource>> CreateDeviceResource(string libraryid)
+        {
+            var library = await _libraryManager.GetMediaLibraryAsync(libraryid, OrgEntityHeader, UserEntityHeader);
+            var response = DetailResponse<MediaResource>.Create();
+            response.Model.MediaLibrary = library.ToEntityHeader();
+            SetAuditProperties(response.Model);
+            SetOwnedProperties(response.Model);
+            return response;
+        }
+
 
         [HttpGet("/api/media/imagegeneration/factory")]
         public DetailResponse<ImageGenerationRequest> CreateImageGenerationRequest(string entityTypeName, string entityFieldName, string entityId)
@@ -165,11 +179,13 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet("/api/media/library/{libraryid}/resources")]
-        public Task<ListResponse<MediaResourceSummary>> GetResourceForLibraryAsync(string libraryid)
+        public async Task<ListResponse<MediaResourceSummary>> GetResourceForLibraryAsync(string libraryid)
         {
-            return _mediaServicesManager.GetMediaResourceSummariesAsync(libraryid, OrgEntityHeader.Id, GetListRequestFromHeader(), UserEntityHeader);
+            var library = await _libraryManager.GetMediaLibraryAsync(libraryid, OrgEntityHeader, UserEntityHeader);
+            var result = await _mediaServicesManager.GetMediaResourceSummariesAsync(libraryid, OrgEntityHeader.Id, GetListRequestFromHeader(), UserEntityHeader);
+            result.Title = $"{result.Title} - {library.Name}";
+            return result;
         }
-
 
         /// <summary>
         /// Media Resources - Get resources for librarys.

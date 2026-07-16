@@ -85,6 +85,12 @@ namespace LagoVista.MediaServices.Models
         [EnumLabel(VideoComposition.AssemblyStage_Encoding, MediaServicesResources.Names.VideoCompositionAssemblyStage_Encoding, typeof(MediaServicesResources))]
         Encoding,
 
+        [EnumLabel(VideoComposition.AssemblyStage_GeneratingThumbnail, MediaServicesResources.Names.VideoCompositionAssemblyStage_GeneratingThumbnail, typeof(MediaServicesResources))]
+        GeneratingThumbnail,
+
+        [EnumLabel(VideoComposition.AssemblyStage_UploadingThumbnail, MediaServicesResources.Names.VideoCompositionAssemblyStage_UploadingThumbnail, typeof(MediaServicesResources))]
+        UploadingThumbnail,
+
         [EnumLabel(VideoComposition.AssemblyStage_UploadingToAzure, MediaServicesResources.Names.VideoCompositionAssemblyStage_UploadingToAzure, typeof(MediaServicesResources))]
         UploadingToAzure,
 
@@ -131,6 +137,9 @@ namespace LagoVista.MediaServices.Models
         public const string AssemblyStage_RenderingLabels = "rendering-labels";
         public const string AssemblyStage_NormalizingMedia = "normalizing-media";
         public const string AssemblyStage_Encoding = "encoding";
+      
+        public const string AssemblyStage_GeneratingThumbnail = "generating-thumbnail";
+        public const string AssemblyStage_UploadingThumbnail = "uploading-thumbnail";
         public const string AssemblyStage_UploadingToAzure = "uploading-to-azure";
         public const string AssemblyStage_UploadingToVimeo = "uploading-to-vimeo";
         public const string AssemblyStage_Completed = "completed";
@@ -141,12 +150,6 @@ namespace LagoVista.MediaServices.Models
             Icon = "lago-icon://system/nuvos-semantic-icon/video-production-default";
             Status = EntityHeader<VideoCompositionStatus>.Create(VideoCompositionStatus.Draft);
         }
-
-        [FormField(LabelResource: MediaServicesResources.Names.Common_Name, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
-        public new string Name { get; set; }
-
-        [FormField(LabelResource: MediaServicesResources.Names.Common_Description, FieldType: FieldTypes.HtmlEditor, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
-        public new string Description { get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoComposition_Status, FieldType: FieldTypes.Picker, EnumType: typeof(VideoCompositionStatus), ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: false)]
         public EntityHeader<VideoCompositionStatus> Status { get; set; }
@@ -304,7 +307,7 @@ namespace LagoVista.MediaServices.Models
         public double FadeOutSeconds { get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_Labels, FieldType: FieldTypes.ChildListInline, ChildListDisplayMembers: "text,fontSize,alignment", ChildListDisplayMember: nameof(VideoCompositionTextLabel.Text), IsReferenceField: false, FactoryUrl: "/api/media/videocomposition/label/factory", ResourceType: typeof(MediaServicesResources), IsUserEditable: true)]
-        public List<VideoCompositionTextLabel> Labels { get; set; } = new List<VideoCompositionTextLabel>();
+        public List<VideoCompositionTextLabel> CompositionLabels { get; set; } = new List<VideoCompositionTextLabel>();
 
         public List<string> GetFormFields()
         {
@@ -319,7 +322,7 @@ namespace LagoVista.MediaServices.Models
                 nameof(DurationSeconds),
                 nameof(FadeInSeconds),
                 nameof(FadeOutSeconds),
-                nameof(Labels)
+                nameof(CompositionLabels)
             };
         }
 
@@ -350,7 +353,7 @@ namespace LagoVista.MediaServices.Models
                 result.AddUserError($"Image block '{Key}' must have a duration greater than zero.");
             }
 
-            foreach (var label in Labels ?? new List<VideoCompositionTextLabel>())
+            foreach (var label in CompositionLabels ?? new List<VideoCompositionTextLabel>())
             {
                 label.Validate(result, Key);
             }

@@ -24,7 +24,7 @@ data:
 
   RabbitNotifications__Enabled: "true"
   RabbitNotifications__Port: "5672"
-  RabbitNotifications__VirtualHost: /lago
+  RabbitNotifications__VirtualHost: /
   RabbitNotifications__Exchange: notif.publish
   RabbitNotifications__RoutingKey: notif-publish
   RabbitNotifications__ClientName: VideoProcessorNotificationPublisher

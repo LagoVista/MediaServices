@@ -1,4 +1,4 @@
-﻿/*7/15/2026 6:32:43 PM*/
+﻿/*7/16/2026 4:14:22 PM*/
 using System.Globalization;
 using System.Reflection;
 
@@ -267,6 +267,12 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:MediaResource_StorageRefName
 
 		public static string MediaResource_StorageRefName { get { return GetResourceString("MediaResource_StorageRefName"); } }
+//Resources:MediaServicesResources:MediaResource_ThumbnailUrl
+
+		public static string MediaResource_ThumbnailUrl { get { return GetResourceString("MediaResource_ThumbnailUrl"); } }
+//Resources:MediaServicesResources:MediaResource_ThumbnailUrl_Help
+
+		public static string MediaResource_ThumbnailUrl_Help { get { return GetResourceString("MediaResource_ThumbnailUrl_Help"); } }
 //Resources:MediaServicesResources:MediaResource_Title
 
 		public static string MediaResource_Title { get { return GetResourceString("MediaResource_Title"); } }
@@ -465,6 +471,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:VideoCompositionAssemblyStage_Failed
 
 		public static string VideoCompositionAssemblyStage_Failed { get { return GetResourceString("VideoCompositionAssemblyStage_Failed"); } }
+//Resources:MediaServicesResources:VideoCompositionAssemblyStage_GeneratingThumbnail
+
+		public static string VideoCompositionAssemblyStage_GeneratingThumbnail { get { return GetResourceString("VideoCompositionAssemblyStage_GeneratingThumbnail"); } }
 //Resources:MediaServicesResources:VideoCompositionAssemblyStage_InspectingMedia
 
 		public static string VideoCompositionAssemblyStage_InspectingMedia { get { return GetResourceString("VideoCompositionAssemblyStage_InspectingMedia"); } }
@@ -480,6 +489,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:VideoCompositionAssemblyStage_RenderingLabels
 
 		public static string VideoCompositionAssemblyStage_RenderingLabels { get { return GetResourceString("VideoCompositionAssemblyStage_RenderingLabels"); } }
+//Resources:MediaServicesResources:VideoCompositionAssemblyStage_UploadingThumbnail
+
+		public static string VideoCompositionAssemblyStage_UploadingThumbnail { get { return GetResourceString("VideoCompositionAssemblyStage_UploadingThumbnail"); } }
 //Resources:MediaServicesResources:VideoCompositionAssemblyStage_UploadingToAzure
 
 		public static string VideoCompositionAssemblyStage_UploadingToAzure { get { return GetResourceString("VideoCompositionAssemblyStage_UploadingToAzure"); } }
@@ -806,6 +818,8 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string MediaResource_OriginalSource = "MediaResource_OriginalSource";
 			public const string MediaResource_ResourceType_Help = "MediaResource_ResourceType_Help";
 			public const string MediaResource_StorageRefName = "MediaResource_StorageRefName";
+			public const string MediaResource_ThumbnailUrl = "MediaResource_ThumbnailUrl";
+			public const string MediaResource_ThumbnailUrl_Help = "MediaResource_ThumbnailUrl_Help";
 			public const string MediaResource_Title = "MediaResource_Title";
 			public const string MediaResource_WebLink = "MediaResource_WebLink";
 			public const string MediaResource_Width = "MediaResource_Width";
@@ -872,11 +886,13 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string VideoCompositionAssemblyStage_DownloadingMedia = "VideoCompositionAssemblyStage_DownloadingMedia";
 			public const string VideoCompositionAssemblyStage_Encoding = "VideoCompositionAssemblyStage_Encoding";
 			public const string VideoCompositionAssemblyStage_Failed = "VideoCompositionAssemblyStage_Failed";
+			public const string VideoCompositionAssemblyStage_GeneratingThumbnail = "VideoCompositionAssemblyStage_GeneratingThumbnail";
 			public const string VideoCompositionAssemblyStage_InspectingMedia = "VideoCompositionAssemblyStage_InspectingMedia";
 			public const string VideoCompositionAssemblyStage_None = "VideoCompositionAssemblyStage_None";
 			public const string VideoCompositionAssemblyStage_NormalizingMedia = "VideoCompositionAssemblyStage_NormalizingMedia";
 			public const string VideoCompositionAssemblyStage_Queued = "VideoCompositionAssemblyStage_Queued";
 			public const string VideoCompositionAssemblyStage_RenderingLabels = "VideoCompositionAssemblyStage_RenderingLabels";
+			public const string VideoCompositionAssemblyStage_UploadingThumbnail = "VideoCompositionAssemblyStage_UploadingThumbnail";
 			public const string VideoCompositionAssemblyStage_UploadingToAzure = "VideoCompositionAssemblyStage_UploadingToAzure";
 			public const string VideoCompositionAssemblyStage_UploadingToVimeo = "VideoCompositionAssemblyStage_UploadingToVimeo";
 			public const string VideoCompositionBlock_Description = "VideoCompositionBlock_Description";

@@ -66,7 +66,7 @@ namespace LagoVista.MediaServices.CloudRepos
                     ContentType = contentType
                 };
 
-                sasBuilder.SetPermissions(BlobSasPermissions.Create);
+                sasBuilder.SetPermissions(BlobSasPermissions.Create | BlobSasPermissions.Write);
 
                 return InvokeResult<VideoProcessorStorageDestination>.Create(new VideoProcessorStorageDestination
                 {

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: video-processor-launcher-config
+  namespace: video-processing
+data:
+  WorkerImage: "your-registry/lago-video-processor:1.0.4"

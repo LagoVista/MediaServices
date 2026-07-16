@@ -184,6 +184,7 @@ namespace LagoVista.VideoAssembly.Contracts
         public string AttemptId { get; set; }
         public string ProductionId { get; set; }
         public string MediaResourceId { get; set; }
+        public string OrganizationId { get; set; }
         public VideoAssemblySource Source { get; set; }
         public VideoMediaImportDestination VideoDestination { get; set; }
         public VideoMediaImportThumbnail Thumbnail { get; set; } = new VideoMediaImportThumbnail();

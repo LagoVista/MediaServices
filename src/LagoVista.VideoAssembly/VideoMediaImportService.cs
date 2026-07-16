@@ -188,7 +188,7 @@ namespace LagoVista.VideoAssembly
 
                 lock (_notificationSyncRoot)
                 {
-                    _pendingUploadNotification = _pendingUploadNotification.ContinueWith(_ => _notificationPublisher.TryPublishAsync(request.ProductionId, message, liveProgress, CancellationToken.None), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
+                    _pendingUploadNotification = _pendingUploadNotification.ContinueWith(_ => _notificationPublisher.TryPublishAsync(request.OrganizationId, message, liveProgress, CancellationToken.None), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
                 }
             });
         }
@@ -202,7 +202,7 @@ namespace LagoVista.VideoAssembly
         {
             Console.WriteLine($"[{stage}] {message}");
 
-            await _notificationPublisher.TryPublishAsync(request.ProductionId, message, new VideoProcessorLiveProgress
+            await _notificationPublisher.TryPublishAsync(request.OrganizationId, message, new VideoProcessorLiveProgress
             {
                 JobType = VideoProcessorJobType.VideoMediaImport,
                 RequestId = request.RequestId,
