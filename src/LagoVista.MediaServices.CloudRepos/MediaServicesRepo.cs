@@ -279,6 +279,60 @@ namespace LagoVista.MediaServices.CloudRepos
             return this.DeleteDocumentAsync(id);
         }
 
+        public async Task<InvokeResult<string>> GetMediaReadUrlAsync(string blobReferenceName, string org, System.Threading.CancellationToken cancellationToken = default)
+        {
+            if (String.IsNullOrWhiteSpace(blobReferenceName))
+            {
+                return InvokeResult<string>.FromError("A media storage reference name is required.");
+            }
+
+            if (String.IsNullOrWhiteSpace(org))
+            {
+                return InvokeResult<string>.FromError("An organization ID is required.");
+            }
+
+            try
+            {
+                var containerResult = await GetStorageContainerAsync(org);
+                if (!containerResult.Successful)
+                {
+                    return InvokeResult<string>.FromInvokeResult(containerResult.ToInvokeResult());
+                }
+
+                var container = containerResult.Result;
+                var blobClient = container.GetBlobClient(blobReferenceName);
+                var existsResult = await blobClient.ExistsAsync(cancellationToken);
+
+                if (!existsResult.Value)
+                {
+                    return InvokeResult<string>.FromError($"Could not find media blob '{blobReferenceName}' for organization '{org}'.");
+                }
+
+                if (!blobClient.CanGenerateSasUri)
+                {
+                    return InvokeResult<string>.FromError($"The media storage client cannot generate a SAS URL for blob '{blobReferenceName}'.");
+                }
+
+                var sasBuilder = new Azure.Storage.Sas.BlobSasBuilder
+                {
+                    BlobContainerName = container.Name,
+                    BlobName = blobReferenceName,
+                    Resource = "b",
+                    StartsOn = DateTimeOffset.UtcNow.AddMinutes(-5),
+                    ExpiresOn = DateTimeOffset.UtcNow.AddHours(1)
+                };
+
+                sasBuilder.SetPermissions(Azure.Storage.Sas.BlobSasPermissions.Read);
+
+                return InvokeResult<string>.Create(blobClient.GenerateSasUri(sasBuilder).ToString());
+            }
+            catch (Exception ex)
+            {
+                _logger.AddException("[MediaServicesRepo_GetMediaReadUrlAsync]", ex);
+                return InvokeResult<string>.FromException("[MediaServicesRepo_GetMediaReadUrlAsync]", ex);
+            }
+        }
+
         public async Task<InvokeResult<byte[]>> GetMediaAsync(string blobReferenceName, string org)
         {
             var sw = Stopwatch.StartNew();

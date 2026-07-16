@@ -23,6 +23,7 @@ namespace LagoVista.MediaServices.Services
             _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
+
         public async Task<InvokeResult<VideoProcessorLaunchResult>> LaunchAsync(VideoProcessorLaunchRequest request, CancellationToken cancellationToken = default)
         {
             var validationResult = ValidateRequest(request);
