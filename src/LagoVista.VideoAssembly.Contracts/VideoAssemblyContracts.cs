@@ -77,6 +77,7 @@ namespace LagoVista.VideoAssembly.Contracts
         public string RequestId { get; set; }
         public string AttemptId { get; set; }
         public string ProductionId { get; set; }
+        public string OrganizationId { get; set; }
         public List<VideoAssemblyBlock> Blocks { get; set; } = new List<VideoAssemblyBlock>();
         public VideoMediaImportDestination AzureVideoDestination { get; set; }
         public VideoMediaImportThumbnail Thumbnail { get; set; } = new VideoMediaImportThumbnail();

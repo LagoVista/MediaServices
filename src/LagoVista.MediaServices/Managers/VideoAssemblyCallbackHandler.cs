@@ -217,11 +217,6 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<VideoProcessorOutputArtifact>.FromError("The completed video output artifact did not contain a storage reference name.");
             }
 
-            if (String.IsNullOrWhiteSpace(videoOutput.ExternalUri))
-            {
-                return InvokeResult<VideoProcessorOutputArtifact>.FromError("The completed video output artifact did not contain an external URI.");
-            }
-
             if (!videoOutput.SizeBytes.HasValue || videoOutput.SizeBytes.Value <= 0)
             {
                 return InvokeResult<VideoProcessorOutputArtifact>.FromError("The completed video output artifact did not contain a valid file size.");
@@ -253,11 +248,6 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<VideoProcessorOutputArtifact>.FromError("The completed thumbnail output artifact did not contain a storage reference name.");
             }
 
-            if (String.IsNullOrWhiteSpace(thumbnailOutput.ExternalUri))
-            {
-                return InvokeResult<VideoProcessorOutputArtifact>.FromError("The completed thumbnail output artifact did not contain an external URI.");
-            }
-
             var pendingRevision = mediaResource.GetPendingRevision();
             if (pendingRevision == null)
             {
@@ -265,14 +255,14 @@ namespace LagoVista.MediaServices.Managers
             }
 
             mediaResource.StorageReferenceName = videoOutput.StorageReferenceName;
-            mediaResource.Link = videoOutput.ExternalUri;
+            if (!String.IsNullOrWhiteSpace(videoOutput.ExternalUri)) mediaResource.Link = videoOutput.ExternalUri;
             mediaResource.ContentSize = videoOutput.SizeBytes.Value;
             mediaResource.DurationSeconds = videoOutput.DurationSeconds.Value;
             mediaResource.Width = videoOutput.Width.Value;
             mediaResource.Height = videoOutput.Height.Value;
             mediaResource.ContentSha256 = videoOutput.Sha256;
             mediaResource.ThumbnailStorageReferenceName = thumbnailOutput.StorageReferenceName;
-            mediaResource.ThumbnailUrl = thumbnailOutput.ExternalUri;
+            if (!String.IsNullOrWhiteSpace(thumbnailOutput.ExternalUri)) mediaResource.ThumbnailUrl = thumbnailOutput.ExternalUri;
 
             pendingRevision.StorageReferenceName = videoOutput.StorageReferenceName;
             pendingRevision.ThumbnailStorageReferenceName = thumbnailOutput.StorageReferenceName;

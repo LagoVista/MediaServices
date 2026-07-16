@@ -177,6 +177,7 @@ namespace LagoVista.MediaServices.Managers
                 RequestId = requestId,
                 AttemptId = attemptId,
                 ProductionId = composition.Id,
+                OrganizationId = org.Id,
                 Blocks = blocksResult.Result,
                 AzureVideoDestination = new VideoMediaImportDestination
                 {

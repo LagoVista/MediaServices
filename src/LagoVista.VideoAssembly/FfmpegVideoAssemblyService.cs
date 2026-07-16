@@ -63,10 +63,10 @@ namespace LagoVista.VideoAssembly
                     segments.Add(segment);
                 }
 
-                foreach (var segment in segments) await NormalizeAsync(segment, progress, executionTimeout.Token);
-                await ConcatenateAsync(segments, workspace, progress, executionTimeout.Token);
+                foreach (var segment in segments) await NormalizeAsync(request.OrganizationId, segment, progress, executionTimeout.Token);
+                await ConcatenateAsync(request.OrganizationId, segments, workspace, progress, executionTimeout.Token);
 
-                progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.InspectingMedia, Message = "Inspecting assembled output." });
+                progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.InspectingMedia, Message = "Inspecting assembled output." });
                 var outputInspection = await _inspectionService.InspectAsync(workspace.OutputPath, executionTimeout.Token);
                 if (outputInspection.SizeBytes > request.Limits.MaxOutputFileBytes) throw new InvalidOperationException($"Output size of {outputInspection.SizeBytes} bytes exceeds the limit of {request.Limits.MaxOutputFileBytes} bytes.");
                 if (outputInspection.DurationSeconds > request.Limits.MaxOutputDurationSeconds) throw new InvalidOperationException($"Output duration of {outputInspection.DurationSeconds:F1} seconds exceeds the limit of {request.Limits.MaxOutputDurationSeconds} seconds.");
@@ -79,9 +79,10 @@ namespace LagoVista.VideoAssembly
 
                 if (request.ExecutionOptions?.UploadToAzure == true)
                 {
-                    progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.UploadingToAzure, PercentComplete = 0, Message = "Uploading assembled video to Azure.", BytesCompleted = 0, BytesTotal = outputInspection.SizeBytes });
+                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingToAzure, PercentComplete = 0, Message = "Uploading assembled video to Azure.", BytesCompleted = 0, BytesTotal = outputInspection.SizeBytes });
                     var azureVideoProgress = new InlineProgress<AzureBlobUploadProgress>(upload => progress?.Report(new VideoAssemblyProgress
                     {
+                        OrganizationId = request.OrganizationId,
                         Stage = VideoAssemblyStage.UploadingToAzure,
                         PercentComplete = upload.PercentComplete,
                         Message = "Uploading assembled video to Azure.",
@@ -104,12 +105,12 @@ namespace LagoVista.VideoAssembly
                         Sha256 = sha256
                     });
 
-                    progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.UploadingToAzure, PercentComplete = 100, Message = "Assembled video uploaded to Azure.", BytesCompleted = outputInspection.SizeBytes, BytesTotal = outputInspection.SizeBytes });
+                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingToAzure, PercentComplete = 100, Message = "Assembled video uploaded to Azure.", BytesCompleted = outputInspection.SizeBytes, BytesTotal = outputInspection.SizeBytes });
                 }
 
                 if (request.ExecutionOptions?.GenerateThumbnail == true)
                 {
-                    progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.GeneratingThumbnail, PercentComplete = 0, Message = "Generating assembled video thumbnail." });
+                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.GeneratingThumbnail, PercentComplete = 0, Message = "Generating assembled video thumbnail." });
 
                     var thumbnailTimeSeconds = request.Thumbnail.TimeSeconds ?? 1.0;
                     await _thumbnailExtractor.ExtractAsync(workspace.OutputPath, workspace.ThumbnailPath, thumbnailTimeSeconds, outputInspection.DurationSeconds, executionTimeout.Token);
@@ -118,11 +119,12 @@ namespace LagoVista.VideoAssembly
                     var thumbnailSha256 = await CalculateSha256Async(workspace.ThumbnailPath, executionTimeout.Token);
                     var thumbnailFileInfo = new FileInfo(workspace.ThumbnailPath);
 
-                    progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.GeneratingThumbnail, PercentComplete = 100, Message = "Assembled video thumbnail generated." });
-                    progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.UploadingThumbnail, PercentComplete = 0, Message = "Uploading assembled video thumbnail to Azure.", BytesCompleted = 0, BytesTotal = thumbnailFileInfo.Length });
+                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.GeneratingThumbnail, PercentComplete = 100, Message = "Assembled video thumbnail generated." });
+                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingThumbnail, PercentComplete = 0, Message = "Uploading assembled video thumbnail to Azure.", BytesCompleted = 0, BytesTotal = thumbnailFileInfo.Length });
 
                     var thumbnailUploadProgress = new InlineProgress<AzureBlobUploadProgress>(upload => progress?.Report(new VideoAssemblyProgress
                     {
+                        OrganizationId = request.OrganizationId,
                         Stage = VideoAssemblyStage.UploadingThumbnail,
                         PercentComplete = upload.PercentComplete,
                         Message = "Uploading assembled video thumbnail to Azure.",
@@ -144,7 +146,7 @@ namespace LagoVista.VideoAssembly
                         Sha256 = thumbnailSha256
                     });
 
-                    progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.UploadingThumbnail, PercentComplete = 100, Message = "Assembled video thumbnail uploaded to Azure.", BytesCompleted = thumbnailFileInfo.Length, BytesTotal = thumbnailFileInfo.Length });
+                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingThumbnail, PercentComplete = 100, Message = "Assembled video thumbnail uploaded to Azure.", BytesCompleted = thumbnailFileInfo.Length, BytesTotal = thumbnailFileInfo.Length });
                 }
 
                 if (request.ExecutionOptions?.UploadToVimeo == true)
@@ -155,14 +157,14 @@ namespace LagoVista.VideoAssembly
 
                     if (String.IsNullOrWhiteSpace(uploadUrl))
                     {
-                        progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.UploadingToVimeo, Message = "Requesting Vimeo upload session." });
+                        progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingToVimeo, Message = "Requesting Vimeo upload session." });
                         var session = await _vimeoUploadSessionClient.CreateSessionAsync(request, outputInspection.SizeBytes, outputDurationSeconds, sha256, executionTimeout.Token);
                         uploadUrl = session.UploadUrl;
                         vimeoVideoUri = session.VideoUri;
                         vimeoVideoId = session.VideoId;
                     }
 
-                    progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.UploadingToVimeo, PercentComplete = 0, Message = "Uploading assembled video to Vimeo.", BytesCompleted = 0, BytesTotal = outputInspection.SizeBytes });
+                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingToVimeo, PercentComplete = 0, Message = "Uploading assembled video to Vimeo.", BytesCompleted = 0, BytesTotal = outputInspection.SizeBytes });
                     await _tusVideoUploader.UploadAsync(uploadUrl, workspace.OutputPath, progress, executionTimeout.Token);
 
                     outputs.Add(new VideoProcessorOutputArtifact
@@ -180,7 +182,7 @@ namespace LagoVista.VideoAssembly
                     });
                 }
 
-                progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.Completed, PercentComplete = 100, Message = "Video assembly and configured uploads completed." });
+                progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.Completed, PercentComplete = 100, Message = "Video assembly and configured uploads completed." });
                 return new VideoAssemblyResult
                 {
                     Successful = true,
@@ -196,7 +198,7 @@ namespace LagoVista.VideoAssembly
             catch (Exception ex)
             {
                 if (_options.PreserveFailedWorkspace) workspace.Preserve = true;
-                progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.Failed, Message = ex.Message });
+                progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.Failed, Message = ex.Message });
                 return new VideoAssemblyResult { Successful = false, OutputFilePath = workspace.Preserve ? workspace.OutputPath : null, ErrorMessage = ex.Message };
             }
         }
@@ -213,7 +215,7 @@ namespace LagoVista.VideoAssembly
 
             if (block.Type == VideoAssemblyBlockType.Video)
             {
-                progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.InspectingMedia, Message = $"Inspecting block '{block.Key}'." });
+                progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.InspectingMedia, Message = $"Inspecting block '{block.Key}'." });
                 inspection = await _inspectionService.InspectAsync(sourcePath, cancellationToken);
                 if (inspection.DurationSeconds <= 0) throw new InvalidOperationException($"Video block '{block.Key}' has no measurable duration.");
                 durationSeconds = inspection.DurationSeconds;
@@ -225,7 +227,7 @@ namespace LagoVista.VideoAssembly
 
             if ((block.Labels?.Count ?? 0) > 0)
             {
-                progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.RenderingLabels, Message = $"Preparing labels for block '{block.Key}'." });
+                progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.RenderingLabels, Message = $"Preparing labels for block '{block.Key}'." });
                 await File.WriteAllTextAsync(subtitlePath, _subtitleBuilder.Build(block, durationSeconds), cancellationToken);
             }
 
@@ -241,18 +243,18 @@ namespace LagoVista.VideoAssembly
             };
         }
 
-        private async Task NormalizeAsync(VideoAssemblySegment segment, IProgress<VideoAssemblyProgress> progress, CancellationToken cancellationToken)
+        private async Task NormalizeAsync(string organizationId, VideoAssemblySegment segment, IProgress<VideoAssemblyProgress> progress, CancellationToken cancellationToken)
         {
-            progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.NormalizingMedia, Message = $"Normalizing block '{segment.Block.Key}'.", TotalDurationSeconds = (int)Math.Ceiling(segment.DurationSeconds) });
-            var processResult = await _processRunner.RunAsync(_options.FfmpegPath, BuildNormalizeArguments(segment), line => ReportFfmpegProgress(line, segment, progress), cancellationToken: cancellationToken);
+            progress?.Report(new VideoAssemblyProgress { OrganizationId = organizationId, Stage = VideoAssemblyStage.NormalizingMedia, Message = $"Normalizing block '{segment.Block.Key}'.", TotalDurationSeconds = (int)Math.Ceiling(segment.DurationSeconds) });
+            var processResult = await _processRunner.RunAsync(_options.FfmpegPath, BuildNormalizeArguments(segment), line => ReportFfmpegProgress(organizationId, line, segment, progress), cancellationToken: cancellationToken);
             if (processResult.ExitCode != 0) throw new InvalidOperationException($"FFmpeg failed while normalizing block '{segment.Block.Key}'. {processResult.StandardError}");
             if (!File.Exists(segment.NormalizedPath)) throw new InvalidOperationException($"FFmpeg did not create normalized block '{segment.Block.Key}'.");
         }
 
-        private async Task ConcatenateAsync(IReadOnlyList<VideoAssemblySegment> segments, VideoAssemblyWorkspace workspace, IProgress<VideoAssemblyProgress> progress, CancellationToken cancellationToken)
+        private async Task ConcatenateAsync(string organizationId, IReadOnlyList<VideoAssemblySegment> segments, VideoAssemblyWorkspace workspace, IProgress<VideoAssemblyProgress> progress, CancellationToken cancellationToken)
         {
             await File.WriteAllLinesAsync(workspace.ConcatManifestPath, segments.Select(segment => $"file '{EscapeConcatPath(segment.NormalizedPath)}'").ToList(), cancellationToken);
-            progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.Encoding, Message = $"Concatenating {segments.Count} normalized block(s)." });
+            progress?.Report(new VideoAssemblyProgress { OrganizationId = organizationId, Stage = VideoAssemblyStage.Encoding, Message = $"Concatenating {segments.Count} normalized block(s)." });
 
             var arguments = $"-y -f concat -safe 0 -i {ProcessRunner.Quote(workspace.ConcatManifestPath)} -c copy -movflags +faststart {ProcessRunner.Quote(workspace.OutputPath)}";
             var processResult = await _processRunner.RunAsync(_options.FfmpegPath, arguments, cancellationToken: cancellationToken);
@@ -305,14 +307,14 @@ namespace LagoVista.VideoAssembly
             return String.Join(",", filters);
         }
 
-        private static void ReportFfmpegProgress(string line, VideoAssemblySegment segment, IProgress<VideoAssemblyProgress> progress)
+        private static void ReportFfmpegProgress(string organizationId, string line, VideoAssemblySegment segment, IProgress<VideoAssemblyProgress> progress)
         {
             if (!line.StartsWith("out_time_ms=", StringComparison.OrdinalIgnoreCase)) return;
             if (!Int64.TryParse(line.Substring("out_time_ms=".Length), NumberStyles.Integer, CultureInfo.InvariantCulture, out var microseconds)) return;
 
             var processedSeconds = (int)Math.Max(0, microseconds / 1000000L);
             var totalSeconds = (int)Math.Max(1, Math.Ceiling(segment.DurationSeconds));
-            progress?.Report(new VideoAssemblyProgress { Stage = VideoAssemblyStage.NormalizingMedia, PercentComplete = Math.Min(100, processedSeconds * 100 / totalSeconds), Message = $"Normalizing block '{segment.Block.Key}'.", ProcessedDurationSeconds = processedSeconds, TotalDurationSeconds = totalSeconds });
+            progress?.Report(new VideoAssemblyProgress { OrganizationId = organizationId, Stage = VideoAssemblyStage.NormalizingMedia, PercentComplete = Math.Min(100, processedSeconds * 100 / totalSeconds), Message = $"Normalizing block '{segment.Block.Key}'.", ProcessedDurationSeconds = processedSeconds, TotalDurationSeconds = totalSeconds });
         }
 
         private static string EscapeFilterPath(string path)

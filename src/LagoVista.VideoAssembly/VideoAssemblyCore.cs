@@ -34,6 +34,7 @@ namespace LagoVista.VideoAssembly
         public int? PercentComplete { get; set; }
         public string Message { get; set; }
         public long? BytesCompleted { get; set; }
+        public string OrganizationId { get; set; }
         public long? BytesTotal { get; set; }
         public int? ProcessedDurationSeconds { get; set; }
         public int? TotalDurationSeconds { get; set; }
