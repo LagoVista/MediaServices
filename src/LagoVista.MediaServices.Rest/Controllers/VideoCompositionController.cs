@@ -101,6 +101,12 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return _videoAssemblyRequestManager.PrepareAssemblyRequestAsync(id, thumbnailTimeSeconds, OrgEntityHeader, UserEntityHeader, cancellationToken);
         }
 
+        [HttpPost("/api/media/videocomposition/{id}/vimeo")]
+        public Task<InvokeResult<VideoAssemblyPreparationResult>> PrepareVimeoPublishRequestAsync(string id, CancellationToken cancellationToken = default)
+        {
+            return _videoAssemblyRequestManager.PrepareVimeoPublishRequestAsync(id, OrgEntityHeader, UserEntityHeader, cancellationToken);
+        }
+
         [HttpDelete("/api/media/videocomposition/{id}")]
         public Task<InvokeResult> DeleteVideoCompositionAsync(string id)
         {

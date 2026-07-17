@@ -297,6 +297,196 @@ namespace LagoVista.MediaServices.Managers
             });
         }
 
+        public async Task<InvokeResult<VideoAssemblyPreparationResult>> PrepareVimeoPublishRequestAsync(string compositionId, EntityHeader org, EntityHeader user, CancellationToken cancellationToken = default)
+        {
+            _adminLogger.Trace($"{this.Tag()} [VIMEO PUBLISH PREPARE STARTED] CompositionId={compositionId}, OrgId={org?.Id}, Environment={_appConfig.Environment}");
+
+            if (String.IsNullOrWhiteSpace(compositionId)) return InvokeResult<VideoAssemblyPreparationResult>.FromError("Video composition ID is required.");
+            if (org == null || String.IsNullOrWhiteSpace(org.Id)) return InvokeResult<VideoAssemblyPreparationResult>.FromError("An organization is required.");
+
+            var composition = await _videoCompositionRepo.GetVideoCompositionAsync(compositionId);
+            if (composition == null) return InvokeResult<VideoAssemblyPreparationResult>.FromError($"Could not find video composition '{compositionId}'.");
+            if (composition.OwnerOrganization == null || !String.Equals(composition.OwnerOrganization.Id, org.Id, StringComparison.OrdinalIgnoreCase)) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The video composition does not belong to the active organization.");
+            if (composition.Status?.Value != VideoCompositionStatus.Completed) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The video composition must be completed before it can be published to Vimeo.");
+            if (composition.OutputMediaResource == null || String.IsNullOrWhiteSpace(composition.OutputMediaResource.Id)) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The video composition does not have an Azure output media resource.");
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var azureMediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(composition.OutputMediaResource.Id, org, user);
+            if (azureMediaResource == null) return InvokeResult<VideoAssemblyPreparationResult>.FromError($"Could not find Azure output media resource '{composition.OutputMediaResource.Id}'.");
+            if (azureMediaResource.Status?.Value != MediaResourceStatus.Ready) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The Azure output media resource is not ready for Vimeo publishing.");
+
+            var sourceResult = await _mediaSourceResolver.ResolveAsync(azureMediaResource, org.Id, cancellationToken);
+            if (!sourceResult.Successful) return sourceResult.ToInvokeResult<VideoAssemblyPreparationResult>();
+
+            MediaResource publishedMediaResource;
+            if (composition.PublishedVideoMediaResource != null && !String.IsNullOrWhiteSpace(composition.PublishedVideoMediaResource.Id))
+            {
+                publishedMediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(composition.PublishedVideoMediaResource.Id, org, user);
+                if (publishedMediaResource == null) return InvokeResult<VideoAssemblyPreparationResult>.FromError($"Could not find Vimeo media resource '{composition.PublishedVideoMediaResource.Id}'.");
+            }
+            else
+            {
+                var now = UtcTimestamp.Now;
+                publishedMediaResource = new MediaResource
+                {
+                    Id = Guid.NewGuid().ToId(),
+                    Name = String.IsNullOrWhiteSpace(composition.Name) ? "Published Vimeo Video" : composition.Name,
+                    Key = $"vimeovideo{DateTime.UtcNow.Ticks}",
+                    Description = composition.Description,
+                    FileName = azureMediaResource.FileName,
+                    IsFileUpload = false,
+                    MimeType = "video/mp4",
+                    ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Video),
+                    Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Pending),
+                    ProcessingStartedUtc = now,
+                    OwnerOrganization = org,
+                    CreatedBy = user,
+                    LastUpdatedBy = user,
+                    CreationDate = now,
+                    LastUpdatedDate = now,
+                    SourceEntityType = nameof(MediaResource),
+                    SourceEntity = azureMediaResource.ToEntityHeader()
+                };
+
+                var addResult = await _mediaServicesManager.AddMediaResourceRecordAsync(publishedMediaResource, org, user);
+                if (!addResult.Successful) return addResult.ToInvokeResult<VideoAssemblyPreparationResult>();
+
+                composition.PublishedVideoMediaResource = publishedMediaResource.ToEntityHeader();
+            }
+
+            publishedMediaResource.Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Pending);
+            publishedMediaResource.ProcessingStartedUtc = UtcTimestamp.Now;
+            publishedMediaResource.ProcessingCompletedUtc = null;
+            publishedMediaResource.ProcessingErrorMessage = null;
+            publishedMediaResource.LastUpdatedDate = UtcTimestamp.Now;
+            publishedMediaResource.LastUpdatedBy = user;
+
+            var updatePublishedResult = await _mediaServicesManager.UpdateMediaResourceRecordAsync(publishedMediaResource, org, user);
+            if (!updatePublishedResult.Successful) return updatePublishedResult.ToInvokeResult<VideoAssemblyPreparationResult>();
+
+            var requestId = Guid.NewGuid().ToId().Value;
+            var attemptId = Guid.NewGuid().ToId().Value;
+            var callbackAccessToken = CreateCallbackAccessToken();
+            var callbackRegistration = new VideoProcessorCallbackRegistration
+            {
+                PartitionKey = requestId,
+                RowKey = attemptId,
+                OrganizationId = org.Id,
+                JobType = VideoProcessorJobType.VideoAssembly.ToString(),
+                RequestId = requestId,
+                AttemptId = attemptId,
+                ProductionId = composition.Id,
+                MediaResourceId = publishedMediaResource.Id,
+                AccessTokenSha256 = ComputeSha256(callbackAccessToken),
+                CreatedUtc = DateTime.UtcNow.ToString("o"),
+                ExpiresUtc = DateTime.UtcNow.AddMinutes(90).ToString("o"),
+                LastSequence = -1,
+                IsCompleted = false
+            };
+
+            await _videoProcessorCallbackRegistrationStore.AddAsync(callbackRegistration, cancellationToken);
+
+            var request = new VideoAssemblyRequest
+            {
+                RequestId = requestId,
+                AttemptId = attemptId,
+                ProductionId = composition.Id,
+                OrganizationId = org.Id,
+                PublishedVideoSource = sourceResult.Result,
+                VimeoUpload = new VideoAssemblyVimeoUpload
+                {
+                    MediaResourceId = publishedMediaResource.Id,
+                    SessionRequestUrl = "/api/media/videocomposition/vimeo/session",
+                    SessionAccessToken = callbackAccessToken
+                },
+                Callback = new VideoAssemblyCallbackSettings
+                {
+                    Path = "/api/media/webhooks/video-assembly",
+                    AccessToken = callbackAccessToken
+                },
+                ExecutionOptions = new VideoAssemblyExecutionOptions
+                {
+                    Operation = VideoAssemblyOperation.Publish,
+                    UploadToAzure = false,
+                    GenerateThumbnail = false,
+                    UploadToVimeo = true,
+                    SendCallbacks = true
+                }
+            };
+
+            var storedRequestResult = await _videoProcessorRequestStore.SaveAsync(org.Id, request.JobType.ToString(), requestId, attemptId, request, cancellationToken);
+            if (!storedRequestResult.Successful)
+            {
+                await _videoProcessorCallbackRegistrationStore.DeleteAsync(requestId, attemptId, cancellationToken);
+                return storedRequestResult.ToInvokeResult<VideoAssemblyPreparationResult>();
+            }
+
+            composition.AssemblyRequestStorageReferenceName = storedRequestResult.Result.StorageReferenceName;
+            composition.AssemblyRequestBlobUrl = storedRequestResult.Result.BlobUrl;
+            composition.AssemblyRequestUrl = storedRequestResult.Result.RequestUrl;
+            composition.AssemblyState = composition.AssemblyState ?? new VideoCompositionAssemblyState();
+            composition.AssemblyState.RequestId = requestId;
+            composition.AssemblyState.AttemptId = attemptId;
+            composition.AssemblyState.ContractVersion = request.Version;
+            composition.AssemblyState.Stage = VideoCompositionAssemblyStage.Queued;
+            composition.AssemblyState.PercentComplete = 5;
+            composition.AssemblyState.Message = "Vimeo publishing request prepared and ready for launch.";
+            composition.AssemblyState.LastUpdatedUtc = UtcTimestamp.Now;
+            composition.Status = EntityHeader<VideoCompositionStatus>.Create(VideoCompositionStatus.ProcessingAtVimeo);
+            composition.ErrorMessage = null;
+
+            await _videoCompositionRepo.UpdateVideoCompositionAsync(composition);
+            await PublishVideoCompositionUpdatedAsync(composition);
+
+            if (_appConfig.Environment == Environments.LocalDevelopment || _appConfig.Environment == Environments.Local)
+            {
+                composition.AssemblyLaunchProvider = "local-manual";
+                composition.AssemblyLaunchId = Guid.Empty.ToString().ToLower();
+                composition.AssemblyLaunchNamespace = "local";
+                composition.AssemblyLaunchJobName = "local-vimeo-publish";
+                composition.AssemblyLaunchedUtc = UtcTimestamp.Now;
+                composition.AssemblyState.Message = "Vimeo publishing request prepared for local manual execution.";
+                _adminLogger.Trace($"{this.Tag()} [VIMEO PUBLISH MANUAL LAUNCH] CompositionId={composition.Id}, RequestId={requestId}, AttemptId={attemptId}, RequestUrl='{storedRequestResult.Result.RequestUrl}'");
+            }
+            else
+            {
+                var launchResult = await _videoProcessorLauncher.LaunchAsync(new VideoProcessorLaunchRequest
+                {
+                    JobType = request.JobType,
+                    ProductionId = composition.Id,
+                    RequestId = requestId,
+                    AttemptId = attemptId,
+                    RequestUrl = storedRequestResult.Result.RequestUrl
+                }, cancellationToken);
+
+                if (!launchResult.Successful) return launchResult.ToInvokeResult<VideoAssemblyPreparationResult>();
+
+                composition.AssemblyLaunchProvider = launchResult.Result.Provider;
+                composition.AssemblyLaunchId = launchResult.Result.LaunchId;
+                composition.AssemblyLaunchNamespace = launchResult.Result.Namespace;
+                composition.AssemblyLaunchJobName = launchResult.Result.JobName;
+                composition.AssemblyLaunchedUtc = launchResult.Result.LaunchedUtc;
+                composition.AssemblyState.Message = "Vimeo publishing processor launched.";
+            }
+
+            composition.AssemblyState.LastUpdatedUtc = UtcTimestamp.Now;
+            await _videoCompositionRepo.UpdateVideoCompositionAsync(composition);
+            await PublishVideoCompositionUpdatedAsync(composition);
+
+            _adminLogger.Trace($"{this.Tag()} [VIMEO PUBLISH PREPARE COMPLETED] CompositionId={composition.Id}, AzureMediaResourceId={azureMediaResource.Id}, VimeoMediaResourceId={publishedMediaResource.Id}, RequestId={requestId}, AttemptId={attemptId}");
+
+            return InvokeResult<VideoAssemblyPreparationResult>.Create(new VideoAssemblyPreparationResult
+            {
+                Composition = composition,
+                OutputMediaResource = publishedMediaResource,
+                Request = request,
+                RequestStorageReferenceName = storedRequestResult.Result.StorageReferenceName,
+                RequestBlobUrl = storedRequestResult.Result.BlobUrl,
+                RequestUrl = storedRequestResult.Result.RequestUrl
+            });
+        }
+
         private async Task<InvokeResult<List<VideoAssemblyBlock>>> CreateAssemblyBlocksAsync(VideoComposition composition, EntityHeader org, EntityHeader user, CancellationToken cancellationToken)
         {
             var assemblyBlocks = new List<VideoAssemblyBlock>();
