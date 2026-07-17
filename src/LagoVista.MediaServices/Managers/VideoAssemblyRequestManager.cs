@@ -93,8 +93,9 @@ namespace LagoVista.MediaServices.Managers
             cancellationToken.ThrowIfCancellationRequested();
 
             _adminLogger.Trace($"{this.Tag()} [ASSEMBLY COMPOSITION VALIDATED] CompositionId={composition.Id}, BlockCount={composition.Blocks.Count}, CurrentStatus={composition.Status?.Value}");
-
-            composition.Status = EntityHeader<VideoCompositionStatus>.Create(VideoCompositionStatus.Preparing);
+            composition.CurrentInputSha256 = composition.CalculateCurrentInputSha256();
+            composition.ExecutionInputSha256 = composition.CurrentInputSha256;
+            composition.SetStatus(VideoCompositionStatus.Preparing);
             composition.AssemblyState = composition.AssemblyState ?? new VideoCompositionAssemblyState();
             composition.AssemblyState.Stage = VideoCompositionAssemblyStage.Queued;
             composition.AssemblyState.PercentComplete = 1;
@@ -244,7 +245,7 @@ namespace LagoVista.MediaServices.Managers
             composition.AssemblyState.PercentComplete = 5;
             composition.AssemblyState.Message = "Video assembly request prepared and ready for launch.";
             composition.AssemblyState.LastUpdatedUtc = UtcTimestamp.Now;
-            composition.Status = EntityHeader<VideoCompositionStatus>.Create(VideoCompositionStatus.Queued);
+            composition.SetStatus(VideoCompositionStatus.Queued);
             composition.SubmittedUtc = UtcTimestamp.Now;
             composition.ErrorMessage = null;
 
@@ -457,7 +458,7 @@ namespace LagoVista.MediaServices.Managers
             composition.AssemblyState.PercentComplete = 5;
             composition.AssemblyState.Message = "Vimeo publishing request prepared and ready for launch.";
             composition.AssemblyState.LastUpdatedUtc = UtcTimestamp.Now;
-            composition.Status = EntityHeader<VideoCompositionStatus>.Create(VideoCompositionStatus.ProcessingAtVimeo);
+            composition.SetStatus(VideoCompositionStatus.ProcessingAtVimeo);
             composition.ErrorMessage = null;
 
             await _videoCompositionRepo.UpdateVideoCompositionAsync(composition);
@@ -559,7 +560,7 @@ namespace LagoVista.MediaServices.Managers
             composition.VimeoVideoUri = videoUri;
             composition.VimeoVideoId = videoId;
             composition.VimeoVideoUrl = uploadResult.Result.Link;
-            composition.Status = EntityHeader<VideoCompositionStatus>.Create(VideoCompositionStatus.ProcessingAtVimeo);
+            composition.SetStatus(VideoCompositionStatus.ProcessingAtVimeo);
             composition.AssemblyState = composition.AssemblyState ?? new VideoCompositionAssemblyState();
             composition.AssemblyState.Stage = VideoCompositionAssemblyStage.UploadingToVimeo;
             composition.AssemblyState.Message = "Uploading approved video to Vimeo.";
@@ -765,7 +766,7 @@ namespace LagoVista.MediaServices.Managers
         {
             _adminLogger.Trace($"{this.Tag()} [ASSEMBLY PREPARE FAILED] CompositionId={composition?.Id}, RequestId={composition?.AssemblyState?.RequestId}, AttemptId={composition?.AssemblyState?.AttemptId}, Message={message}");
 
-            composition.Status = EntityHeader<VideoCompositionStatus>.Create(VideoCompositionStatus.Failed);
+            composition.SetStatus(VideoCompositionStatus.Failed);
             composition.AssemblyState = composition.AssemblyState ?? new VideoCompositionAssemblyState();
             composition.AssemblyState.Stage = VideoCompositionAssemblyStage.Failed;
             composition.AssemblyState.Message = message;

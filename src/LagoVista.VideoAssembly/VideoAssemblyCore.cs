@@ -234,25 +234,27 @@ namespace LagoVista.VideoAssembly
 
         private static void ValidateUrl(List<string> errors, string value, string name)
         {
-            if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)) errors.Add($"{name} must be an absolute HTTP or HTTPS URL.");
+            if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)) 
+                errors.Add($"{name} must be an absolute HTTP or HTTPS URL. but was [{value}]");
         }
 
         private static void ValidatePath(List<string> errors, string value, string name)
         {
             if (String.IsNullOrWhiteSpace(value))
             {
-                errors.Add($"{name} is required.");
+                errors.Add($"{name} is required but was empty.");
                 return;
             }
 
             if (!value.StartsWith("/", StringComparison.Ordinal))
             {
-                errors.Add($"{name} must begin with '/'.");
+                errors.Add($"{name} must begin with '/' but was [{value}]");
             }
 
-            if (Uri.TryCreate(value, UriKind.Absolute, out _))
+            if (Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
+               (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
             {
-                errors.Add($"{name} must be a relative path.");
+                errors.Add($"{name} must be a relative path but was [{value}]");
             }
         }
     }

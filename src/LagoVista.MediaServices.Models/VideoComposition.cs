@@ -7,7 +7,10 @@ using LagoVista.Core.Validation;
 using LagoVista.MediaServices.Models.Resources;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace LagoVista.MediaServices.Models
 {
@@ -145,14 +148,36 @@ namespace LagoVista.MediaServices.Models
         public const string AssemblyStage_Completed = "completed";
         public const string AssemblyStage_Failed = "failed";
 
+        public const string DefaultLocaleCode = "en-US";
+
         public VideoComposition()
         {
             Icon = "lago-icon://system/nuvos-semantic-icon/video-production-default";
             Status = EntityHeader<VideoCompositionStatus>.Create(VideoCompositionStatus.Draft);
+            DefaultLocale = DefaultLocaleCode;
+            StatusChangedUtc = UtcTimestamp.Now;
         }
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoComposition_Status, FieldType: FieldTypes.Picker, EnumType: typeof(VideoCompositionStatus), ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: false)]
         public EntityHeader<VideoCompositionStatus> Status { get; set; }
+
+        public string DefaultLocale { get; set; }
+
+        public bool IsReady { get; set; }
+
+        public string CurrentInputSha256 { get; set; }
+
+        public string ExecutionInputSha256 { get; set; }
+
+        public string OutputInputSha256 { get; set; }
+
+        public bool IsCurrent =>
+            IsReady &&
+            !String.IsNullOrWhiteSpace(CurrentInputSha256) &&
+            !String.IsNullOrWhiteSpace(OutputInputSha256) &&
+            String.Equals(CurrentInputSha256, OutputInputSha256, StringComparison.OrdinalIgnoreCase);
+
+        public string StatusChangedUtc { get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoComposition_OutputMediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: false)]
         public EntityHeader OutputMediaResource { get; set; }
@@ -196,6 +221,77 @@ namespace LagoVista.MediaServices.Models
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoComposition_ErrorMessage, FieldType: FieldTypes.MultiLineText, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: false)]
         public string ErrorMessage { get; set; }
+
+        public string CalculateCurrentInputSha256()
+        {
+            var content = new StringBuilder();
+
+            content.AppendLine("version=1");
+            content.AppendLine($"defaultLocale={NormalizeHashValue(DefaultLocale)}");
+
+            foreach (var block in (Blocks ?? new List<VideoCompositionBlock>()).OrderBy(block => block.SortOrder).ThenBy(block => block.Id, StringComparer.OrdinalIgnoreCase))
+            {
+                content.AppendLine("block");
+                content.AppendLine($"id={NormalizeHashValue(block.Id)}");
+                content.AppendLine($"key={NormalizeHashValue(block.Key)}");
+                content.AppendLine($"sortOrder={block.SortOrder.ToString(CultureInfo.InvariantCulture)}");
+                content.AppendLine($"type={block.Type}");
+                content.AppendLine($"mediaResourceId={NormalizeHashValue(block.MediaResource?.Id)}");
+                content.AppendLine($"durationSeconds={NormalizeHashValue(block.DurationSeconds)}");
+                content.AppendLine($"fadeInSeconds={NormalizeHashValue(block.FadeInSeconds)}");
+                content.AppendLine($"fadeOutSeconds={NormalizeHashValue(block.FadeOutSeconds)}");
+
+                var labelIndex = 0;
+
+                foreach (var label in block.CompositionLabels ?? new List<VideoCompositionTextLabel>())
+                {
+                    content.AppendLine($"label[{labelIndex}]");
+                    content.AppendLine($"id={NormalizeHashValue(label.Id)}");
+                    content.AppendLine($"text={NormalizeHashValue(label.Text)}");
+                    content.AppendLine($"x={label.X.ToString(CultureInfo.InvariantCulture)}");
+                    content.AppendLine($"y={label.Y.ToString(CultureInfo.InvariantCulture)}");
+                    content.AppendLine($"fontSize={label.FontSize.ToString(CultureInfo.InvariantCulture)}");
+                    content.AppendLine($"bold={label.Bold}");
+                    content.AppendLine($"color={NormalizeHashValue(label.Color)}");
+                    content.AppendLine($"alignment={label.Alignment}");
+                    content.AppendLine($"maxWidth={NormalizeHashValue(label.MaxWidth)}");
+                    content.AppendLine($"delaySeconds={NormalizeHashValue(label.DelaySeconds)}");
+                    content.AppendLine($"visibleDurationSeconds={NormalizeHashValue(label.VisibleDurationSeconds)}");
+                    content.AppendLine($"fadeInSeconds={NormalizeHashValue(label.FadeInSeconds)}");
+                    content.AppendLine($"fadeOutSeconds={NormalizeHashValue(label.FadeOutSeconds)}");
+
+                    labelIndex++;
+                }
+            }
+
+            using (var sha256 = SHA256.Create())
+            {
+                var bytes = Encoding.UTF8.GetBytes(content.ToString());
+                var hash = sha256.ComputeHash(bytes);
+
+                return BitConverter.ToString(hash).Replace("-", String.Empty).ToLowerInvariant();
+            }
+        }
+
+        private static string NormalizeHashValue(string value)
+        {
+            return value?.Trim() ?? String.Empty;
+        }
+
+        private static string NormalizeHashValue(double value)
+        {
+            return value.ToString("R", CultureInfo.InvariantCulture);
+        }
+
+        private static string NormalizeHashValue(double? value)
+        {
+            return value.HasValue ? value.Value.ToString("R", CultureInfo.InvariantCulture) : String.Empty;
+        }
+
+        private static string NormalizeHashValue(int? value)
+        {
+            return value.HasValue ? value.Value.ToString(CultureInfo.InvariantCulture) : String.Empty;
+        }
 
         public List<string> GetFormFields()
         {
@@ -249,6 +345,19 @@ namespace LagoVista.MediaServices.Models
             }
         }
 
+        public bool SetStatus(VideoCompositionStatus status)
+        {
+            if (Status?.Value == status)
+            {
+                return false;
+            }
+
+            Status = EntityHeader<VideoCompositionStatus>.Create(status);
+            StatusChangedUtc = UtcTimestamp.Now;
+
+            return true;
+        }
+
         public VideoCompositionSummary CreateSummary()
         {
             var summary = new VideoCompositionSummary
@@ -259,7 +368,11 @@ namespace LagoVista.MediaServices.Models
                 TotalDurationSeconds = CalculateKnownDurationSeconds(),
                 VimeoVideoUrl = VimeoVideoUrl,
                 SubmittedUtc = SubmittedUtc,
-                CompletedUtc = CompletedUtc
+                CompletedUtc = CompletedUtc,
+                DefaultLocale = DefaultLocale,
+                IsReady = IsReady,
+                IsCurrent = IsCurrent,
+                StatusChangedUtc = StatusChangedUtc,
             };
 
             summary.Populate(this);
@@ -522,6 +635,14 @@ namespace LagoVista.MediaServices.Models
         public EntityHeader OutputMediaResource { get; set; }
 
         public int BlockCount { get; set; }
+
+        public string DefaultLocale { get; set; }
+
+        public bool IsReady { get; set; }
+
+        public bool IsCurrent { get; set; }
+
+        public string StatusChangedUtc { get; set; }
 
         public int? TotalDurationSeconds { get; set; }
 

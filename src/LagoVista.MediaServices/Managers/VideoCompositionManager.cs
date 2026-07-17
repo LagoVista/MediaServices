@@ -89,9 +89,13 @@ namespace LagoVista.MediaServices.Managers
 
             if (composition.Status == null)
             {
-                composition.Status = EntityHeader<VideoCompositionStatus>.Create(VideoCompositionStatus.Draft);
+                composition.SetStatus(VideoCompositionStatus.Draft);
             }
 
+            if (String.IsNullOrWhiteSpace(composition.DefaultLocale))
+            {
+                composition.DefaultLocale = VideoComposition.DefaultLocaleCode;
+            }
 
             composition.Blocks = composition.Blocks ?? new System.Collections.Generic.List<VideoCompositionBlock>();
 

@@ -137,7 +137,7 @@ namespace LagoVista.MediaServices.Managers
 
             if (String.Equals(heyGenResult.Result.Status, "failed", StringComparison.OrdinalIgnoreCase))
             {
-                production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Failed);
+                production.SetStatus(VideoProductionStatus.Failed);
                 production.ErrorMessage = ResolveHeyGenVideoError(heyGenResult.Result);
                 production.LastStatusCheckUtc = UtcTimestamp.Now;
 
@@ -188,7 +188,7 @@ namespace LagoVista.MediaServices.Managers
             production.VimeoVideoUri = uploadResult.Result.Uri;
             production.VimeoVideoId = ResolveVimeoVideoId(uploadResult.Result.Uri);
             production.VimeoVideoUrl = uploadResult.Result.Link;
-            production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.ImportingToVimeo);
+            production.SetStatus(VideoProductionStatus.ImportingToVimeo);
             production.LastStatusCheckUtc = UtcTimestamp.Now;
             production.ErrorMessage = null;
 
@@ -480,7 +480,7 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<VideoProduction>.FromError("Voice ID is required to generate preview audio.");
             }
 
-            production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.GeneratingPreviewAudio);
+            production.SetStatus(VideoProductionStatus.GeneratingPreviewAudio);
             production.LastStatusCheckUtc = UtcTimestamp.Now;
             await _repo.UpdateVideoProductionAsync(production);
 
@@ -499,7 +499,7 @@ namespace LagoVista.MediaServices.Managers
             var avatarResult = await _videoAvatarManager.EnsureProviderAvatarAsync(production.VideoAvatar.Id, org, user);
             if (!avatarResult.Successful)
             {
-                production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Failed);
+                production.SetStatus(VideoProductionStatus.Failed);
                 production.ErrorMessage = avatarResult.Errors[0].Message;
                 production.LastStatusCheckUtc = UtcTimestamp.Now;
                 await _repo.UpdateVideoProductionAsync(production);
@@ -509,7 +509,7 @@ namespace LagoVista.MediaServices.Managers
             var avatarStatusResult = await _videoAvatarManager.RefreshProviderAvatarStatusAsync(production.VideoAvatar.Id, org, user);
             if (!avatarStatusResult.Successful)
             {
-                production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Failed);
+                production.SetStatus(VideoProductionStatus.Failed);
                 production.ErrorMessage = avatarStatusResult.Errors[0].Message;
                 production.LastStatusCheckUtc = UtcTimestamp.Now;
                 await _repo.UpdateVideoProductionAsync(production);
@@ -518,7 +518,7 @@ namespace LagoVista.MediaServices.Managers
 
             if (avatarStatusResult.Result.Status.Value != VideoAvatarStatus.Ready)
             {
-                production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.WaitingForAvatar);
+                production.SetStatus(VideoProductionStatus.WaitingForAvatar);
                 production.ErrorMessage = "Video avatar is not ready.";
                 production.LastStatusCheckUtc = UtcTimestamp.Now;
                 await _repo.UpdateVideoProductionAsync(production);
@@ -530,7 +530,7 @@ namespace LagoVista.MediaServices.Managers
             var webhookResult = await _heyGenVideoService.EnsureWebhookRegistrationAsync(_webhookSecretOwner, user, _heyGenWebhookCallbackUrl);
             if (!webhookResult.Successful)
             {
-                production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Failed);
+                production.SetStatus(VideoProductionStatus.Failed);
                 production.ErrorMessage = webhookResult.Errors[0].Message;
                 production.LastStatusCheckUtc = UtcTimestamp.Now;
 
@@ -543,7 +543,7 @@ namespace LagoVista.MediaServices.Managers
             var submitResult = await _heyGenVideoService.SubmitVideoAsync(submitRequest);
             if (!submitResult.Successful)
             {
-                production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Failed);
+                production.SetStatus(VideoProductionStatus.Failed);
                 production.ErrorMessage = submitResult.Errors[0].Message;
                 production.LastStatusCheckUtc = UtcTimestamp.Now;
                 await _repo.UpdateVideoProductionAsync(production);
@@ -551,7 +551,7 @@ namespace LagoVista.MediaServices.Managers
             }
 
             production.ProviderVideoId = submitResult.Result.VideoId;
-            production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Submitted);
+            production.SetStatus(VideoProductionStatus.Submitted);
             production.SubmittedUtc = UtcTimestamp.Now;
             production.LastStatusCheckUtc = production.SubmittedUtc;
             production.ErrorMessage = null;
@@ -741,33 +741,33 @@ namespace LagoVista.MediaServices.Managers
 
             if (String.Equals(uploadStatus, "error", StringComparison.OrdinalIgnoreCase))
             {
-                production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Failed);
+                production.SetStatus(VideoProductionStatus.Failed);
                 production.ErrorMessage = String.IsNullOrWhiteSpace(video.Upload?.Error) ? "Vimeo failed to import the video." : video.Upload.Error;
                 return;
             }
 
             if (String.Equals(transcodeStatus, "error", StringComparison.OrdinalIgnoreCase))
             {
-                production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Failed);
+                production.SetStatus(VideoProductionStatus.Failed);
                 production.ErrorMessage = "Vimeo failed to process the video.";
                 return;
             }
 
             if (!String.Equals(uploadStatus, "complete", StringComparison.OrdinalIgnoreCase))
             {
-                production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.ImportingToVimeo);
+                production.SetStatus(VideoProductionStatus.ImportingToVimeo);
                 production.ErrorMessage = null;
                 return;
             }
 
             if (!String.Equals(transcodeStatus, "complete", StringComparison.OrdinalIgnoreCase))
             {
-                production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.ProcessingAtVimeo);
+                production.SetStatus(VideoProductionStatus.ProcessingAtVimeo);
                 production.ErrorMessage = null;
                 return;
             }
 
-            production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Completed);
+            production.SetStatus(VideoProductionStatus.Completed);
             production.CompletedUtc = String.IsNullOrWhiteSpace(production.CompletedUtc) ? UtcTimestamp.Now.Value : production.CompletedUtc;
             production.ErrorMessage = null;
         }
@@ -847,23 +847,23 @@ namespace LagoVista.MediaServices.Managers
             {
                 case "pending":
                 case "waiting":
-                    production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Submitted);
+                    production.SetStatus(VideoProductionStatus.Submitted);
                     production.ErrorMessage = null;
                     break;
 
                 case "processing":
-                    production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Rendering);
+                    production.SetStatus(VideoProductionStatus.Rendering);
                     production.ErrorMessage = null;
                     break;
 
                 case "completed":
-                    production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.ProviderCompleted);
+                    production.SetStatus(VideoProductionStatus.ProviderCompleted);
                     production.CompletedUtc = production.CompletedUtc ?? UtcTimestamp.Now;
                     production.ErrorMessage = null;
                     break;
 
                 case "failed":
-                    production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Failed);
+                    production.SetStatus(VideoProductionStatus.Failed);
                     production.ErrorMessage = ResolveVideoStatusErrorMessage(providerStatus);
                     break;
 
@@ -957,12 +957,17 @@ namespace LagoVista.MediaServices.Managers
 
             if (production.Status == null)
             {
-                production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Draft);
+                production.SetStatus(VideoProductionStatus.Draft);
             }
 
             if (String.IsNullOrWhiteSpace(production.CostCurrency))
             {
                 production.CostCurrency = "USD";
+            }
+
+            if (String.IsNullOrWhiteSpace(production.DefaultLocale))
+            {
+                production.DefaultLocale = VideoProduction.DefaultLocaleCode;
             }
         }
 

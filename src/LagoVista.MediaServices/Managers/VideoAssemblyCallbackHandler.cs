@@ -134,13 +134,13 @@ namespace LagoVista.MediaServices.Managers
             switch (callback.Type)
             {
                 case VideoAssemblyCallbackType.Started:
-                    composition.Status = EntityHeader<VideoCompositionStatus>.Create(isVimeoPublish ? VideoCompositionStatus.ProcessingAtVimeo : VideoCompositionStatus.Assembling);
+                    composition.SetStatus(isVimeoPublish ? VideoCompositionStatus.ProcessingAtVimeo : VideoCompositionStatus.Assembling);
                     composition.AssemblyState.StartedUtc = composition.AssemblyState.StartedUtc ?? callbackTimestamp;
                     composition.ErrorMessage = null;
                     break;
 
                 case VideoAssemblyCallbackType.Progress:
-                    composition.Status = EntityHeader<VideoCompositionStatus>.Create(isVimeoPublish ? VideoCompositionStatus.ProcessingAtVimeo : IsUploadStage(callback.Stage) ? VideoCompositionStatus.Uploading : VideoCompositionStatus.Assembling);
+                    composition.SetStatus(isVimeoPublish ? VideoCompositionStatus.ProcessingAtVimeo : IsUploadStage(callback.Stage) ? VideoCompositionStatus.Uploading : VideoCompositionStatus.Assembling);
                     composition.ErrorMessage = null;
                     break;
 
@@ -153,9 +153,14 @@ namespace LagoVista.MediaServices.Managers
                         return mediaResourceUpdateResult.ToInvokeResult<VideoComposition>();
                     }
 
-                    var completedVideoOutput = mediaResourceUpdateResult.Result;
 
-                    composition.Status = EntityHeader<VideoCompositionStatus>.Create(VideoCompositionStatus.Completed);
+
+                    var completedVideoOutput = mediaResourceUpdateResult.Result;
+                    composition.OutputInputSha256 = composition.ExecutionInputSha256;
+                    composition.IsReady = true;
+                    composition.CompletedUtc = UtcTimestamp.Now;
+                    composition.ErrorMessage = null;
+                    composition.SetStatus(VideoCompositionStatus.Completed);
                     composition.AssemblyState.Stage = VideoCompositionAssemblyStage.Completed;
                     composition.AssemblyState.PercentComplete = 100;
                     composition.AssemblyState.CompletedUtc = callbackTimestamp;
@@ -168,7 +173,7 @@ namespace LagoVista.MediaServices.Managers
 
                 case VideoAssemblyCallbackType.Failed:
                     _adminLogger.Trace($"{this.Tag()} [ASSEMBLY PROCESSOR FAILED] CompositionId={composition.Id}, MediaResourceId={callback.MediaResourceId}, RequestId={callback.RequestId}, AttemptId={callback.AttemptId}, Sequence={callback.Sequence}, Error={callback.ErrorMessage ?? callback.Message}, IsVimeoPublish={isVimeoPublish}");
-                    composition.Status = EntityHeader<VideoCompositionStatus>.Create(VideoCompositionStatus.Failed);
+                    composition.SetStatus(VideoCompositionStatus.Failed);
                     composition.AssemblyState.Stage = VideoCompositionAssemblyStage.Failed;
                     composition.AssemblyState.ErrorMessage = String.IsNullOrWhiteSpace(callback.ErrorMessage) ? callback.Message : callback.ErrorMessage;
                     composition.ErrorMessage = composition.AssemblyState.ErrorMessage;

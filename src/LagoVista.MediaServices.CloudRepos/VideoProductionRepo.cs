@@ -19,6 +19,7 @@ namespace LagoVista.MediaServices.CloudRepos
 
         public Task AddVideoProductionAsync(VideoProduction production)
         {
+            production.CurrentInputSha256 = production.CalculateCurrentInputSha256();
             return CreateDocumentAsync(production);
         }
 
@@ -64,6 +65,7 @@ namespace LagoVista.MediaServices.CloudRepos
 
         public Task UpdateVideoProductionAsync(VideoProduction production)
         {
+            production.CurrentInputSha256 = production.CalculateCurrentInputSha256();
             return UpsertDocumentAsync(production);
         }
 

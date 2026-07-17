@@ -146,7 +146,7 @@ namespace LagoVista.MediaServices.Managers
 
             _adminLogger.Trace($"{this.Tag()} [IMPORT STATUS ACCEPTED] ProductionId={production.Id}, CurrentStatus={production.Status?.Value}. Provider readiness will determine whether the import can proceed.");
 
-            production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.ImportingProviderVideo);
+            production.SetStatus(VideoProductionStatus.ImportingProviderVideo);
             production.ProviderVideoImportStartedUtc = production.ProviderVideoImportStartedUtc ?? UtcTimestamp.Now;
             production.ProviderVideoImportLastUpdatedUtc = UtcTimestamp.Now;
             production.ProviderVideoImportMessage = "Retrieving completed video details from HeyGen.";
@@ -297,6 +297,7 @@ namespace LagoVista.MediaServices.Managers
                 AttemptId = attemptId,
                 ProductionId = production.Id,
                 MediaResourceId = mediaResource.Id,
+                OrganizationId = mediaResource.OwnerOrganization.Id,
                 Source = new VideoAssemblySource
                 {
                     Url = providerResult.Result.VideoUrl,
@@ -650,7 +651,12 @@ namespace LagoVista.MediaServices.Managers
             {
                 case VideoAssemblyCallbackType.Completed:
                     _adminLogger.Trace($"{this.Tag()} [PROCESSOR COMPLETED] ProductionId={production.Id}, MediaResourceId={callback.MediaResourceId}, RequestId={callback.RequestId}, AttemptId={callback.AttemptId}, Sequence={callback.Sequence}");
-                    production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.ProviderVideoReady);
+         
+                    production.OutputInputSha256 = production.ExecutionInputSha256;
+                    production.IsReady = true;
+                    production.CompletedUtc = UtcTimestamp.Now;
+                    production.ErrorMessage = null;
+                    production.SetStatus(VideoProductionStatus.ProviderVideoReady);
                     production.ProviderVideoImportCompletedUtc = callbackTimestamp;
                     production.ProviderVideoImportPercentComplete = 100;
                     production.ProviderVideoImportMessage = String.IsNullOrWhiteSpace(callback.Message) ? "Generated video is ready in the media library." : callback.Message;
@@ -660,13 +666,13 @@ namespace LagoVista.MediaServices.Managers
 
                 case VideoAssemblyCallbackType.Failed:
                     _adminLogger.Trace($"{this.Tag()} [PROCESSOR FAILED] ProductionId={production.Id}, MediaResourceId={callback.MediaResourceId}, RequestId={callback.RequestId}, AttemptId={callback.AttemptId}, Sequence={callback.Sequence}, Error={callback.ErrorMessage ?? callback.Message}");
-                    production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Failed);
+                    production.SetStatus(VideoProductionStatus.Failed);
                     production.ErrorMessage = String.IsNullOrWhiteSpace(callback.ErrorMessage) ? callback.Message : callback.ErrorMessage;
                     break;
 
                 default:
                     _adminLogger.Trace($"{this.Tag()} [PROCESSOR PROGRESS] ProductionId={production.Id}, RequestId={callback.RequestId}, AttemptId={callback.AttemptId}, Sequence={callback.Sequence}, Stage={callback.Stage}, PercentComplete={callback.PercentComplete}, BytesCompleted={callback.BytesCompleted}, BytesTotal={callback.BytesTotal}");
-                    production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.ImportingProviderVideo);
+                    production.SetStatus(VideoProductionStatus.ImportingProviderVideo);
                     production.ErrorMessage = null;
                     break;
             }
@@ -811,7 +817,7 @@ namespace LagoVista.MediaServices.Managers
         {
             _adminLogger.Trace($"{this.Tag()} [IMPORT FAILED] ProductionId={production?.Id}, RequestId={production?.ProviderVideoImportRequestId}, AttemptId={production?.ProviderVideoImportAttemptId}, Message={message}");
 
-            production.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Failed);
+            production.SetStatus(VideoProductionStatus.Failed);
             production.ProviderVideoImportMessage = message;
             production.ProviderVideoImportLastUpdatedUtc = UtcTimestamp.Now;
             production.ErrorMessage = message;

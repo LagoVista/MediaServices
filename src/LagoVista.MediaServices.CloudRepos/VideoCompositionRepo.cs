@@ -18,11 +18,13 @@ namespace LagoVista.MediaServices.CloudRepos
 
         public Task AddVideoCompositionAsync(VideoComposition composition)
         {
+            composition.CurrentInputSha256 = composition.CalculateCurrentInputSha256();
             return CreateDocumentAsync(composition);
         }
 
         public Task UpdateVideoCompositionAsync(VideoComposition composition)
         {
+            composition.CurrentInputSha256 = composition.CalculateCurrentInputSha256();
             return UpsertDocumentAsync(composition);
         }
 

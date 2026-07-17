@@ -4,7 +4,9 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace LagoVista.VideoAssembly
 {
@@ -47,6 +49,7 @@ namespace LagoVista.VideoAssembly
             try
             {
                 await PublishAsync(channelId, text, payload, cancellationToken);
+                Console.WriteLine($"[VideoProcessorNotificationPublisher__TryPublishAsync] {channelId}/{text}");
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -68,17 +71,20 @@ namespace LagoVista.VideoAssembly
             {
                 MessageId = Guid.NewGuid().ToString("N"),
                 DateStamp = DateTime.UtcNow.ToString("O"),
-                Channel = VideoProcessorNotificationHeader.Create("org", "Org"),
-                Verbosity = VideoProcessorNotificationHeader.Create("normal", "Normal"),
+                Channel = VideoProcessorNotificationHeader.Create("Org", "Org"),
+                Verbosity = VideoProcessorNotificationHeader.Create("Normal", "Normal"),
                 ChannelId = channelId,
-                Text = text,
+                Text = "assembler-status-message",
+                Message = text,
                 PayloadType = typeof(TPayload).Name,
                 Payload = payloadJson
             };
 
             var json = JsonSerializer.Serialize(notification, _jsonOptions);
             var body = Encoding.UTF8.GetBytes(json);
-            await channel.BasicPublishAsync(_settings.Exchange, _settings.RoutingKey, body: body, cancellationToken: cancellationToken);
+            Console.WriteLine($"[VideoProcessorNotificationPublisher__TryPublishAsync] Pubilshing {notification.Channel.Id}/{channelId}/{text}/{_settings.Exchange}/{_settings.RoutingKey}");
+            await channel.BasicPublishAsync(_settings.Exchange, _settings.RoutingKey, body: body, mandatory:true, cancellationToken: cancellationToken);
+            Console.WriteLine($"[VideoProcessorNotificationPublisher__TryPublishAsync] Confirmed {notification.Channel.Id}/{channelId}/{text}/{_settings.Exchange}/{_settings.RoutingKey}");
         }
 
         private async Task<IChannel> GetChannelAsync(CancellationToken cancellationToken)
@@ -110,8 +116,24 @@ namespace LagoVista.VideoAssembly
                             TopologyRecoveryEnabled = true
                         };
 
+                        var options = new CreateChannelOptions(publisherConfirmationsEnabled: true, publisherConfirmationTrackingEnabled: true);
+
                         _connection = await factory.CreateConnectionAsync(cancellationToken);
-                        _channel = await _connection.CreateChannelAsync(cancellationToken: cancellationToken);
+                        _channel = await _connection.CreateChannelAsync(options, cancellationToken: cancellationToken);
+
+                        _channel.BasicReturnAsync += (_, args) =>
+                        {
+                            var returnedBody = Encoding.UTF8.GetString(args.Body.Span);
+
+                            Console.WriteLine(
+                                $"[VideoProcessorNotificationPublisher] RabbitMQ returned message. " +
+                                $"ReplyCode={args.ReplyCode}, ReplyText={args.ReplyText}, " +
+                                $"Exchange={args.Exchange}, RoutingKey={args.RoutingKey}, Body={returnedBody}");
+
+                            return Task.CompletedTask;
+                        };
+
+                        Console.WriteLine($"[VideoProcessorNotificationPublisher__GetChannelAsync] {_settings.HostName}/{factory.VirtualHost}");
                         return _channel;
                     }
                     catch (Exception ex)
@@ -197,6 +219,9 @@ namespace LagoVista.VideoAssembly
 
         [JsonPropertyName("text")]
         public string Text { get; set; }
+        
+        [JsonPropertyName("message")]
+        public string Message { get; set; }
 
         [JsonPropertyName("payloadType")]
         public string PayloadType { get; set; }
