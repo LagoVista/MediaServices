@@ -40,6 +40,8 @@ namespace LagoVista.VideoAssembly
 
         public async Task<VideoAssemblyResult> AssembleAsync(VideoAssemblyRequest request, IProgress<VideoAssemblyProgress> progress, CancellationToken cancellationToken = default)
         {
+            if (request.ExecutionOptions?.Operation == VideoAssemblyOperation.Publish) return await PublishAsync(request, progress, cancellationToken);
+
             using var executionTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             executionTimeout.CancelAfter(TimeSpan.FromMinutes(request.Limits.MaxExecutionMinutes));
             using var workspace = _workspaceFactory.Create(request);
@@ -188,6 +190,78 @@ namespace LagoVista.VideoAssembly
                     Successful = true,
                     OutputFilePath = workspace.OutputPath,
                     Outputs = outputs,
+                    VimeoVideoUri = vimeoVideoUri,
+                    VimeoVideoId = vimeoVideoId,
+                    OutputSizeBytes = outputInspection.SizeBytes,
+                    OutputDurationSeconds = outputDurationSeconds,
+                    Sha256 = sha256
+                };
+            }
+            catch (Exception ex)
+            {
+                if (_options.PreserveFailedWorkspace) workspace.Preserve = true;
+                progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.Failed, Message = ex.Message });
+                return new VideoAssemblyResult { Successful = false, OutputFilePath = workspace.Preserve ? workspace.OutputPath : null, ErrorMessage = ex.Message };
+            }
+        }
+
+        private async Task<VideoAssemblyResult> PublishAsync(VideoAssemblyRequest request, IProgress<VideoAssemblyProgress> progress, CancellationToken cancellationToken)
+        {
+            using var executionTimeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            executionTimeout.CancelAfter(TimeSpan.FromMinutes(request.Limits.MaxExecutionMinutes));
+            using var workspace = _workspaceFactory.Create(request);
+            workspace.Preserve = request.ExecutionOptions?.PreserveOutputFile == true;
+
+            try
+            {
+                progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.DownloadingMedia, PercentComplete = 0, Message = "Downloading approved Azure video for Vimeo publishing." });
+                var downloaded = await _sourceDownloader.DownloadAsync(request.PublishedVideoSource, workspace.OutputPath, request.Limits.MaxSourceFileBytes, VideoAssemblyStage.DownloadingMedia, progress, executionTimeout.Token);
+
+                progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.InspectingMedia, Message = "Inspecting approved video before Vimeo publishing." });
+                var outputInspection = await _inspectionService.InspectAsync(workspace.OutputPath, executionTimeout.Token);
+                if (outputInspection.SizeBytes > request.Limits.MaxOutputFileBytes) throw new InvalidOperationException($"Published video size of {outputInspection.SizeBytes} bytes exceeds the limit of {request.Limits.MaxOutputFileBytes} bytes.");
+                if (outputInspection.DurationSeconds > request.Limits.MaxOutputDurationSeconds) throw new InvalidOperationException($"Published video duration of {outputInspection.DurationSeconds:F1} seconds exceeds the limit of {request.Limits.MaxOutputDurationSeconds} seconds.");
+
+                var sha256 = await CalculateSha256Async(workspace.OutputPath, executionTimeout.Token);
+                var outputDurationSeconds = (int)Math.Round(outputInspection.DurationSeconds);
+                var uploadUrl = request.VimeoUpload.UploadUrl;
+                var vimeoVideoUri = request.VimeoUpload.VideoUri;
+                var vimeoVideoId = request.VimeoUpload.VideoId;
+
+                if (String.IsNullOrWhiteSpace(uploadUrl))
+                {
+                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingToVimeo, Message = "Requesting Vimeo upload session." });
+                    var session = await _vimeoUploadSessionClient.CreateSessionAsync(request, outputInspection.SizeBytes, outputDurationSeconds, sha256, executionTimeout.Token);
+                    uploadUrl = session.UploadUrl;
+                    vimeoVideoUri = session.VideoUri;
+                    vimeoVideoId = session.VideoId;
+                }
+
+                progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingToVimeo, PercentComplete = 0, Message = "Uploading approved video to Vimeo.", BytesCompleted = 0, BytesTotal = downloaded.SizeBytes });
+                await _tusVideoUploader.UploadAsync(uploadUrl, workspace.OutputPath, progress, executionTimeout.Token);
+
+                var output = new VideoProcessorOutputArtifact
+                {
+                    Type = VideoProcessorOutputArtifactType.Video,
+                    MediaResourceId = request.VimeoUpload.MediaResourceId,
+                    FileName = request.PublishedVideoSource.FileName,
+                    ContentType = request.PublishedVideoSource.ContentType,
+                    SizeBytes = outputInspection.SizeBytes,
+                    DurationSeconds = outputDurationSeconds,
+                    Width = outputInspection.Width,
+                    Height = outputInspection.Height,
+                    Sha256 = sha256,
+                    ExternalUri = vimeoVideoUri,
+                    ExternalId = vimeoVideoId
+                };
+
+                progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.Completed, PercentComplete = 100, Message = "Approved video uploaded to Vimeo." });
+
+                return new VideoAssemblyResult
+                {
+                    Successful = true,
+                    OutputFilePath = workspace.OutputPath,
+                    Outputs = new List<VideoProcessorOutputArtifact> { output },
                     VimeoVideoUri = vimeoVideoUri,
                     VimeoVideoId = vimeoVideoId,
                     OutputSizeBytes = outputInspection.SizeBytes,

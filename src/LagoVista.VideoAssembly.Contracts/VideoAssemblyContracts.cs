@@ -20,6 +20,12 @@ namespace LagoVista.VideoAssembly.Contracts
         Right
     }
 
+    public enum VideoAssemblyOperation
+    {
+        Assemble = 1,
+        Publish = 2
+    }
+
     public enum VideoAssemblyStage
     {
         Queued,
@@ -78,6 +84,7 @@ namespace LagoVista.VideoAssembly.Contracts
         public string AttemptId { get; set; }
         public string ProductionId { get; set; }
         public string OrganizationId { get; set; }
+        public VideoAssemblySource PublishedVideoSource { get; set; }
         public List<VideoAssemblyBlock> Blocks { get; set; } = new List<VideoAssemblyBlock>();
         public VideoMediaImportDestination AzureVideoDestination { get; set; }
         public VideoMediaImportThumbnail Thumbnail { get; set; } = new VideoMediaImportThumbnail();
@@ -272,9 +279,10 @@ namespace LagoVista.VideoAssembly.Contracts
 
     public sealed class VideoAssemblyExecutionOptions
     {
+        public VideoAssemblyOperation Operation { get; set; } = VideoAssemblyOperation.Assemble;
         public bool UploadToAzure { get; set; } = true;
         public bool GenerateThumbnail { get; set; } = true;
-        public bool UploadToVimeo { get; set; } = true;
+        public bool UploadToVimeo { get; set; }
         public bool SendCallbacks { get; set; } = true;
         public bool PreserveOutputFile { get; set; }
     }

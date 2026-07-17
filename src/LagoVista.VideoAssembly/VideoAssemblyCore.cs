@@ -61,16 +61,41 @@ namespace LagoVista.VideoAssembly
             if (request.Limits == null) errors.Add("Limits are required.");
             else ValidateLimits(request.Limits, errors);
 
-            if (request.Blocks == null || request.Blocks.Count == 0) errors.Add("At least one video assembly block is required.");
-            else if (request.Limits != null && request.Blocks.Count > request.Limits.MaxBlocks) errors.Add($"The request contains {request.Blocks.Count} blocks, exceeding the limit of {request.Limits.MaxBlocks}.");
+            var executionOptions = request.ExecutionOptions ?? new VideoAssemblyExecutionOptions();
+
+            if (executionOptions.Operation == VideoAssemblyOperation.Assemble)
+            {
+                if (request.Blocks == null || request.Blocks.Count == 0) errors.Add("At least one video assembly block is required for an assemble operation.");
+                else if (request.Limits != null && request.Blocks.Count > request.Limits.MaxBlocks) errors.Add($"The request contains {request.Blocks.Count} blocks, exceeding the limit of {request.Limits.MaxBlocks}.");
+                else
+                {
+                    for (var index = 0; index < request.Blocks.Count; index++) ValidateBlock(request.Blocks[index], index, request.Limits, errors);
+                }
+
+                if (executionOptions.UploadToAzure) ValidateAzureDestination(request.AzureVideoDestination, errors);
+                if (executionOptions.GenerateThumbnail) ValidateThumbnail(request.Thumbnail, errors);
+            }
+            else if (executionOptions.Operation == VideoAssemblyOperation.Publish)
+            {
+                if (request.PublishedVideoSource == null)
+                {
+                    errors.Add("PublishedVideoSource is required for a publish operation.");
+                }
+                else
+                {
+                    ValidateUrl(errors, request.PublishedVideoSource.Url, "PublishedVideoSource.Url");
+                    if (String.IsNullOrWhiteSpace(request.PublishedVideoSource.FileName)) errors.Add("PublishedVideoSource.FileName is required for a publish operation.");
+                    if (String.IsNullOrWhiteSpace(request.PublishedVideoSource.ContentType)) errors.Add("PublishedVideoSource.ContentType is required for a publish operation.");
+                }
+
+                if (!executionOptions.UploadToVimeo) errors.Add("UploadToVimeo must be enabled for a publish operation.");
+                if (executionOptions.UploadToAzure) errors.Add("UploadToAzure must be disabled for a publish operation.");
+                if (executionOptions.GenerateThumbnail) errors.Add("GenerateThumbnail must be disabled for a publish operation.");
+            }
             else
             {
-                for (var index = 0; index < request.Blocks.Count; index++) ValidateBlock(request.Blocks[index], index, request.Limits, errors);
+                errors.Add($"Unsupported video assembly operation '{executionOptions.Operation}'.");
             }
-
-            var executionOptions = request.ExecutionOptions ?? new VideoAssemblyExecutionOptions();
-            if (executionOptions.UploadToAzure) ValidateAzureDestination(request.AzureVideoDestination, errors);
-            if (executionOptions.GenerateThumbnail) ValidateThumbnail(request.Thumbnail, errors);
 
             if (executionOptions.UploadToVimeo)
             {
