@@ -38,7 +38,7 @@ namespace LagoVista.VideoAssembly
                     RequestId = _request.RequestId,
                     AttemptId = _request.AttemptId,
                     ProductionId = _request.ProductionId,
-                    MediaResourceId = _request.AzureVideoDestination?.MediaResourceId,
+                    MediaResourceId = ResolveMediaResourceId(),
                     Stage = progress.Stage.ToString(),
                     PercentComplete = progress.PercentComplete,
                     Message = progress.Message,
@@ -47,7 +47,7 @@ namespace LagoVista.VideoAssembly
                     TimestampUtc = DateTime.UtcNow.ToString("O")
                 };
 
-                _pendingNotification = _pendingNotification.ContinueWith(_ => _notificationPublisher.TryPublishAsync(_request.ProductionId, progress.Message, notificationProgress, _cancellationToken), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
+                _pendingNotification = _pendingNotification.ContinueWith(_ => _notificationPublisher.TryPublishAsync(_request.OrganizationId, progress.Message, notificationProgress, _cancellationToken), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
 
                 if (_request.ExecutionOptions?.SendCallbacks != true) return;
                 if (_lastReportedStage == progress.Stage) return;
@@ -58,6 +58,13 @@ namespace LagoVista.VideoAssembly
                 callback.BytesTotal = progress.BytesTotal;
                 _pendingCallback = _pendingCallback.ContinueWith(_ => SendSafelyAsync(callback), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
             }
+        }
+
+        private string ResolveMediaResourceId()
+        {
+            return _request.ExecutionOptions?.Operation == VideoAssemblyOperation.Publish
+                ? _request.VimeoUpload?.MediaResourceId
+                : _request.AzureVideoDestination?.MediaResourceId;
         }
 
         public Task SendStartedAsync()
@@ -96,7 +103,7 @@ namespace LagoVista.VideoAssembly
                 RequestId = _request.RequestId,
                 AttemptId = _request.AttemptId,
                 ProductionId = _request.ProductionId,
-                MediaResourceId = _request.AzureVideoDestination?.MediaResourceId,
+                MediaResourceId = ResolveMediaResourceId(),
                 Sequence = Interlocked.Increment(ref _sequence),
                 Type = type,
                 Stage = stage.ToString(),

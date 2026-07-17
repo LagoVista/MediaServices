@@ -11,6 +11,7 @@ namespace LagoVista.MediaServices.Interfaces
     {
         Task<InvokeResult<VideoAssemblyPreparationResult>> PrepareAssemblyRequestAsync(string compositionId, double? thumbnailTimeSeconds, EntityHeader org, EntityHeader user, CancellationToken cancellationToken = default);
         Task<InvokeResult<VideoAssemblyPreparationResult>> PrepareVimeoPublishRequestAsync(string compositionId, EntityHeader org, EntityHeader user, CancellationToken cancellationToken = default);
+        Task<InvokeResult<VideoAssemblyVimeoSessionResponse>> CreateVimeoUploadSessionAsync(VideoAssemblyVimeoSessionRequest request, string accessToken, CancellationToken cancellationToken = default);
     }
 
     public sealed class VideoAssemblyPreparationResult

@@ -6,9 +6,13 @@ using LagoVista.Core.Validation;
 using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
+using LagoVista.MediaServices.Services;
+using LagoVista.UserAdmin.Interfaces.Repos.Orgs;
+using LagoVista.UserAdmin.Models.Orgs;
 using LagoVista.VideoAssembly.Contracts;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -26,11 +30,14 @@ namespace LagoVista.MediaServices.Managers
         private readonly IVideoProcessorRequestStore _videoProcessorRequestStore;
         private readonly IVideoProcessorCallbackRegistrationStore _videoProcessorCallbackRegistrationStore;
         private readonly IVideoProcessorLauncher _videoProcessorLauncher;
+        private readonly IVimeoVideoService _vimeoVideoService;
+        private readonly IOrganizationLoaderRepo _organizationLoaderRepo;
+        private readonly ISecureStorage _secureStorage;
         private readonly INotificationPublisher _notificationPublisher;
         private readonly ILogger _adminLogger;
         private readonly IAppConfig _appConfig;
 
-        public VideoAssemblyRequestManager(IVideoCompositionRepo videoCompositionRepo, IMediaServicesManager mediaServicesManager, IVideoAssemblyMediaSourceResolver mediaSourceResolver, IVideoProcessorStorageUrlService videoProcessorStorageUrlService, IVideoProcessorRequestStore videoProcessorRequestStore, IVideoProcessorCallbackRegistrationStore videoProcessorCallbackRegistrationStore, IVideoProcessorLauncher videoProcessorLauncher, ICoreAppServices coreAppServices)
+        public VideoAssemblyRequestManager(IVideoCompositionRepo videoCompositionRepo, IMediaServicesManager mediaServicesManager, IVideoAssemblyMediaSourceResolver mediaSourceResolver, IVideoProcessorStorageUrlService videoProcessorStorageUrlService, IVideoProcessorRequestStore videoProcessorRequestStore, IVideoProcessorCallbackRegistrationStore videoProcessorCallbackRegistrationStore, IVideoProcessorLauncher videoProcessorLauncher, IVimeoVideoService vimeoVideoService, IOrganizationLoaderRepo organizationLoaderRepo, ISecureStorage secureStorage, ICoreAppServices coreAppServices)
         {
             _videoCompositionRepo = videoCompositionRepo ?? throw new ArgumentNullException(nameof(videoCompositionRepo));
             _mediaServicesManager = mediaServicesManager ?? throw new ArgumentNullException(nameof(mediaServicesManager));
@@ -39,6 +46,9 @@ namespace LagoVista.MediaServices.Managers
             _videoProcessorRequestStore = videoProcessorRequestStore ?? throw new ArgumentNullException(nameof(videoProcessorRequestStore));
             _videoProcessorCallbackRegistrationStore = videoProcessorCallbackRegistrationStore ?? throw new ArgumentNullException(nameof(videoProcessorCallbackRegistrationStore));
             _videoProcessorLauncher = videoProcessorLauncher ?? throw new ArgumentNullException(nameof(videoProcessorLauncher));
+            _vimeoVideoService = vimeoVideoService ?? throw new ArgumentNullException(nameof(vimeoVideoService));
+            _organizationLoaderRepo = organizationLoaderRepo ?? throw new ArgumentNullException(nameof(organizationLoaderRepo));
+            _secureStorage = secureStorage ?? throw new ArgumentNullException(nameof(secureStorage));
             _notificationPublisher = coreAppServices?.NotificationPublisher ?? throw new ArgumentNullException(nameof(coreAppServices.NotificationPublisher));
             _adminLogger = coreAppServices?.Logger ?? throw new ArgumentNullException(nameof(coreAppServices.Logger));
             _appConfig = coreAppServices?.AppConfig ?? throw new ArgumentNullException(nameof(coreAppServices.AppConfig));
@@ -307,7 +317,10 @@ namespace LagoVista.MediaServices.Managers
             var composition = await _videoCompositionRepo.GetVideoCompositionAsync(compositionId);
             if (composition == null) return InvokeResult<VideoAssemblyPreparationResult>.FromError($"Could not find video composition '{compositionId}'.");
             if (composition.OwnerOrganization == null || !String.Equals(composition.OwnerOrganization.Id, org.Id, StringComparison.OrdinalIgnoreCase)) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The video composition does not belong to the active organization.");
-            if (composition.Status?.Value != VideoCompositionStatus.Completed) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The video composition must be completed before it can be published to Vimeo.");
+            if (composition.Status?.Value != VideoCompositionStatus.ProcessingAtVimeo &&
+                composition.Status?.Value != VideoCompositionStatus.Failed &&
+                composition.Status?.Value != VideoCompositionStatus.Cancelled &&
+                composition.Status?.Value != VideoCompositionStatus.Completed) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The video composition must be completed before it can be published to Vimeo.");
             if (composition.OutputMediaResource == null || String.IsNullOrWhiteSpace(composition.OutputMediaResource.Id)) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The video composition does not have an Azure output media resource.");
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -318,6 +331,12 @@ namespace LagoVista.MediaServices.Managers
 
             var sourceResult = await _mediaSourceResolver.ResolveAsync(azureMediaResource, org.Id, cancellationToken);
             if (!sourceResult.Successful) return sourceResult.ToInvokeResult<VideoAssemblyPreparationResult>();
+
+            var publishedVideoSource = sourceResult.Result;
+
+            publishedVideoSource.ContentType = !String.IsNullOrWhiteSpace(azureMediaResource.MimeType)
+                ? azureMediaResource.MimeType
+                : "video/mp4";
 
             MediaResource publishedMediaResource;
             if (composition.PublishedVideoMediaResource != null && !String.IsNullOrWhiteSpace(composition.PublishedVideoMediaResource.Id))
@@ -334,11 +353,16 @@ namespace LagoVista.MediaServices.Managers
                     Name = String.IsNullOrWhiteSpace(composition.Name) ? "Published Vimeo Video" : composition.Name,
                     Key = $"vimeovideo{DateTime.UtcNow.Ticks}",
                     Description = composition.Description,
-                    FileName = azureMediaResource.FileName,
+                    FileName = String.IsNullOrWhiteSpace(azureMediaResource.FileName)
+                                ? $"{composition.Id}.mp4"
+                                : Path.HasExtension(azureMediaResource.FileName)
+                                    ? azureMediaResource.FileName
+                                    : $"{azureMediaResource.FileName}.mp4",
                     IsFileUpload = false,
                     MimeType = "video/mp4",
                     ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Video),
                     Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Pending),
+                    Link = "TBD",
                     ProcessingStartedUtc = now,
                     OwnerOrganization = org,
                     CreatedBy = user,
@@ -393,7 +417,7 @@ namespace LagoVista.MediaServices.Managers
                 AttemptId = attemptId,
                 ProductionId = composition.Id,
                 OrganizationId = org.Id,
-                PublishedVideoSource = sourceResult.Result,
+                PublishedVideoSource = publishedVideoSource,
                 VimeoUpload = new VideoAssemblyVimeoUpload
                 {
                     MediaResourceId = publishedMediaResource.Id,
@@ -487,6 +511,81 @@ namespace LagoVista.MediaServices.Managers
             });
         }
 
+        public async Task<InvokeResult<VideoAssemblyVimeoSessionResponse>> CreateVimeoUploadSessionAsync(VideoAssemblyVimeoSessionRequest request, string accessToken, CancellationToken cancellationToken = default)
+        {
+            if (request == null) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError("A Vimeo upload session request is required.");
+            if (String.IsNullOrWhiteSpace(request.RequestId)) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError("RequestId is required.");
+            if (String.IsNullOrWhiteSpace(request.AttemptId)) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError("AttemptId is required.");
+            if (String.IsNullOrWhiteSpace(request.ProductionId)) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError("ProductionId is required.");
+            if (request.OutputSizeBytes <= 0) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError("The Vimeo upload size must be greater than zero.");
+
+            var registration = await _videoProcessorCallbackRegistrationStore.GetAsync(request.RequestId, request.AttemptId, cancellationToken);
+            if (registration == null) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError($"Could not find processor registration for request '{request.RequestId}' attempt '{request.AttemptId}'.");
+            if (!IsAccessTokenValid(accessToken, registration.AccessTokenSha256)) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError("The Vimeo upload session bearer token is invalid.");
+            if (!String.Equals(registration.ProductionId, request.ProductionId, StringComparison.OrdinalIgnoreCase)) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError("The Vimeo upload session production ID does not match the registered composition.");
+            if (!DateTime.TryParse(registration.ExpiresUtc, out var expiresUtc) || expiresUtc.ToUniversalTime() <= DateTime.UtcNow) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError("The Vimeo upload session registration has expired.");
+
+            var composition = await _videoCompositionRepo.GetVideoCompositionAsync(request.ProductionId);
+            if (composition == null) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError($"Could not find video composition '{request.ProductionId}'.");
+            if (composition.OwnerOrganization == null || !String.Equals(composition.OwnerOrganization.Id, registration.OrganizationId, StringComparison.OrdinalIgnoreCase)) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError("The video composition does not belong to the registered organization.");
+            if (composition.PublishedVideoMediaResource == null || !String.Equals(composition.PublishedVideoMediaResource.Id, registration.MediaResourceId, StringComparison.OrdinalIgnoreCase)) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError("The registered Vimeo media resource does not match the composition publishing resource.");
+
+            var organization = await _organizationLoaderRepo.GetOrganizationAsync(registration.OrganizationId);
+            if (organization == null) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError($"Could not load organization '{registration.OrganizationId}'.");
+            if (!organization.VimeoEnabled) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError("Vimeo publishing is not enabled for this organization.");
+            if (String.IsNullOrWhiteSpace(organization.VimeoAccessTokenSecretId)) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError("The organization does not have a Vimeo access token configured.");
+
+            var user = composition.LastUpdatedBy ?? composition.CreatedBy;
+            var tokenResult = await _secureStorage.GetSecretAsync(composition.OwnerOrganization, organization.VimeoAccessTokenSecretId, user);
+            if (!tokenResult.Successful) return tokenResult.ToInvokeResult<VideoAssemblyVimeoSessionResponse>();
+            if (String.IsNullOrWhiteSpace(tokenResult.Result)) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError("The configured Vimeo access token is empty.");
+
+            var privacy = organization.VimeoDefaultPrivacy?.Id;
+            if (String.IsNullOrWhiteSpace(privacy)) privacy = Organization.Organization_VimeoUnlisted;
+
+            var uploadResult = await _vimeoVideoService.CreateTusUploadAsync(tokenResult.Result, new VimeoTusUploadRequest
+            {
+                Name = composition.Name,
+                Description = composition.Description,
+                Upload = new VimeoTusUploadSource { Size = request.OutputSizeBytes },
+                Privacy = new VimeoPrivacySettings { View = privacy }
+            }, cancellationToken);
+
+            if (!uploadResult.Successful) return uploadResult.ToInvokeResult<VideoAssemblyVimeoSessionResponse>();
+
+            var videoUri = uploadResult.Result.Uri;
+            var videoId = ResolveVimeoVideoId(videoUri);
+
+            composition.VimeoVideoUri = videoUri;
+            composition.VimeoVideoId = videoId;
+            composition.VimeoVideoUrl = uploadResult.Result.Link;
+            composition.Status = EntityHeader<VideoCompositionStatus>.Create(VideoCompositionStatus.ProcessingAtVimeo);
+            composition.AssemblyState = composition.AssemblyState ?? new VideoCompositionAssemblyState();
+            composition.AssemblyState.Stage = VideoCompositionAssemblyStage.UploadingToVimeo;
+            composition.AssemblyState.Message = "Uploading approved video to Vimeo.";
+            composition.AssemblyState.LastUpdatedUtc = UtcTimestamp.Now;
+            composition.ErrorMessage = null;
+
+            if (!String.IsNullOrWhiteSpace(organization.VimeoDefaultFolderUri))
+            {
+                var folderResult = await _vimeoVideoService.AddVideoToFolderAsync(videoUri, organization.VimeoDefaultFolderUri, tokenResult.Result, cancellationToken);
+                if (!folderResult.Successful) return folderResult.ToInvokeResult<VideoAssemblyVimeoSessionResponse>();
+
+                composition.VimeoFolderUri = organization.VimeoDefaultFolderUri;
+                composition.VimeoFolderAssignedUtc = UtcTimestamp.Now;
+            }
+
+            await _videoCompositionRepo.UpdateVideoCompositionAsync(composition);
+            await PublishVideoCompositionUpdatedAsync(composition);
+
+            return InvokeResult<VideoAssemblyVimeoSessionResponse>.Create(new VideoAssemblyVimeoSessionResponse
+            {
+                UploadUrl = uploadResult.Result.Upload.UploadLink,
+                VideoUri = videoUri,
+                VideoId = videoId
+            });
+        }
+
         private async Task<InvokeResult<List<VideoAssemblyBlock>>> CreateAssemblyBlocksAsync(VideoComposition composition, EntityHeader org, EntityHeader user, CancellationToken cancellationToken)
         {
             var assemblyBlocks = new List<VideoAssemblyBlock>();
@@ -567,6 +666,27 @@ namespace LagoVista.MediaServices.Managers
             };
 
             return mediaResource;
+        }
+
+        private static bool IsAccessTokenValid(string accessToken, string expectedSha256)
+        {
+            if (String.IsNullOrWhiteSpace(accessToken) || String.IsNullOrWhiteSpace(expectedSha256)) return false;
+
+            var actualBytes = Encoding.ASCII.GetBytes(ComputeSha256(accessToken));
+            var expectedBytes = Encoding.ASCII.GetBytes(expectedSha256.ToLowerInvariant());
+            if (actualBytes.Length != expectedBytes.Length) return false;
+
+            var difference = 0;
+            for (var index = 0; index < actualBytes.Length; index++) difference |= actualBytes[index] ^ expectedBytes[index];
+            return difference == 0;
+        }
+
+        private static string ResolveVimeoVideoId(string videoUri)
+        {
+            if (String.IsNullOrWhiteSpace(videoUri)) return null;
+
+            var segments = videoUri.Trim('/').Split('/');
+            return segments.Length == 0 ? null : segments[segments.Length - 1];
         }
 
         private static MediaResourceHistory PreparePendingRevision(MediaResource mediaResource, EntityHeader user)

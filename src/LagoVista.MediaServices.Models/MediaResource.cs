@@ -194,6 +194,9 @@ namespace LagoVista.MediaServices.Models
 
         public void SetContentType(string contentType, string id = "")
         {
+            if (string.IsNullOrEmpty(contentType))
+                throw new ArgumentNullException(nameof(contentType));
+
             if (String.IsNullOrEmpty(id))
                 id = Guid.NewGuid().ToId();
 

@@ -109,11 +109,11 @@ namespace LagoVista.VideoAssembly
                 }
                 else if (!String.IsNullOrWhiteSpace(request.VimeoUpload.UploadUrl))
                 {
-                    ValidateUrl(errors, request.VimeoUpload.UploadUrl, "VimeoUpload.UploadUrl");
+                    ValidateUrl(errors, request.VimeoUpload.SessionRequestUrl, "VimeoUpload.SessionRequestUrl");
                 }
                 else
                 {
-                    ValidateUrl(errors, request.VimeoUpload.SessionRequestUrl, "VimeoUpload.SessionRequestUrl");
+                    ValidatePath(errors, request.VimeoUpload.SessionRequestUrl, "VimeoUpload.SessionRequestUrl");
                     if (String.IsNullOrWhiteSpace(request.VimeoUpload.SessionAccessToken)) errors.Add("VimeoUpload.SessionAccessToken is required when VimeoUpload.UploadUrl is not supplied.");
                 }
             }
@@ -235,6 +235,25 @@ namespace LagoVista.VideoAssembly
         private static void ValidateUrl(List<string> errors, string value, string name)
         {
             if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)) errors.Add($"{name} must be an absolute HTTP or HTTPS URL.");
+        }
+
+        private static void ValidatePath(List<string> errors, string value, string name)
+        {
+            if (String.IsNullOrWhiteSpace(value))
+            {
+                errors.Add($"{name} is required.");
+                return;
+            }
+
+            if (!value.StartsWith("/", StringComparison.Ordinal))
+            {
+                errors.Add($"{name} must begin with '/'.");
+            }
+
+            if (Uri.TryCreate(value, UriKind.Absolute, out _))
+            {
+                errors.Add($"{name} must be a relative path.");
+            }
         }
     }
 }

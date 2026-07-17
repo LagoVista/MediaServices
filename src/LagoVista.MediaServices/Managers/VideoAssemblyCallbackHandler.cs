@@ -119,6 +119,7 @@ namespace LagoVista.MediaServices.Managers
             cancellationToken.ThrowIfCancellationRequested();
 
             var callbackTimestamp = String.IsNullOrWhiteSpace(callback.TimestampUtc) ? UtcTimestamp.Now.Value : callback.TimestampUtc;
+            var isVimeoPublish = composition.PublishedVideoMediaResource != null && String.Equals(composition.PublishedVideoMediaResource.Id, callback.MediaResourceId, StringComparison.OrdinalIgnoreCase);
 
             composition.AssemblyState.Stage = MapStage(callback.Stage);
             composition.AssemblyState.PercentComplete = callback.PercentComplete;
@@ -133,19 +134,19 @@ namespace LagoVista.MediaServices.Managers
             switch (callback.Type)
             {
                 case VideoAssemblyCallbackType.Started:
-                    composition.Status = EntityHeader<VideoCompositionStatus>.Create(VideoCompositionStatus.Assembling);
+                    composition.Status = EntityHeader<VideoCompositionStatus>.Create(isVimeoPublish ? VideoCompositionStatus.ProcessingAtVimeo : VideoCompositionStatus.Assembling);
                     composition.AssemblyState.StartedUtc = composition.AssemblyState.StartedUtc ?? callbackTimestamp;
                     composition.ErrorMessage = null;
                     break;
 
                 case VideoAssemblyCallbackType.Progress:
-                    composition.Status = EntityHeader<VideoCompositionStatus>.Create(IsUploadStage(callback.Stage) ? VideoCompositionStatus.Uploading : VideoCompositionStatus.Assembling);
+                    composition.Status = EntityHeader<VideoCompositionStatus>.Create(isVimeoPublish ? VideoCompositionStatus.ProcessingAtVimeo : IsUploadStage(callback.Stage) ? VideoCompositionStatus.Uploading : VideoCompositionStatus.Assembling);
                     composition.ErrorMessage = null;
                     break;
 
                 case VideoAssemblyCallbackType.Completed:
-                    _adminLogger.Trace($"{this.Tag()} [ASSEMBLY PROCESSOR COMPLETED] CompositionId={composition.Id}, MediaResourceId={callback.MediaResourceId}, RequestId={callback.RequestId}, AttemptId={callback.AttemptId}, Sequence={callback.Sequence}, OutputCount={callback.Outputs?.Count ?? 0}");
-                    var mediaResourceUpdateResult = await UpdateCompletedMediaResourceAsync(composition, callback);
+                    _adminLogger.Trace($"{this.Tag()} [ASSEMBLY PROCESSOR COMPLETED] CompositionId={composition.Id}, MediaResourceId={callback.MediaResourceId}, RequestId={callback.RequestId}, AttemptId={callback.AttemptId}, Sequence={callback.Sequence}, OutputCount={callback.Outputs?.Count ?? 0}, IsVimeoPublish={isVimeoPublish}");
+                    var mediaResourceUpdateResult = isVimeoPublish ? await UpdateCompletedVimeoMediaResourceAsync(composition, callback) : await UpdateCompletedMediaResourceAsync(composition, callback);
                     if (!mediaResourceUpdateResult.Successful)
                     {
                         _adminLogger.Trace($"{this.Tag()} [ASSEMBLY COMPLETION REJECTED] CompositionId={composition.Id}, MediaResourceId={callback.MediaResourceId}, RequestId={callback.RequestId}, AttemptId={callback.AttemptId}, Message={mediaResourceUpdateResult.Errors[0].Message}");
@@ -161,16 +162,17 @@ namespace LagoVista.MediaServices.Managers
                     composition.AssemblyState.OutputSizeBytes = completedVideoOutput.SizeBytes.Value;
                     composition.AssemblyState.OutputDurationSeconds = completedVideoOutput.DurationSeconds.Value;
                     composition.AssemblyState.OutputSha256 = completedVideoOutput.Sha256;
-                    composition.CompletedUtc = callbackTimestamp;
+                    if (!isVimeoPublish) composition.CompletedUtc = callbackTimestamp;
                     composition.ErrorMessage = null;
                     break;
 
                 case VideoAssemblyCallbackType.Failed:
-                    _adminLogger.Trace($"{this.Tag()} [ASSEMBLY PROCESSOR FAILED] CompositionId={composition.Id}, MediaResourceId={callback.MediaResourceId}, RequestId={callback.RequestId}, AttemptId={callback.AttemptId}, Sequence={callback.Sequence}, Error={callback.ErrorMessage ?? callback.Message}");
+                    _adminLogger.Trace($"{this.Tag()} [ASSEMBLY PROCESSOR FAILED] CompositionId={composition.Id}, MediaResourceId={callback.MediaResourceId}, RequestId={callback.RequestId}, AttemptId={callback.AttemptId}, Sequence={callback.Sequence}, Error={callback.ErrorMessage ?? callback.Message}, IsVimeoPublish={isVimeoPublish}");
                     composition.Status = EntityHeader<VideoCompositionStatus>.Create(VideoCompositionStatus.Failed);
                     composition.AssemblyState.Stage = VideoCompositionAssemblyStage.Failed;
                     composition.AssemblyState.ErrorMessage = String.IsNullOrWhiteSpace(callback.ErrorMessage) ? callback.Message : callback.ErrorMessage;
                     composition.ErrorMessage = composition.AssemblyState.ErrorMessage;
+                    if (isVimeoPublish) await UpdateFailedVimeoMediaResourceAsync(composition, callback.MediaResourceId, composition.AssemblyState.ErrorMessage, callbackTimestamp);
                     break;
             }
 
@@ -281,6 +283,89 @@ namespace LagoVista.MediaServices.Managers
             _adminLogger.Trace($"{this.Tag()} [ASSEMBLY MEDIA RESOURCE READY] CompositionId={composition.Id}, MediaResourceId={mediaResource.Id}, StorageReferenceName={mediaResource.StorageReferenceName}, ThumbnailStorageReferenceName={mediaResource.ThumbnailStorageReferenceName}, ContentSize={mediaResource.ContentSize}, DurationSeconds={mediaResource.DurationSeconds}, Width={mediaResource.Width}, Height={mediaResource.Height}, Sha256={mediaResource.ContentSha256}");
 
             return InvokeResult<VideoProcessorOutputArtifact>.Create(videoOutput);
+        }
+
+        private async Task<InvokeResult<VideoProcessorOutputArtifact>> UpdateCompletedVimeoMediaResourceAsync(VideoComposition composition, VideoProcessorJobCallback callback)
+        {
+            if (composition.PublishedVideoMediaResource == null || String.IsNullOrWhiteSpace(composition.PublishedVideoMediaResource.Id))
+            {
+                return InvokeResult<VideoProcessorOutputArtifact>.FromError("The completed Vimeo publishing operation does not have a published video media resource.");
+            }
+
+            var mediaResource = await _mediaServicesRepo.GetMediaResourceRecordAsync(composition.PublishedVideoMediaResource.Id);
+            if (mediaResource == null)
+            {
+                return InvokeResult<VideoProcessorOutputArtifact>.FromError($"Could not find Vimeo media resource '{composition.PublishedVideoMediaResource.Id}'.");
+            }
+
+            var videoOutput = callback.Outputs?.FirstOrDefault(output => output.Type == VideoProcessorOutputArtifactType.Video && !String.IsNullOrWhiteSpace(output.ExternalUri));
+            if (videoOutput == null)
+            {
+                return InvokeResult<VideoProcessorOutputArtifact>.FromError("The completed Vimeo publishing callback did not contain a Vimeo video output artifact.");
+            }
+
+            if (!String.Equals(videoOutput.MediaResourceId, mediaResource.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                return InvokeResult<VideoProcessorOutputArtifact>.FromError("The completed Vimeo output artifact does not match the published video media resource.");
+            }
+
+            if (!videoOutput.SizeBytes.HasValue || videoOutput.SizeBytes.Value <= 0)
+            {
+                return InvokeResult<VideoProcessorOutputArtifact>.FromError("The completed Vimeo output artifact did not contain a valid file size.");
+            }
+
+            if (!videoOutput.DurationSeconds.HasValue || videoOutput.DurationSeconds.Value <= 0)
+            {
+                return InvokeResult<VideoProcessorOutputArtifact>.FromError("The completed Vimeo output artifact did not contain a valid duration.");
+            }
+
+            if (!videoOutput.Width.HasValue || videoOutput.Width.Value <= 0 || !videoOutput.Height.HasValue || videoOutput.Height.Value <= 0)
+            {
+                return InvokeResult<VideoProcessorOutputArtifact>.FromError("The completed Vimeo output artifact did not contain valid dimensions.");
+            }
+
+            if (String.IsNullOrWhiteSpace(videoOutput.Sha256))
+            {
+                return InvokeResult<VideoProcessorOutputArtifact>.FromError("The completed Vimeo output artifact did not contain a SHA-256 hash.");
+            }
+
+            mediaResource.Link = videoOutput.ExternalUri;
+            mediaResource.OriginalUrl = videoOutput.ExternalId;
+            mediaResource.ContentSize = videoOutput.SizeBytes.Value;
+            mediaResource.DurationSeconds = videoOutput.DurationSeconds.Value;
+            mediaResource.Width = videoOutput.Width.Value;
+            mediaResource.Height = videoOutput.Height.Value;
+            mediaResource.ContentSha256 = videoOutput.Sha256;
+            mediaResource.ProcessingCompletedUtc = String.IsNullOrWhiteSpace(callback.TimestampUtc) ? UtcTimestamp.Now.Value : callback.TimestampUtc;
+            mediaResource.ProcessingErrorMessage = null;
+            mediaResource.Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Ready);
+            mediaResource.LastUpdatedDate = UtcTimestamp.Now;
+            mediaResource.LastUpdatedBy = composition.LastUpdatedBy ?? composition.CreatedBy;
+
+            composition.VimeoVideoUri = videoOutput.ExternalUri;
+            composition.VimeoVideoId = videoOutput.ExternalId;
+
+            await _mediaServicesRepo.UpdateMediaResourceRecordAsync(mediaResource);
+
+            _adminLogger.Trace($"{this.Tag()} [VIMEO MEDIA RESOURCE READY] CompositionId={composition.Id}, MediaResourceId={mediaResource.Id}, VimeoVideoUri={composition.VimeoVideoUri}, VimeoVideoId={composition.VimeoVideoId}, ContentSize={mediaResource.ContentSize}, DurationSeconds={mediaResource.DurationSeconds}, Width={mediaResource.Width}, Height={mediaResource.Height}, Sha256={mediaResource.ContentSha256}");
+
+            return InvokeResult<VideoProcessorOutputArtifact>.Create(videoOutput);
+        }
+
+        private async Task UpdateFailedVimeoMediaResourceAsync(VideoComposition composition, string mediaResourceId, string errorMessage, string callbackTimestamp)
+        {
+            if (String.IsNullOrWhiteSpace(mediaResourceId)) return;
+
+            var mediaResource = await _mediaServicesRepo.GetMediaResourceRecordAsync(mediaResourceId);
+            if (mediaResource == null) return;
+
+            mediaResource.Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Failed);
+            mediaResource.ProcessingCompletedUtc = callbackTimestamp;
+            mediaResource.ProcessingErrorMessage = errorMessage;
+            mediaResource.LastUpdatedDate = UtcTimestamp.Now;
+            mediaResource.LastUpdatedBy = composition.LastUpdatedBy ?? composition.CreatedBy;
+
+            await _mediaServicesRepo.UpdateMediaResourceRecordAsync(mediaResource);
         }
 
         private async Task PublishVideoCompositionUpdatedAsync(VideoComposition composition)

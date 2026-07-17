@@ -7,6 +7,8 @@ using LagoVista.IoT.Web.Common.Controllers;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
 using LagoVista.UserAdmin.Models.Users;
+using LagoVista.VideoAssembly.Contracts;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -107,10 +109,28 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return _videoAssemblyRequestManager.PrepareVimeoPublishRequestAsync(id, OrgEntityHeader, UserEntityHeader, cancellationToken);
         }
 
+        [AllowAnonymous]
+        [HttpPost("/api/media/videocomposition/vimeo/session")]
+        public async Task<IActionResult> CreateVimeoUploadSessionAsync([FromBody] VideoAssemblyVimeoSessionRequest request, CancellationToken cancellationToken = default)
+        {
+            var result = await _videoAssemblyRequestManager.CreateVimeoUploadSessionAsync(request, GetBearerToken(Request.Headers["Authorization"].ToString()), cancellationToken);
+            if (!result.Successful) return BadRequest(result);
+            return Ok(result.Result);
+        }
+
         [HttpDelete("/api/media/videocomposition/{id}")]
         public Task<InvokeResult> DeleteVideoCompositionAsync(string id)
         {
             return _manager.DeleteVideoCompositionAsync(id, OrgEntityHeader, UserEntityHeader);
+        }
+
+        private static string GetBearerToken(string authorizationHeader)
+        {
+            const string bearerPrefix = "Bearer ";
+            if (String.IsNullOrWhiteSpace(authorizationHeader) || !authorizationHeader.StartsWith(bearerPrefix, StringComparison.OrdinalIgnoreCase)) return null;
+
+            var accessToken = authorizationHeader.Substring(bearerPrefix.Length).Trim();
+            return String.IsNullOrWhiteSpace(accessToken) ? null : accessToken;
         }
     }
 }
