@@ -13,6 +13,8 @@ using LagoVista.UserAdmin.Interfaces.Repos.Orgs;
 using LagoVista.UserAdmin.Models.Orgs;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,6 +35,7 @@ namespace LagoVista.MediaServices.Managers
         private readonly IOrganizationLoaderRepo _organizationLoaderRepo;
         private readonly ISecureStorage _secureStorage;
         private readonly IMediaServicesRepo _mediaRepo;
+        private readonly IMediaServicesManager _mediaServicesManager;
         private readonly IBillingEventRecorder _billingEventRecorder;
 
         private static readonly TimeSpan VimeoStatusPollingInterval = TimeSpan.FromSeconds(20);
@@ -43,8 +46,7 @@ namespace LagoVista.MediaServices.Managers
         private readonly ILogger _logger;
 
 
-        public VideoProductionManager(IVideoProductionRepo repo, IVideoAvatarManager videoAvatarManager, IHeyGenVideoService heyGenVideoService, IVimeoVideoService vimeoVideoService, IMediaServicesRepo mediaRepo,
-            IOrganizationLoaderRepo organizationLoaderRepo, ISecureStorage secureStorage, ICacheProvider cacheProvider, ICoreAppServices coreAppServices, IBillingEventRecorder billingEventRecorder) : base(coreAppServices)
+        public VideoProductionManager(IVideoProductionRepo repo, IVideoAvatarManager videoAvatarManager, IHeyGenVideoService heyGenVideoService, IVimeoVideoService vimeoVideoService, IMediaServicesRepo mediaRepo, IMediaServicesManager mediaServicesManager, IOrganizationLoaderRepo organizationLoaderRepo, ISecureStorage secureStorage, ICacheProvider cacheProvider, ICoreAppServices coreAppServices, IBillingEventRecorder billingEventRecorder) : base(coreAppServices)
         {
             _repo = repo ?? throw new NullReferenceException(nameof(repo));
             _videoAvatarManager = videoAvatarManager ?? throw new NullReferenceException(nameof(videoAvatarManager));
@@ -57,6 +59,7 @@ namespace LagoVista.MediaServices.Managers
             _webhookSecretOwner = coreAppServices.AppConfig.SystemOwnerOrg;
             _cacheProvider = cacheProvider ?? throw new ArgumentNullException(nameof(cacheProvider));
             _mediaRepo = mediaRepo ?? throw new ArgumentNullException(nameof(mediaRepo));
+            _mediaServicesManager = mediaServicesManager ?? throw new ArgumentNullException(nameof(mediaServicesManager));
 
             _logger = coreAppServices.Logger ?? throw new ArgumentNullException(nameof(coreAppServices.Logger));
             var siteUrl = coreAppServices.AppConfig.Environment == Environments.LocalDevelopment || coreAppServices.AppConfig.Environment == Environments.Development ? "https://dev.nuviot.com" : coreAppServices.AppConfig.WebAddress;
@@ -474,10 +477,13 @@ namespace LagoVista.MediaServices.Managers
 
             production.EstimatedDurationSeconds = EstimateDurationSeconds(production.Script);
             production.EstimatedPreviewAudioCost = EstimateCost(production.EstimatedDurationSeconds.Value, 0.000667m);
-            production.EstimatedVideoGenerationCost = EstimateCost(production.EstimatedDurationSeconds.Value, 0.05m);
+            var quality = production.Quality?.Value ?? VideoProductionQuality.Standard;
+            var videoGenerationCostPerSecond = quality == VideoProductionQuality.Standard ? 1.0m / 60.0m : 3.0m / 60.0m;
+
+            production.EstimatedVideoGenerationCost = EstimateCost(production.EstimatedDurationSeconds.Value, videoGenerationCostPerSecond);
             production.EstimatedTotalCost = (production.EstimatedPreviewAudioCost ?? 0) + (production.EstimatedAvatarCreationCost ?? 0) + (production.EstimatedVideoGenerationCost ?? 0);
             production.CostCurrency = String.IsNullOrWhiteSpace(production.CostCurrency) ? "USD" : production.CostCurrency;
-            production.CostModelVersion = String.IsNullOrWhiteSpace(production.CostModelVersion) ? "heygen-api-2026-07" : production.CostModelVersion;
+            production.CostModelVersion = "heygen-standard-premium-2026-07";
 
             await _repo.UpdateVideoProductionAsync(production);
 
@@ -557,6 +563,27 @@ namespace LagoVista.MediaServices.Managers
 
             ApplyAvatarToProduction(production, avatarStatusResult.Result, selectedLook);
 
+            var backgroundResult = await ResolveProviderBackgroundAssetAsync(production, org, user);
+            if (!backgroundResult.Successful)
+            {
+                production.SetStatus(VideoProductionStatus.Failed);
+                production.ErrorMessage = backgroundResult.Errors[0].Message;
+                production.LastStatusCheckUtc = UtcTimestamp.Now;
+
+                await _repo.UpdateVideoProductionAsync(production);
+                await PublishVideoProductionUpdatedAsync(production);
+
+                return backgroundResult.ToInvokeResult<VideoProduction>();
+            }
+
+            production.ProviderBackgroundAssetId = backgroundResult.Result;
+            production.SetStatus(VideoProductionStatus.Submitting);
+            production.ErrorMessage = null;
+            production.LastStatusCheckUtc = UtcTimestamp.Now;
+
+            await _repo.UpdateVideoProductionAsync(production);
+            await PublishVideoProductionUpdatedAsync(production);
+
             var webhookResult = await _heyGenVideoService.EnsureWebhookRegistrationAsync(_webhookSecretOwner, user, _heyGenWebhookCallbackUrl);
             if (!webhookResult.Successful)
             {
@@ -570,7 +597,7 @@ namespace LagoVista.MediaServices.Managers
             }
 
             var submitRequest = BuildHeyGenRequest(production);
-            var submitResult = await _heyGenVideoService.SubmitVideoAsync(submitRequest);
+            var submitResult = await _heyGenVideoService.SubmitVideoAsync(submitRequest, production.Quality?.Value ?? VideoProductionQuality.Standard, production.Settings);
             if (!submitResult.Successful)
             {
                 production.SetStatus(VideoProductionStatus.Failed);
@@ -726,7 +753,8 @@ namespace LagoVista.MediaServices.Managers
 
             var duration = production.ActualDurationSeconds.HasValue ? (double)production.ActualDurationSeconds : 0;
 
-            await _billingEventRecorder.RecordUsageAsync(BillingEventType.VideoGeneration, duration, $"HeyGen Video Pruduction {production.Name}, duration: {duration}", production.OwnerOrganization, production.LastUpdatedBy);
+            var quality = production.Quality?.Text ?? production.Quality?.Id ?? VideoProductionQuality.Standard.ToString();
+            await _billingEventRecorder.RecordUsageAsync(BillingEventType.VideoGeneration, duration, $"HeyGen {quality} Video Production {production.Name}, duration: {duration}", production.OwnerOrganization, production.LastUpdatedBy);
 
             return await _repo.UpdateVideoProductionProviderStateAsync(production.Id, state);
         }
@@ -747,7 +775,8 @@ namespace LagoVista.MediaServices.Managers
 
             var duration = production.ActualDurationSeconds.HasValue ? (double)production.ActualDurationSeconds : 0;
 
-            await _billingEventRecorder.RecordUsageAsync(BillingEventType.VideoGeneration, duration, $"Failed HeyGen Video Pruduction {production.Name}, duration {duration}", production.OwnerOrganization, production.LastUpdatedBy);
+            var quality = production.Quality?.Text ?? production.Quality?.Id ?? VideoProductionQuality.Standard.ToString();
+            await _billingEventRecorder.RecordUsageAsync(BillingEventType.VideoGeneration, duration, $"Failed HeyGen {quality} Video Production {production.Name}, duration: {duration}", production.OwnerOrganization, production.LastUpdatedBy);
 
             return await _repo.UpdateVideoProductionProviderStateAsync(production.Id, state);
         }
@@ -931,6 +960,87 @@ namespace LagoVista.MediaServices.Managers
             return "HeyGen video generation failed.";
         }
 
+        private async Task<InvokeResult<string>> ResolveProviderBackgroundAssetAsync(VideoProduction production, EntityHeader org, EntityHeader user)
+        {
+            if (production.BackgroundMediaResource == null || String.IsNullOrWhiteSpace(production.BackgroundMediaResource.Id))
+            {
+                production.ProviderBackgroundAssetId = null;
+                return InvokeResult<string>.Create(null);
+            }
+
+            var mediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(production.BackgroundMediaResource.Id, org, user);
+            if (mediaResource == null)
+            {
+                return InvokeResult<string>.FromError($"Could not find background media resource '{production.BackgroundMediaResource.Id}'.");
+            }
+
+            var externalAsset = mediaResource.ExternalAssets?.FirstOrDefault(asset =>
+                asset.Provider?.Value == MediaExternalAssetProvider.HeyGen &&
+                asset.Purpose?.Value == MediaExternalAssetPurpose.ProcessingAsset &&
+                !String.IsNullOrWhiteSpace(asset.ProviderAssetId) &&
+                String.Equals(asset.ContentSha256, mediaResource.ContentSha256, StringComparison.OrdinalIgnoreCase));
+
+            if (externalAsset != null)
+            {
+                return InvokeResult<string>.Create(externalAsset.ProviderAssetId);
+            }
+
+            production.SetStatus(VideoProductionStatus.UploadingBackground);
+            production.ProviderBackgroundAssetId = null;
+            production.ErrorMessage = null;
+            production.LastStatusCheckUtc = UtcTimestamp.Now;
+
+            await _repo.UpdateVideoProductionAsync(production);
+            await PublishVideoProductionUpdatedAsync(production);
+
+            var content = await _mediaServicesManager.GetResourceMediaAsync(mediaResource.Id, org, user);
+            if (content == null || content.ImageBytes == null || content.ImageBytes.Length == 0)
+            {
+                return InvokeResult<string>.FromError($"Background media resource '{mediaResource.Id}' does not contain content.");
+            }
+
+            using var stream = new MemoryStream(content.ImageBytes, writable: false);
+
+            var uploadResult = await _heyGenVideoService.UploadAssetAsync(stream, content.FileName, content.ContentType, mediaResource.Id);
+            if (!uploadResult.Successful)
+            {
+                return uploadResult.ToInvokeResult<string>();
+            }
+
+            if (mediaResource.ExternalAssets == null)
+            {
+                mediaResource.ExternalAssets = new List<MediaExternalAsset>();
+            }
+
+            externalAsset = mediaResource.ExternalAssets.FirstOrDefault(asset =>
+                asset.Provider?.Value == MediaExternalAssetProvider.HeyGen &&
+                asset.Purpose?.Value == MediaExternalAssetPurpose.ProcessingAsset &&
+                String.Equals(asset.ContentSha256, mediaResource.ContentSha256, StringComparison.OrdinalIgnoreCase));
+
+            if (externalAsset == null)
+            {
+                externalAsset = new MediaExternalAsset
+                {
+                    Provider = EntityHeader<MediaExternalAssetProvider>.Create(MediaExternalAssetProvider.HeyGen),
+                    Purpose = EntityHeader<MediaExternalAssetPurpose>.Create(MediaExternalAssetPurpose.ProcessingAsset),
+                    CreatedUtc = UtcTimestamp.Now
+                };
+
+                mediaResource.ExternalAssets.Add(externalAsset);
+            }
+
+            externalAsset.ProviderAssetId = uploadResult.Result.AssetId;
+            externalAsset.ContentSha256 = mediaResource.ContentSha256;
+            externalAsset.Status = EntityHeader<MediaExternalAssetStatus>.Create(MediaExternalAssetStatus.Ready);
+            externalAsset.ReadyUtc = UtcTimestamp.Now;
+            externalAsset.LastStatusCheckUtc = UtcTimestamp.Now;
+            externalAsset.ErrorMessage = null;
+
+            await _mediaServicesManager.UpdateMediaResourceRecordAsync(mediaResource, org, user);
+
+            return InvokeResult<string>.Create(externalAsset.ProviderAssetId);
+        }
+
         private static HeyGenVideoRequest BuildHeyGenRequest(VideoProduction production)
         {
             return new HeyGenVideoRequest
@@ -1027,6 +1137,26 @@ namespace LagoVista.MediaServices.Managers
             if (production.Status == null)
             {
                 production.SetStatus(VideoProductionStatus.Draft);
+            }
+
+            if (production.Quality == null)
+            {
+                production.Quality = EntityHeader<VideoProductionQuality>.Create(VideoProductionQuality.Standard);
+            }
+
+            if (production.Settings == null)
+            {
+                production.Settings = new VideoProductionSettings();
+            }
+
+            if (production.Settings.Width <= 0)
+            {
+                production.Settings.Width = 1920;
+            }
+
+            if (production.Settings.Height <= 0)
+            {
+                production.Settings.Height = 1080;
             }
 
             if (String.IsNullOrWhiteSpace(production.CostCurrency))
