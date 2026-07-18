@@ -12,6 +12,8 @@ namespace LagoVista.MediaServices.Models
 
         public string UserId { get; set; }
         public string UserName { get; set; }
+
+        [Obsolete("Use VideoAvatarId and VideoAvatarLookId.")]
         public string AvatarMediaResourceId { get; set; }
 
         public string HeyGenAvatarId { get; set; }

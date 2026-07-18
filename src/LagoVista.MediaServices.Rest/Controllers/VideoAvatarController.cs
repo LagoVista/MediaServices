@@ -76,5 +76,11 @@ namespace LagoVista.MediaServices.Rest.Controllers
         {
             return _manager.RefreshProviderAvatarStatusAsync(id, OrgEntityHeader, UserEntityHeader);
         }
+
+        [HttpPost("/api/media/videoavatar/{id}/provider/reconcile")]
+        public Task<InvokeResult<VideoAvatar>> ReconcileProviderAvatarAsync(string id)
+        {
+            return _manager.ReconcileProviderAvatarAsync(id, OrgEntityHeader, UserEntityHeader);
+        }
     }
 }

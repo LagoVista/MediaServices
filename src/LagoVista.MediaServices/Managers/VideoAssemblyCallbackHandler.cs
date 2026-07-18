@@ -267,7 +267,7 @@ namespace LagoVista.MediaServices.Managers
             }
 
             mediaResource.StorageReferenceName = videoOutput.StorageReferenceName;
-            if (!String.IsNullOrWhiteSpace(videoOutput.ExternalUri)) mediaResource.Link = videoOutput.ExternalUri;
+            if (!String.IsNullOrWhiteSpace(videoOutput.ExternalUri)) mediaResource.ExternalUrl = videoOutput.ExternalUri;
             mediaResource.ContentSize = videoOutput.SizeBytes.Value;
             mediaResource.DurationSeconds = videoOutput.DurationSeconds.Value;
             mediaResource.Width = videoOutput.Width.Value;
@@ -282,8 +282,6 @@ namespace LagoVista.MediaServices.Managers
 
             mediaResource.CurrentRevision = pendingRevision.Id;
             mediaResource.PendingRevision = null;
-            mediaResource.ProcessingCompletedUtc = String.IsNullOrWhiteSpace(callback.TimestampUtc) ? UtcTimestamp.Now.Value : callback.TimestampUtc;
-            mediaResource.ProcessingErrorMessage = null;
             mediaResource.Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Ready);
             mediaResource.LastUpdatedDate = UtcTimestamp.Now;
             mediaResource.LastUpdatedBy = composition.LastUpdatedBy ?? composition.CreatedBy;
@@ -339,15 +337,41 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<VideoProcessorOutputArtifact>.FromError("The completed Vimeo output artifact did not contain a SHA-256 hash.");
             }
 
-            mediaResource.Link = videoOutput.ExternalUri;
+            mediaResource.ExternalUrl = videoOutput.ExternalUri;
             mediaResource.OriginalUrl = videoOutput.ExternalId;
+            mediaResource.ExternalAssets = mediaResource.ExternalAssets ?? new System.Collections.Generic.List<MediaExternalAsset>();
+
+            var publication = mediaResource.ExternalAssets.FirstOrDefault(asset =>
+                asset.Provider?.Value == MediaExternalAssetProvider.Vimeo &&
+                asset.Purpose?.Value == MediaExternalAssetPurpose.Publication &&
+                String.Equals(asset.ProviderAssetId, videoOutput.ExternalId, StringComparison.OrdinalIgnoreCase));
+
+            if (publication == null)
+            {
+                publication = new MediaExternalAsset
+                {
+                    Provider = EntityHeader<MediaExternalAssetProvider>.Create(MediaExternalAssetProvider.Vimeo),
+                    Purpose = EntityHeader<MediaExternalAssetPurpose>.Create(MediaExternalAssetPurpose.Publication),
+                    CreatedUtc = UtcTimestamp.Now
+                };
+
+                mediaResource.ExternalAssets.Add(publication);
+            }
+
+            publication.ProviderAssetId = videoOutput.ExternalId;
+            publication.ProviderUri = videoOutput.ExternalUri;
+            publication.ExternalUrl = videoOutput.ExternalUri;
+            publication.ContentSha256 = videoOutput.Sha256;
+            publication.Status = EntityHeader<MediaExternalAssetStatus>.Create(MediaExternalAssetStatus.Ready);
+            publication.ReadyUtc = String.IsNullOrWhiteSpace(callback.TimestampUtc) ? UtcTimestamp.Now.Value : callback.TimestampUtc;
+            publication.LastStatusCheckUtc = publication.ReadyUtc;
+            publication.ErrorMessage = null;
+
             mediaResource.ContentSize = videoOutput.SizeBytes.Value;
             mediaResource.DurationSeconds = videoOutput.DurationSeconds.Value;
             mediaResource.Width = videoOutput.Width.Value;
             mediaResource.Height = videoOutput.Height.Value;
             mediaResource.ContentSha256 = videoOutput.Sha256;
-            mediaResource.ProcessingCompletedUtc = String.IsNullOrWhiteSpace(callback.TimestampUtc) ? UtcTimestamp.Now.Value : callback.TimestampUtc;
-            mediaResource.ProcessingErrorMessage = null;
             mediaResource.Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Ready);
             mediaResource.LastUpdatedDate = UtcTimestamp.Now;
             mediaResource.LastUpdatedBy = composition.LastUpdatedBy ?? composition.CreatedBy;
@@ -370,8 +394,6 @@ namespace LagoVista.MediaServices.Managers
             if (mediaResource == null) return;
 
             mediaResource.Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Failed);
-            mediaResource.ProcessingCompletedUtc = callbackTimestamp;
-            mediaResource.ProcessingErrorMessage = errorMessage;
             mediaResource.LastUpdatedDate = UtcTimestamp.Now;
             mediaResource.LastUpdatedBy = composition.LastUpdatedBy ?? composition.CreatedBy;
 

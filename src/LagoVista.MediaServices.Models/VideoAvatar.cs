@@ -80,19 +80,59 @@ namespace LagoVista.MediaServices.Models
             Provider = EntityHeader<VideoAvatarProvider>.Create(VideoAvatarProvider.HeyGen);
             Role = EntityHeader<VideoAvatarRole>.Create(VideoAvatarRole.Primary);
             Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Draft);
+            AlternateLookResources = new List<ImageEntityHeader>();
+            Looks = new List<VideoAvatarLook>();
             Voices = new List<VideoAvatarVoice>();
         }
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoAvatar_SourceImage, FieldType: FieldTypes.FileUpload, DisplayImageSize: "1024x1024", GeneratedImageSize: "1024x1024", ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true, AiImageQuality: "premium",
             ImageGenerationStyleGuidance: "Create a polished, contemporary portrait photograph that serves as the canonical identity image for this Video Avatar. Use warm natural or soft studio-style lighting, a restrained and professional background, believable posture, and a clean composition that keeps the subject clearly readable at profile, card, and directory sizes. Frame the image primarily from the chest or shoulders upward, with the face clearly visible and the subject oriented toward the camera. The subject should appear professional, approachable, confident, and credible, with a natural friendly expression rather than an exaggerated grin. Maintain a refined editorial-photography look with realistic skin tones, subtle depth of field, balanced contrast, and a visually clean finish. Avoid generic stock-photo staging, harsh or dramatic lighting, busy backgrounds, theatrical poses, exaggerated futuristic elements, embedded text, logos, watermarks, or visual clutter.",
-            AiImagePurpose: "Create the canonical portrait for this Video Avatar. This image will be used as the primary profile image across the platform, including profile pages, cards, directory results, avatar selection, and other identity-focused surfaces. The image should support clean square or portrait cropping and should clearly establish the subject's appearance for future reference-based image generation.")]
-        public ImageEntityHeader AvatarImage { get; set; }
+            AiImagePurpose: "Create the primary source image for this Video Avatar. This image is reconciled into the primary provider look and is also used as the canonical identity image across profile, card, directory, and avatar-selection surfaces.")]
+        public ImageEntityHeader PrimaryLookResource { get; set; }
 
-        [FormField(LabelResource: MediaServicesResources.Names.VideoAvatar_EditorialImage, FieldType: FieldTypes.FileUploads, DisplayImageSize: "1536x1024", GeneratedImageSize: "1536x1024", ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true, AiImageQuality: "premium",
-            ImageGenerationStyleGuidance: "Create polished, contemporary editorial-photography images that show this Video Avatar in credible, purposeful business situations. Use warm natural lighting, believable professional environments, clean composition, and realistic human posture and expression. These images should feel like a coherent extension of the canonical avatar portrait, maintaining consistent subject identity, color treatment, contrast, and overall visual finish across the image library. Compose scenes with useful negative space and a wider framing appropriate for banners, storytelling, and marketing surfaces. Show the subject engaged in meaningful work such as presenting, collaborating, reviewing information, thinking strategically, or working in a professional setting. Expressions should feel natural and context-appropriate, with a mix of focused, thoughtful, collaborative, and occasionally warm expressions rather than constant broad smiles or everyone looking directly at the camera. Avoid generic stock-photo staging, sterile corporate environments, exaggerated futuristic interfaces, visual clutter, embedded text, logos, watermarks, and dramatically inconsistent photographic styles.",
-            AiReferenceImageField: "avatarImage",
-            AiImagePurpose: "Create editorial images that show this Video Avatar in believable work-oriented situations while preserving the same recognizable identity established by the canonical avatar portrait. These images will be used for marketing, storytelling, reference, and content surfaces where a wider, more contextual image is needed.")]
-        public List<ImageEntityHeader> EditorialImages { get; set; }
+        [FormField(LabelResource: MediaServicesResources.Names.VideoAvatar_EditorialImage, FieldType: FieldTypes.FileUploads, DisplayImageSize: "1024x1024", GeneratedImageSize: "1024x1024", ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true, AiImageQuality: "premium",
+            ImageGenerationStyleGuidance: "Create polished, contemporary portrait photographs that preserve the recognizable identity of the primary Video Avatar image while providing useful alternate wardrobe, pose, framing, or professional-setting variations. Each image should remain suitable for provider avatar generation, with the face clearly visible, believable posture, clean composition, realistic lighting, and no embedded text, logos, watermarks, visual clutter, or dramatically inconsistent photographic styles.",
+            AiReferenceImageField: "primaryLookResource",
+            AiImagePurpose: "Create alternate source images that will each be reconciled into an additional provider look for this Video Avatar.")]
+        public List<ImageEntityHeader> AlternateLookResources { get; set; }
+
+        public List<VideoAvatarLook> Looks { get; set; }
+
+        [System.Obsolete("Use PrimaryLookResource instead.")]
+        public ImageEntityHeader AvatarImage
+        {
+            get => PrimaryLookResource;
+            set
+            {
+                if (PrimaryLookResource == null)
+                {
+                    PrimaryLookResource = value;
+                }
+            }
+        }
+
+        public bool ShouldSerializeAvatarImage()
+        {
+            return false;
+        }
+
+        [System.Obsolete("Use AlternateLookResources instead.")]
+        public List<ImageEntityHeader> EditorialImages
+        {
+            get => AlternateLookResources;
+            set
+            {
+                if ((AlternateLookResources == null || AlternateLookResources.Count == 0) && value != null)
+                {
+                    AlternateLookResources = value;
+                }
+            }
+        }
+
+        public bool ShouldSerializeEditorialImages()
+        {
+            return false;
+        }
 
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoAvatar_Provider, FieldType: FieldTypes.Picker, EnumType: typeof(VideoAvatarProvider), ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
@@ -142,7 +182,7 @@ namespace LagoVista.MediaServices.Models
         {
             var summary = new VideoAvatarSummary
             {
-                SourceImage = AvatarImage,
+                SourceImage = PrimaryLookResource,
                 Provider = Provider,
                 Role = Role,
                 Status = Status,
@@ -165,8 +205,8 @@ namespace LagoVista.MediaServices.Models
                 nameof(IsDefault),
                 nameof(Icon),
                 nameof(Description),
-                nameof(AvatarImage),
-                nameof(EditorialImages),
+                nameof(PrimaryLookResource),
+                nameof(AlternateLookResources),
             };
         }
 
@@ -176,6 +216,31 @@ namespace LagoVista.MediaServices.Models
         {
             return CreateSummary();
         }
+    }
+
+    public class VideoAvatarLook
+    {
+        public string Id { get; set; } = System.Guid.NewGuid().ToId();
+
+        public string Name { get; set; }
+
+        public bool IsPrimary { get; set; }
+
+        public bool IsActive { get; set; } = true;
+
+        public ImageEntityHeader SourceMediaResource { get; set; }
+
+        public EntityHeader<VideoAvatarStatus> Status { get; set; } = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Draft);
+
+        public string ProviderAssetId { get; set; }
+
+        public string ProviderAvatarId { get; set; }
+
+        public string ProviderAvatarStatus { get; set; }
+
+        public UtcTimestamp? LastStatusCheck { get; set; }
+
+        public string ErrorMessage { get; set; }
     }
 
     public class VideoAvatarVoice

@@ -153,7 +153,7 @@ namespace LagoVista.MediaServices.Managers
                 return await ApplyPreparationFailureAsync(composition, thumbnailDestinationResult.Errors[0].Message);
             }
 
-            outputMediaResource.Link = videoDestinationResult.Result.BlobUrl;
+            outputMediaResource.ExternalUrl = videoDestinationResult.Result.BlobUrl;
             outputMediaResource.StorageReferenceName = videoDestinationResult.Result.StorageReferenceName;
             outputMediaResource.ThumbnailUrl = thumbnailDestinationResult.Result.BlobUrl;
             outputMediaResource.ThumbnailStorageReferenceName = thumbnailDestinationResult.Result.StorageReferenceName;
@@ -438,8 +438,7 @@ namespace LagoVista.MediaServices.Managers
                     MimeType = "video/mp4",
                     ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.Video),
                     Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Pending),
-                    Link = "TBD",
-                    ProcessingStartedUtc = now,
+                    ExternalUrl = "TBD",
                     OwnerOrganization = org,
                     CreatedBy = user,
                     LastUpdatedBy = user,
@@ -466,9 +465,6 @@ namespace LagoVista.MediaServices.Managers
                 publishedMediaResource.MediaLibrary = createLibraryResult.Result.ToEntityHeader();
             }
             publishedMediaResource.Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Pending);
-            publishedMediaResource.ProcessingStartedUtc = UtcTimestamp.Now;
-            publishedMediaResource.ProcessingCompletedUtc = null;
-            publishedMediaResource.ProcessingErrorMessage = null;
             publishedMediaResource.LastUpdatedDate = UtcTimestamp.Now;
             publishedMediaResource.LastUpdatedBy = user;
 
@@ -737,11 +733,10 @@ namespace LagoVista.MediaServices.Managers
                 Description = composition.Description,
                 FileName = CreateVideoFileName(composition),
                 IsFileUpload = false,
-                Link = null,
+                ExternalUrl = null,
                 MimeType = "video/mp4",
                 ResourceType = EntityHeader<MediaResourceTypes>.Create(MediaResourceTypes.RawVideo),
                 Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Pending),
-                ProcessingStartedUtc = now,
                 OwnerOrganization = org,
                 CreatedBy = user,
                 LastUpdatedBy = user,
@@ -796,9 +791,6 @@ namespace LagoVista.MediaServices.Managers
                 mediaResource.PendingRevision = pendingRevision.Id;
             }
 
-            mediaResource.ProcessingStartedUtc = UtcTimestamp.Now;
-            mediaResource.ProcessingCompletedUtc = null;
-            mediaResource.ProcessingErrorMessage = null;
             mediaResource.LastUpdatedDate = UtcTimestamp.Now;
             mediaResource.LastUpdatedBy = user;
             mediaResource.Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Pending);

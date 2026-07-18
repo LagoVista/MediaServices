@@ -42,9 +42,9 @@ namespace LagoVista.MediaServices.Managers
                 return await ResolveGeneratedVideoAsync(mediaResource, orgId, cancellationToken);
             }
 
-            if (!String.IsNullOrWhiteSpace(mediaResource.Link))
+            if (!String.IsNullOrWhiteSpace(mediaResource.ExternalUrl))
             {
-                return InvokeResult<VideoAssemblySource>.Create(CreateSource(mediaResource, mediaResource.Link));
+                return InvokeResult<VideoAssemblySource>.Create(CreateSource(mediaResource, mediaResource.ExternalUrl));
             }
 
             return InvokeResult<VideoAssemblySource>.FromError($"Media resource '{mediaResource.Id}' does not have a downloadable assembly source.");
@@ -108,12 +108,12 @@ namespace LagoVista.MediaServices.Managers
 
         private static InvokeResult<string> ResolveLegacyGeneratedVideoStorageReference(MediaResource mediaResource, string orgId)
         {
-            if (String.IsNullOrWhiteSpace(mediaResource.Link))
+            if (String.IsNullOrWhiteSpace(mediaResource.ExternalUrl))
             {
                 return InvokeResult<string>.FromError($"Generated video media resource '{mediaResource.Id}' does not have a storage reference name or blob URL.");
             }
 
-            if (!Uri.TryCreate(mediaResource.Link, UriKind.Absolute, out var blobUri))
+            if (!Uri.TryCreate(mediaResource.ExternalUrl, UriKind.Absolute, out var blobUri))
             {
                 return InvokeResult<string>.FromError($"Generated video media resource '{mediaResource.Id}' has an invalid blob URL.");
             }

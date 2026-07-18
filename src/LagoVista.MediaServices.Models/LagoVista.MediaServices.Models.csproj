@@ -7,7 +7,7 @@
     <AssemblyOriginatorKeyFile>lagovista.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="LagoVista.UserAdmin" Version="3.0.3349.0928" />
+    <PackageReference Include="LagoVista.UserAdmin" Version="3.0.3349.1223" />
   </ItemGroup>
   <ItemGroup>
     <None Update="T4ResourceGenerator.tt">

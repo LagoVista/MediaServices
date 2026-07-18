@@ -50,6 +50,51 @@ namespace LagoVista.MediaServices.Models
         RawVideo,
     }
 
+    public enum MediaResourceStorageType
+    {
+        RepositoryManaged,
+        ServiceManaged,
+        LinkOnly
+    }
+
+    public enum MediaExternalAssetProvider
+    {
+        HeyGen,
+        Vimeo,
+        YouTube,
+        Facebook
+    }
+
+    public enum MediaExternalAssetPurpose
+    {
+        ProcessingAsset,
+        Publication
+    }
+
+    public enum MediaExternalAssetStatus
+    {
+        Pending,
+        Ready,
+        Failed,
+        Removed
+    }
+
+    public class MediaExternalAsset
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToId();
+        public EntityHeader<MediaExternalAssetProvider> Provider { get; set; }
+        public EntityHeader<MediaExternalAssetPurpose> Purpose { get; set; }
+        public string ProviderAssetId { get; set; }
+        public string ProviderUri { get; set; }
+        public string ExternalUrl { get; set; }
+        public EntityHeader<MediaExternalAssetStatus> Status { get; set; }
+        public string ContentSha256 { get; set; }
+        public string CreatedUtc { get; set; }
+        public string ReadyUtc { get; set; }
+        public string LastStatusCheckUtc { get; set; }
+        public string ErrorMessage { get; set; }
+    }
+
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResource_Title, MediaServicesResources.Names.MediaResource_Help, 
         MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources),
         EditUIUrl: "/contentmanagement/mediaresource/{id}", ListUIUrl: "/contentmanagement/mediaresources", CreateUIUrl: "/contentmanagement/mediaresource/add",
@@ -76,17 +121,12 @@ namespace LagoVista.MediaServices.Models
             Icon = "lago-icon://system/nuvos-semantic-icon/media-resource-default";
             IsFileUpload = true;
             Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Ready);
+            ExternalAssets = new List<MediaExternalAsset>();
         }
 
         public string MediaTypeKey { get; set; }
 
         public EntityHeader<MediaResourceStatus> Status { get; set; }
-
-        public string ProcessingStartedUtc { get; set; }
-
-        public string ProcessingCompletedUtc { get; set; }
-
-        public string ProcessingErrorMessage { get; set; }
 
         public string ContentSha256 { get; set; }
 
@@ -107,7 +147,42 @@ namespace LagoVista.MediaServices.Models
         public bool IsFileUpload { get; set; }
        
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Link, HelpResource: MediaServicesResources.Names.MediaResource_Link_Help, FieldType: FieldTypes.WebLink, ResourceType: typeof(MediaServicesResources))]
-        public string Link { get; set; }
+        public string ExternalUrl { get; set; }
+
+        [Obsolete("Use ExternalUrl instead.")]
+        public string Link
+        {
+            get => ExternalUrl;
+            set
+            {
+                if (String.IsNullOrWhiteSpace(ExternalUrl))
+                {
+                    ExternalUrl = value;
+                }
+            }
+        }
+
+        public bool ShouldSerializeLink()
+        {
+            return false;
+        }
+
+        public MediaResourceStorageType GetStorageType()
+        {
+            if (IsFileUpload)
+            {
+                return MediaResourceStorageType.RepositoryManaged;
+            }
+
+            if (!String.IsNullOrWhiteSpace(StorageReferenceName))
+            {
+                return MediaResourceStorageType.ServiceManaged;
+            }
+
+            return MediaResourceStorageType.LinkOnly;
+        }
+
+        public List<MediaExternalAsset> ExternalAssets { get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_ContentLength, ParentRowName: DetailsRow, ParentRowIndex:1, FieldType: FieldTypes.Integer, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public long? ContentSize { get; set; }
@@ -130,10 +205,6 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_Height, ParentRowName: DetailsRow, ParentRowIndex: 4, FieldType: FieldTypes.Integer, IsUserEditable: false, ResourceType: typeof(MediaServicesResources))]
         public int? Height { get; set; }
 
-        public string HeyGenAssetId { get; set; }
-
-        public string HeyGenAvatarId { get; set; }
-
         public string CurrentRevision { get; set; }
 
         public string PendingRevision { get; set; }
@@ -155,6 +226,12 @@ namespace LagoVista.MediaServices.Models
         public string OriginalPrompt => GetCurrentRevision()?.OriginalPrompt ?? String.Empty;
 
         public string RevisedPrompt => GetCurrentRevision()?.RevisedPrompt ?? String.Empty;
+
+        [Obsolete("Use ExternalAssets for provider asset registrations.")]
+        public string HeyGenAssetId { get; set; }
+
+        [Obsolete("Avatar provider identity belongs on VideoAvatar or VideoAvatarLook.")]
+        public string HeyGenAvatarId { get; set;}
 
         public MediaResourceHistory GetPendingRevision()
         {
@@ -317,7 +394,8 @@ namespace LagoVista.MediaServices.Models
                 ThumbnailUrl = ThumbnailUrl,
                 MediaLibrary = MediaLibrary,
                 DurationSeconds = DurationSeconds,
-                Link = Link,
+                ExternalUrl = ExternalUrl,
+                Link = ExternalUrl,
                 Name = Name,
                 IsFileUpload = IsFileUpload,
                 MediaTypeKey = MediaTypeKey,
@@ -326,9 +404,10 @@ namespace LagoVista.MediaServices.Models
 
             summary.Populate(this);
 
-            if(String.IsNullOrEmpty(summary.Link))
+            if(String.IsNullOrEmpty(summary.ExternalUrl))
             {
-                summary.Link = $"/api/media/resource/{this.OwnerOrganization.Id}/{this.Id}/download";
+                summary.ExternalUrl = $"/api/media/resource/{this.OwnerOrganization.Id}/{this.Id}/download";
+                summary.Link = summary.ExternalUrl;
             }
 
             return summary;
@@ -339,35 +418,26 @@ namespace LagoVista.MediaServices.Models
         {
             if (IsFileUpload)
             {
-                Link = String.Empty;
+                ExternalUrl = String.Empty;
 
                 if (String.IsNullOrEmpty(FileName))
                 {
                     result.AddUserError("Must provide file name.");
                 }
-                else
+                else if (String.IsNullOrEmpty(MimeType))
                 {
-                    if (String.IsNullOrEmpty(MimeType))
-                    {
-                        result.AddUserError("Mime Type is a Required Field.");
-                    }
-
-                    if (String.IsNullOrEmpty(StorageReferenceName))
-                    {
-                        result.AddUserError("Storage Reference Name is a Required Field.");
-                    }
+                    result.AddUserError("Mime Type is a Required Field.");
                 }
             }
-            else
+            else if (String.IsNullOrEmpty(StorageReferenceName))
             {
                 ContentSize = null;
                 MimeType = null;
                 FileName = null;
-                StorageReferenceName = null;
 
-                if (String.IsNullOrEmpty(Link))
+                if (String.IsNullOrEmpty(ExternalUrl))
                 {
-                    result.AddUserError("Must provide link.");
+                    result.AddUserError("Must provide an external URL.");
                 }
             }
         }
@@ -385,7 +455,7 @@ namespace LagoVista.MediaServices.Models
                 nameof(Description),
                 nameof(Content),
                 nameof(ThumbnailUrl),
-                nameof(Link),
+                nameof(ExternalUrl),
             };
         }
 
@@ -393,7 +463,7 @@ namespace LagoVista.MediaServices.Models
         {
             return new FormConditionals()
             {
-                ConditionalFields = new List<string> { nameof(ContentSize), nameof(MimeType), nameof(Link), nameof(Content), nameof(Width), nameof(Height) },
+                ConditionalFields = new List<string> { nameof(ContentSize), nameof(MimeType), nameof(ExternalUrl), nameof(Content), nameof(Width), nameof(Height) },
                 Conditionals = new List<FormConditional>()
                 {
                     new FormConditional()
@@ -424,7 +494,7 @@ namespace LagoVista.MediaServices.Models
                     {
                         Field = nameof(IsFileUpload),
                         Value = "false",
-                        VisibleFields = new List<string>() {nameof(Link)}
+                        VisibleFields = new List<string>() {nameof(ExternalUrl)}
                     }
                 }
             };
@@ -446,7 +516,7 @@ namespace LagoVista.MediaServices.Models
                 nameof(ResourceType),
                 nameof(Description),
                 nameof(Content),
-                nameof(Link),
+                nameof(ExternalUrl),
                 nameof(License),
                 nameof(OriginalUrl),
             };
@@ -464,6 +534,7 @@ namespace LagoVista.MediaServices.Models
         public string MimeType { get; set; }
         public long? ContentSize { get; set; }
         public bool IsFileUpload { get; set; }
+        public string ExternalUrl { get; set; }
         public string Link { get; set; }
 
         public EntityHeader MediaLibrary { get; set; }

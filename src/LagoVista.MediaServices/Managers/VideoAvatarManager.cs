@@ -29,13 +29,13 @@ namespace LagoVista.MediaServices.Managers
         private static readonly TimeSpan ProviderStatusPollInterval = TimeSpan.FromSeconds(20);
         private static readonly TimeSpan ProviderStatusPollTimeout = TimeSpan.FromMinutes(5);
 
-        public VideoAvatarManager(IVideoAvatarRepo repo, IMediaServicesManager mediaServicesManager, IBillingEventRecorder billingEventRecorder, 
+        public VideoAvatarManager(IVideoAvatarRepo repo, IMediaServicesManager mediaServicesManager, IBillingEventRecorder billingEventRecorder,
                                   IHeyGenVideoService heyGenVideoService, ICoreAppServices coreAppServices) : base(coreAppServices)
         {
             _repo = repo ?? throw new NullReferenceException(nameof(repo));
             _mediaServicesManager = mediaServicesManager ?? throw new NullReferenceException(nameof(mediaServicesManager));
             _heyGenVideoService = heyGenVideoService ?? throw new NullReferenceException(nameof(heyGenVideoService));
-            _adminLogger = coreAppServices?.Logger ?? throw new ArgumentNullException(nameof(coreAppServices.Logger)); 
+            _adminLogger = coreAppServices?.Logger ?? throw new ArgumentNullException(nameof(coreAppServices.Logger));
             _notificationPublisher = coreAppServices?.NotificationPublisher ?? throw new ArgumentNullException(nameof(coreAppServices.NotificationPublisher));
             _billingEventRecorder = billingEventRecorder ?? throw new NullReferenceException(nameof(billingEventRecorder));
 
@@ -49,6 +49,7 @@ namespace LagoVista.MediaServices.Managers
             }
 
             NormalizeVideoAvatar(avatar);
+            ReconcileLooks(avatar);
 
             var voiceValidation = ValidateVoices(avatar);
             if (!voiceValidation.Successful)
@@ -76,7 +77,11 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<VideoAvatar>.FromError("Video avatar ID is required.");
             }
 
+            var currentAvatar = await _repo.GetVideoAvatarAsync(avatar.Id);
+            avatar.Looks = currentAvatar?.Looks ?? avatar.Looks;
+
             NormalizeVideoAvatar(avatar);
+            ReconcileLooks(avatar);
 
             var voiceValidation = ValidateVoices(avatar);
             if (!voiceValidation.Successful)
@@ -136,65 +141,85 @@ namespace LagoVista.MediaServices.Managers
             {
                 var avatar = await GetVideoAvatarAsync(id, org, user);
 
-                if (!String.IsNullOrWhiteSpace(avatar.ProviderAvatarId))
+                NormalizeVideoAvatar(avatar);
+                ReconcileLooks(avatar);
+
+                var activeLooks = avatar.Looks
+                    .Where(look => look != null && look.IsActive && !String.IsNullOrWhiteSpace(look.SourceMediaResource?.Id))
+                    .ToList();
+
+                if (activeLooks.Count == 0)
                 {
-                    return InvokeResult<VideoAvatar>.Create(avatar);
+                    return InvokeResult<VideoAvatar>.FromError("At least one active video avatar look is required.");
                 }
 
-                if (avatar.AvatarImage == null || String.IsNullOrWhiteSpace(avatar.AvatarImage.Id))
+                var shouldPoll = false;
+
+                foreach (var sourceLook in activeLooks)
                 {
-                    return InvokeResult<VideoAvatar>.FromError("Video avatar source image is required.");
-                }
+                    var look = sourceLook;
 
-                var assetResult = await GetOrCreateProviderAssetIdAsync(avatar.AvatarImage.Id, org, user);
-                if (!assetResult.Successful)
-                {
-                    avatar.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Failed);
-                    avatar.ErrorMessage = assetResult.Errors[0].Message;
-                    avatar.LastStatusCheck = UtcTimestamp.Now;
-
-                    await _repo.UpdateVideoAvatarProviderStateAsync(avatar.Id, CreateProviderState(avatar));
-
-                    return assetResult.ToInvokeResult<VideoAvatar>();
-                }
-
-                avatar.ProviderAssetId = assetResult.Result;
-                avatar.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Preparing);
-                avatar.ErrorMessage = null;
-                avatar.LastStatusCheck = UtcTimestamp.Now;
-
-                avatar = await _repo.UpdateVideoAvatarProviderStateAsync(avatar.Id, CreateProviderState(avatar));
-
-                var avatarRequest = new HeyGenPhotoAvatarRequest
-                {
-                    Name = avatar.Name,
-                    File = new HeyGenPhotoAvatarFile
+                    if (!String.IsNullOrWhiteSpace(look.ProviderAvatarId))
                     {
-                        AssetId = assetResult.Result
+                        if (!IsLookStatus(look, VideoAvatarStatus.Ready) && !IsLookStatus(look, VideoAvatarStatus.Failed))
+                        {
+                            shouldPoll = true;
+                        }
+
+                        continue;
                     }
-                };
 
-                var createResult = await _heyGenVideoService.CreatePhotoAvatarAsync(avatarRequest);
-                if (!createResult.Successful)
-                {
-                    avatar.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Failed);
-                    avatar.ErrorMessage = createResult.Errors[0].Message;
-                    avatar.LastStatusCheck = UtcTimestamp.Now;
+                    var assetResult = await GetOrCreateProviderAssetIdAsync(look.SourceMediaResource.Id, org, user);
+                    if (!assetResult.Successful)
+                    {
+                        look.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Failed);
+                        look.ErrorMessage = assetResult.Errors[0].Message;
+                        look.LastStatusCheck = UtcTimestamp.Now;
+                        continue;
+                    }
 
-                    await _repo.UpdateVideoAvatarProviderStateAsync(avatar.Id, CreateProviderState(avatar));
+                    look.ProviderAssetId = assetResult.Result;
+                    look.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Preparing);
+                    look.ErrorMessage = null;
+                    look.LastStatusCheck = UtcTimestamp.Now;
 
-                    return createResult.ToInvokeResult<VideoAvatar>();
+                    UpdateAggregateStatus(avatar);
+                    avatar = await _repo.UpdateVideoAvatarAsync(avatar);
+                    look = avatar.Looks.First(item => item.Id == look.Id);
+
+                    var avatarRequest = new HeyGenPhotoAvatarRequest
+                    {
+                        Name = String.IsNullOrWhiteSpace(look.Name) ? avatar.Name : $"{avatar.Name} - {look.Name}",
+                        File = new HeyGenPhotoAvatarFile
+                        {
+                            AssetId = assetResult.Result
+                        }
+                    };
+
+                    var createResult = await _heyGenVideoService.CreatePhotoAvatarAsync(avatarRequest);
+                    if (!createResult.Successful)
+                    {
+                        look.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Failed);
+                        look.ErrorMessage = createResult.Errors[0].Message;
+                        look.LastStatusCheck = UtcTimestamp.Now;
+                        continue;
+                    }
+
+                    look.ProviderAvatarId = createResult.Result.AvatarId;
+                    look.ProviderAvatarStatus = VideoAvatar.Status_WaitingForProvider;
+                    look.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.WaitingForProvider);
+                    look.ErrorMessage = null;
+                    look.LastStatusCheck = UtcTimestamp.Now;
+                    shouldPoll = true;
                 }
 
-                avatar.ProviderAvatarId = createResult.Result.AvatarId;
-                avatar.ProviderAvatarStatus = VideoAvatar.Status_WaitingForProvider;
-                avatar.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.WaitingForProvider);
-                avatar.ErrorMessage = null;
-                avatar.LastStatusCheck = UtcTimestamp.Now;
+                UpdateAggregateStatus(avatar);
+                var currentAvatar = await _repo.UpdateVideoAvatarAsync(avatar);
 
-                var currentAvatar = await _repo.UpdateVideoAvatarProviderStateAsync(avatar.Id, CreateProviderState(avatar));
-
-                QueueProviderAvatarStatusPolling(currentAvatar.Id, org, user);
+                if (shouldPoll)
+                {
+                    QueueProviderAvatarStatusPolling(currentAvatar.Id, org, user);
+                }
 
                 await PublishAvatarUpdatedAsync(currentAvatar);
 
@@ -225,7 +250,6 @@ namespace LagoVista.MediaServices.Managers
             var pollingOrg = EntityHeader.Create(org.Id, org.Text);
             var pollingUser = EntityHeader.Create(user.Id, user.Text);
 
-
             if (queue == null)
             {
                 _adminLogger.AddCustomEvent(LogLevel.Warning, this.Tag(), $"Background task queue is unavailable. Provider status polling was not queued for avatar '{avatarId}'.");
@@ -236,24 +260,21 @@ namespace LagoVista.MediaServices.Managers
 
             if (!queued)
             {
-                _adminLogger.AddCustomEvent(
-                    LogLevel.Warning,
-                    this.Tag(),
-                    $"Provider status polling could not be queued for avatar '{avatarId}'.");
+                _adminLogger.AddCustomEvent(LogLevel.Warning, this.Tag(), $"Provider status polling could not be queued for avatar '{avatarId}'.");
             }
         }
 
-        private static bool IsAvatarStatus(VideoAvatar avatar, VideoAvatarStatus status)
+        private static bool IsLookStatus(VideoAvatarLook look, VideoAvatarStatus status)
         {
-            return String.Equals(avatar?.Status?.Key, status.ToString(), StringComparison.OrdinalIgnoreCase) ||
-                   String.Equals(avatar?.Status?.Id, status.ToString(), StringComparison.OrdinalIgnoreCase);
+            return String.Equals(look?.Status?.Key, status.ToString(), StringComparison.OrdinalIgnoreCase) ||
+                   String.Equals(look?.Status?.Id, status.ToString(), StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task PollProviderAvatarStatusAsync(string avatarId, EntityHeader org, EntityHeader user, CancellationToken cancellationToken)
         {
             var startedUtc = DateTime.UtcNow;
-
             var idx = 0;
+
             _adminLogger.Trace($"{this.Tag()} - Starting provider status polling for avatar '{avatarId}'.");
 
             try
@@ -263,35 +284,64 @@ namespace LagoVista.MediaServices.Managers
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var avatar = await GetVideoAvatarAsync(avatarId, org, user);
+                    NormalizeVideoAvatar(avatar);
 
-                    if (avatar == null || String.IsNullOrWhiteSpace(avatar.ProviderAvatarId))
+                    var pendingLooks = avatar.Looks
+                        .Where(look => look != null &&
+                                       look.IsActive &&
+                                       !String.IsNullOrWhiteSpace(look.ProviderAvatarId) &&
+                                       !IsLookStatus(look, VideoAvatarStatus.Ready) &&
+                                       !IsLookStatus(look, VideoAvatarStatus.Failed))
+                        .ToList();
+
+                    if (pendingLooks.Count == 0)
                     {
                         return;
                     }
 
-                    if (IsAvatarStatus(avatar, VideoAvatarStatus.Ready) || IsAvatarStatus(avatar, VideoAvatarStatus.Failed))
+                    var changed = false;
+
+                    foreach (var look in pendingLooks)
                     {
-                        return;
-                    }
+                        var wasReady = IsLookStatus(look, VideoAvatarStatus.Ready);
+                        var statusResult = await _heyGenVideoService.GetAvatarStatusAsync(look.ProviderAvatarId, cancellationToken);
 
-                    var statusResult = await _heyGenVideoService.GetAvatarStatusAsync(avatar.ProviderAvatarId, cancellationToken);
-
-                    if (statusResult.Successful)
-                    {
-                        var updatedAvatar = await ApplyProviderStatusAsync(avatar, statusResult.Result);
-
-                        if (statusResult.Result.IsReady || !String.IsNullOrWhiteSpace(statusResult.Result.ErrorCode))
+                        if (!statusResult.Successful)
                         {
-                            _adminLogger.Trace($"{this.Tag()} - Avatar IS ready Congratulations -'{avatarId}' - {idx++}.");
-                            await _billingEventRecorder.RecordUsageAsync(BillingEventType.VideoAvatarCreated, 1, $"HeyGen Video Avatar '{avatarId}' is ready", avatar.OwnerOrganization, avatar.LastUpdatedBy);
-                            await PublishAvatarUpdatedAsync(updatedAvatar);
-                            return;
+                            look.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Failed);
+                            look.ErrorMessage = statusResult.Errors[0].Message;
+                            look.LastStatusCheck = UtcTimestamp.Now;
+                            changed = true;
+                            continue;
+                        }
+
+                        ApplyProviderStatus(look, statusResult.Result);
+                        changed = true;
+
+                        if (!wasReady && statusResult.Result.IsReady)
+                        {
+                            await _billingEventRecorder.RecordUsageAsync(BillingEventType.VideoAvatarCreated, 1, $"HeyGen Video Avatar Look '{look.ProviderAvatarId}' is ready", avatar.OwnerOrganization, avatar.LastUpdatedBy);
                         }
                     }
-                  
-                    await Task.Delay(ProviderStatusPollInterval, cancellationToken);
-                    _adminLogger.Trace($"{this.Tag()} - Avatar not ready '{avatarId}' - {idx++}.");
 
+                    if (changed)
+                    {
+                        UpdateAggregateStatus(avatar);
+                        avatar = await _repo.UpdateVideoAvatarAsync(avatar);
+                        await PublishAvatarUpdatedAsync(avatar);
+                    }
+
+                    if (!avatar.Looks.Any(look => look != null &&
+                                                  look.IsActive &&
+                                                  !String.IsNullOrWhiteSpace(look.ProviderAvatarId) &&
+                                                  !IsLookStatus(look, VideoAvatarStatus.Ready) &&
+                                                  !IsLookStatus(look, VideoAvatarStatus.Failed)))
+                    {
+                        return;
+                    }
+
+                    await Task.Delay(ProviderStatusPollInterval, cancellationToken);
+                    _adminLogger.Trace($"{this.Tag()} - Avatar looks not ready '{avatarId}' - {idx++}.");
                 }
 
                 await RecordProviderPollingTimeoutAsync(avatarId, org, user);
@@ -308,69 +358,119 @@ namespace LagoVista.MediaServices.Managers
         private async Task RecordProviderPollingTimeoutAsync(string avatarId, EntityHeader org, EntityHeader user)
         {
             var avatar = await GetVideoAvatarAsync(avatarId, org, user);
+            NormalizeVideoAvatar(avatar);
 
-            if (avatar == null || IsAvatarStatus(avatar, VideoAvatarStatus.Ready) || IsAvatarStatus(avatar, VideoAvatarStatus.Failed))
+            var pendingLooks = avatar.Looks
+                .Where(look => look != null &&
+                               look.IsActive &&
+                               !String.IsNullOrWhiteSpace(look.ProviderAvatarId) &&
+                               !IsLookStatus(look, VideoAvatarStatus.Ready) &&
+                               !IsLookStatus(look, VideoAvatarStatus.Failed))
+                .ToList();
+
+            if (pendingLooks.Count == 0)
             {
                 return;
             }
 
-            avatar.LastStatusCheck = UtcTimestamp.Now;
+            foreach (var look in pendingLooks)
+            {
+                look.LastStatusCheck = UtcTimestamp.Now;
+            }
 
-            var currentAvatar = await _repo.UpdateVideoAvatarProviderStateAsync(avatar.Id, CreateProviderState(avatar));
+            UpdateAggregateStatus(avatar);
 
+            var currentAvatar = await _repo.UpdateVideoAvatarAsync(avatar);
             await PublishAvatarUpdatedAsync(currentAvatar);
         }
 
-        private async Task<VideoAvatar> ApplyProviderStatusAsync(VideoAvatar avatar, HeyGenAvatarStatusResult providerStatus)
+        private static void ApplyProviderStatus(VideoAvatarLook look, HeyGenAvatarStatusResult providerStatus)
         {
-            avatar.ProviderAvatarStatus = providerStatus.Status;
-            avatar.LastStatusCheck = UtcTimestamp.Now;
-            avatar.ErrorMessage = providerStatus.ErrorMessage;
+            look.ProviderAvatarStatus = providerStatus.Status;
+            look.LastStatusCheck = UtcTimestamp.Now;
+            look.ErrorMessage = providerStatus.ErrorMessage;
 
             if (providerStatus.IsReady)
             {
-                avatar.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Ready);
-                avatar.ErrorMessage = null;
+                look.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Ready);
+                look.ErrorMessage = null;
             }
             else if (!String.IsNullOrWhiteSpace(providerStatus.ErrorCode))
             {
-                avatar.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Failed);
+                look.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Failed);
             }
             else
             {
-                avatar.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.WaitingForProvider);
+                look.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.WaitingForProvider);
             }
-
-            return await _repo.UpdateVideoAvatarProviderStateAsync(avatar.Id, CreateProviderState(avatar));
         }
 
         public async Task<InvokeResult<VideoAvatar>> RefreshProviderAvatarStatusAsync(string id, EntityHeader org, EntityHeader user)
         {
             var avatar = await GetVideoAvatarAsync(id, org, user);
 
-            if (String.IsNullOrWhiteSpace(avatar.ProviderAvatarId))
+            NormalizeVideoAvatar(avatar);
+            ReconcileLooks(avatar);
+
+            var providerLooks = avatar.Looks
+                .Where(look => look != null && look.IsActive && !String.IsNullOrWhiteSpace(look.ProviderAvatarId))
+                .ToList();
+
+            if (providerLooks.Count == 0)
             {
-                return InvokeResult<VideoAvatar>.FromError("Provider avatar ID has not been created.");
+                return InvokeResult<VideoAvatar>.FromError("No provider avatar looks have been created.");
             }
 
-            var statusResult = await _heyGenVideoService.GetAvatarStatusAsync(avatar.ProviderAvatarId);
-
-            if (!statusResult.Successful)
+            foreach (var look in providerLooks)
             {
-                avatar.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Failed);
-                avatar.ErrorMessage = statusResult.Errors[0].Message;
-                avatar.LastStatusCheck = UtcTimestamp.Now;
+                var statusResult = await _heyGenVideoService.GetAvatarStatusAsync(look.ProviderAvatarId);
 
-                var failedAvatar = await _repo.UpdateVideoAvatarProviderStateAsync(avatar.Id, CreateProviderState(avatar));
+                if (!statusResult.Successful)
+                {
+                    look.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Failed);
+                    look.ErrorMessage = statusResult.Errors[0].Message;
+                    look.LastStatusCheck = UtcTimestamp.Now;
+                    continue;
+                }
 
-                return statusResult.ToInvokeResult<VideoAvatar>();
+                ApplyProviderStatus(look, statusResult.Result);
             }
 
-            var currentAvatar = await ApplyProviderStatusAsync(avatar, statusResult.Result);
+            UpdateAggregateStatus(avatar);
 
+            var currentAvatar = await _repo.UpdateVideoAvatarAsync(avatar);
             await PublishAvatarUpdatedAsync(currentAvatar);
 
             return InvokeResult<VideoAvatar>.Create(currentAvatar);
+        }
+
+        public Task<InvokeResult<VideoAvatar>> ReconcileProviderAvatarAsync(string id, EntityHeader org, EntityHeader user)
+        {
+            return RefreshProviderAvatarStatusAsync(id, org, user);
+        }
+
+        private static void UpdateAggregateStatus(VideoAvatar avatar)
+        {
+            var primaryLook = avatar.Looks?.FirstOrDefault(look => look != null && look.IsActive && look.IsPrimary) ??
+                              avatar.Looks?.FirstOrDefault(look => look != null && look.IsActive);
+
+            if (primaryLook == null)
+            {
+                avatar.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Draft);
+                avatar.ProviderAssetId = null;
+                avatar.ProviderAvatarId = null;
+                avatar.ProviderAvatarStatus = null;
+                avatar.LastStatusCheck = null;
+                avatar.ErrorMessage = null;
+                return;
+            }
+
+            avatar.Status = primaryLook.Status ?? EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Draft);
+            avatar.ProviderAssetId = primaryLook.ProviderAssetId;
+            avatar.ProviderAvatarId = primaryLook.ProviderAvatarId;
+            avatar.ProviderAvatarStatus = primaryLook.ProviderAvatarStatus;
+            avatar.LastStatusCheck = primaryLook.LastStatusCheck;
+            avatar.ErrorMessage = primaryLook.ErrorMessage;
         }
 
         private async Task<InvokeResult<string>> GetOrCreateProviderAssetIdAsync(string mediaResourceId, EntityHeader org, EntityHeader user)
@@ -381,9 +481,14 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<string>.FromError($"Could not find media resource '{mediaResourceId}'.");
             }
 
-            if (!String.IsNullOrWhiteSpace(mediaResource.HeyGenAssetId))
+            var externalAsset = mediaResource.ExternalAssets?.FirstOrDefault(asset =>
+                asset.Provider?.Value == MediaExternalAssetProvider.HeyGen &&
+                asset.Purpose?.Value == MediaExternalAssetPurpose.ProcessingAsset &&
+                (String.IsNullOrWhiteSpace(asset.ContentSha256) || String.Equals(asset.ContentSha256, mediaResource.ContentSha256, StringComparison.OrdinalIgnoreCase)));
+
+            if (!String.IsNullOrWhiteSpace(externalAsset?.ProviderAssetId))
             {
-                return InvokeResult<string>.Create(mediaResource.HeyGenAssetId);
+                return InvokeResult<string>.Create(externalAsset.ProviderAssetId);
             }
 
             var content = await _mediaServicesManager.GetResourceMediaAsync(mediaResourceId, org, user);
@@ -400,10 +505,33 @@ namespace LagoVista.MediaServices.Managers
                 return uploadResult.ToInvokeResult<string>();
             }
 
-            mediaResource.HeyGenAssetId = uploadResult.Result.AssetId;
+            if (mediaResource.ExternalAssets == null)
+            {
+                mediaResource.ExternalAssets = new List<MediaExternalAsset>();
+            }
+
+            if (externalAsset == null)
+            {
+                externalAsset = new MediaExternalAsset
+                {
+                    Provider = EntityHeader<MediaExternalAssetProvider>.Create(MediaExternalAssetProvider.HeyGen),
+                    Purpose = EntityHeader<MediaExternalAssetPurpose>.Create(MediaExternalAssetPurpose.ProcessingAsset),
+                    CreatedUtc = UtcTimestamp.Now
+                };
+
+                mediaResource.ExternalAssets.Add(externalAsset);
+            }
+
+            externalAsset.ProviderAssetId = uploadResult.Result.AssetId;
+            externalAsset.ContentSha256 = mediaResource.ContentSha256;
+            externalAsset.Status = EntityHeader<MediaExternalAssetStatus>.Create(MediaExternalAssetStatus.Ready);
+            externalAsset.ReadyUtc = UtcTimestamp.Now;
+            externalAsset.LastStatusCheckUtc = UtcTimestamp.Now;
+            externalAsset.ErrorMessage = null;
+
             await _mediaServicesManager.UpdateMediaResourceRecordAsync(mediaResource, org, user);
 
-            return InvokeResult<string>.Create(mediaResource.HeyGenAssetId);
+            return InvokeResult<string>.Create(externalAsset.ProviderAssetId);
         }
 
         private static void NormalizeVideoAvatar(VideoAvatar avatar)
@@ -428,7 +556,79 @@ namespace LagoVista.MediaServices.Managers
                 avatar.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Draft);
             }
 
+            if (avatar.AlternateLookResources == null)
+            {
+                avatar.AlternateLookResources = new List<ImageEntityHeader>();
+            }
+
+            if (avatar.Looks == null)
+            {
+                avatar.Looks = new List<VideoAvatarLook>();
+            }
+
             NormalizeVoices(avatar);
+        }
+
+        private static void ReconcileLooks(VideoAvatar avatar)
+        {
+            var desiredResources = new Dictionary<string, KeyValuePair<ImageEntityHeader, bool>>(StringComparer.OrdinalIgnoreCase);
+
+            if (avatar.PrimaryLookResource != null && !String.IsNullOrWhiteSpace(avatar.PrimaryLookResource.Id))
+            {
+                desiredResources[avatar.PrimaryLookResource.Id] = new KeyValuePair<ImageEntityHeader, bool>(avatar.PrimaryLookResource, true);
+            }
+
+            foreach (var resource in avatar.AlternateLookResources)
+            {
+                if (resource == null || String.IsNullOrWhiteSpace(resource.Id) || desiredResources.ContainsKey(resource.Id))
+                {
+                    continue;
+                }
+
+                desiredResources[resource.Id] = new KeyValuePair<ImageEntityHeader, bool>(resource, false);
+            }
+
+            foreach (var look in avatar.Looks)
+            {
+                if (look == null)
+                {
+                    continue;
+                }
+
+                look.IsPrimary = false;
+                look.IsActive = false;
+            }
+
+            foreach (var desiredResource in desiredResources.Values)
+            {
+                var resource = desiredResource.Key;
+                var isPrimary = desiredResource.Value;
+                var look = avatar.Looks.FirstOrDefault(candidate => candidate != null && String.Equals(candidate.SourceMediaResource?.Id, resource.Id, StringComparison.OrdinalIgnoreCase));
+
+                if (look == null)
+                {
+                    look = new VideoAvatarLook
+                    {
+                        Name = String.IsNullOrWhiteSpace(resource.Text) ? (isPrimary ? "Primary Look" : "Alternate Look") : resource.Text,
+                        SourceMediaResource = resource,
+                        Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Draft)
+                    };
+
+                    avatar.Looks.Add(look);
+                }
+                else
+                {
+                    look.SourceMediaResource = resource;
+
+                    if (look.Status == null)
+                    {
+                        look.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Draft);
+                    }
+                }
+
+                look.IsPrimary = isPrimary;
+                look.IsActive = true;
+            }
         }
 
         private async Task PublishAvatarUpdatedAsync(VideoAvatar avatar)
@@ -577,7 +777,7 @@ namespace LagoVista.MediaServices.Managers
 
             return voice.VoiceName ?? voice.VoiceId ?? "Voice";
         }
- 
+
         private static InvokeResult ValidateVoices(VideoAvatar avatar)
         {
             var voices = avatar?.Voices ?? new List<VideoAvatarVoice>();

@@ -1,4 +1,5 @@
 ﻿using LagoVista.Core.Models;
+using System;
 
 namespace LagoVista.MediaServices.Models
 {
@@ -7,6 +8,8 @@ namespace LagoVista.MediaServices.Models
         public EntityHeader Organization { get; set; }
         public EntityHeader User { get; set; }
 
+
+        [Obsolete("Use VideoAvatarId and VideoAvatarLookId.")]
         public string AvatarMediaResourceId { get; set; }
         public string BackgroundMediaResourceId { get; set; }
 
