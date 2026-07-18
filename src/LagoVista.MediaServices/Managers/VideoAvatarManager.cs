@@ -26,7 +26,7 @@ namespace LagoVista.MediaServices.Managers
         private readonly INotificationPublisher _notificationPublisher;
         private readonly ILogger _adminLogger;
         private readonly IBillingEventRecorder _billingEventRecorder;
-        private static readonly TimeSpan ProviderStatusPollInterval = TimeSpan.FromSeconds(20);
+        private static readonly TimeSpan ProviderStatusPollInterval = TimeSpan.FromSeconds(5);
         private static readonly TimeSpan ProviderStatusPollTimeout = TimeSpan.FromMinutes(5);
 
         public VideoAvatarManager(IVideoAvatarRepo repo, IMediaServicesManager mediaServicesManager, IBillingEventRecorder billingEventRecorder,
@@ -148,6 +148,8 @@ namespace LagoVista.MediaServices.Managers
 
                 var activeLooks = avatar.Looks
                     .Where(look => look != null && look.IsActive && !String.IsNullOrWhiteSpace(look.SourceMediaResource?.Id))
+                    .OrderByDescending(look => look.IsPrimary)
+                    .ThenBy(look => look.Name)
                     .ToList();
 
                 if (activeLooks.Count == 0)
@@ -194,9 +196,18 @@ namespace LagoVista.MediaServices.Managers
                         throw new InvalidOperationException($"Provider avatar look '{sourceLook.Id}' was not persisted for avatar '{avatar.Id}'.");
                     }
 
+                    if (!look.IsPrimary && String.IsNullOrWhiteSpace(avatar.ProviderAvatarGroupId))
+                    {
+                        look.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Failed);
+                        look.ErrorMessage = "The primary HeyGen avatar look must create an avatar group before alternate looks can be created.";
+                        look.LastStatusCheck = UtcTimestamp.Now;
+                        continue;
+                    }
+
                     var avatarRequest = new HeyGenPhotoAvatarRequest
                     {
                         Name = String.IsNullOrWhiteSpace(look.Name) ? avatar.Name : $"{avatar.Name} - {look.Name}",
+                        AvatarGroupId = avatar.ProviderAvatarGroupId,
                         File = new HeyGenPhotoAvatarFile
                         {
                             AssetId = assetResult.Result
@@ -212,8 +223,20 @@ namespace LagoVista.MediaServices.Managers
                         continue;
                     }
 
+                    if (String.IsNullOrWhiteSpace(avatar.ProviderAvatarGroupId))
+                    {
+                        avatar.ProviderAvatarGroupId = createResult.Result.AvatarGroupId;
+                    }
+                    else if (!String.Equals(avatar.ProviderAvatarGroupId, createResult.Result.AvatarGroupId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        look.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Failed);
+                        look.ErrorMessage = $"HeyGen returned unexpected avatar group '{createResult.Result.AvatarGroupId}'. Expected '{avatar.ProviderAvatarGroupId}'.";
+                        look.LastStatusCheck = UtcTimestamp.Now;
+                        continue;
+                    }
+
                     look.ProviderAvatarId = createResult.Result.AvatarId;
-                    look.ProviderAvatarStatus = VideoAvatar.Status_WaitingForProvider;
+                    look.ProviderAvatarStatus = createResult.Result.Status ?? VideoAvatar.Status_WaitingForProvider;
                     look.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.WaitingForProvider);
                     look.ErrorMessage = null;
                     look.LastStatusCheck = UtcTimestamp.Now;
