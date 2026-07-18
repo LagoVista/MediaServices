@@ -11,6 +11,7 @@ namespace LagoVista.MediaServices.Interfaces
     {
         Task AddVideoAvatarAsync(VideoAvatar avatar);
         Task<VideoAvatar> UpdateVideoAvatarAsync(VideoAvatar avatar);
+        Task<VideoAvatar> UpdateVideoAvatarProviderLifecycleAsync(VideoAvatar avatar);
         Task DeleteVideoAvatarAsync(string id);
         Task<VideoAvatar> GetVideoAvatarAsync(string id);
         Task<ListResponse<VideoAvatarSummary>> GetVideoAvatarSummariesForOrgAsync(string orgId, ListRequest listRequest);

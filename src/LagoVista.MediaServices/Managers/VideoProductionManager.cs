@@ -707,6 +707,11 @@ namespace LagoVista.MediaServices.Managers
 
                 await PublishVideoProductionUpdatedAsync(currentProduction);
 
+                if (isSuccess)
+                {
+                    QueueProviderVideoStatusRefresh(currentProduction.Id, currentProduction.OwnerOrganization, currentProduction.LastUpdatedBy);
+                }
+
                 await _cacheProvider.AddAsync(receiptKey, webhookEvent.EventType, WebhookReceiptDuration);
 
                 return InvokeResult<VideoProduction>.Create(currentProduction);
@@ -867,6 +872,49 @@ namespace LagoVista.MediaServices.Managers
         }
 
       
+        private void QueueProviderVideoStatusRefresh(string productionId, EntityHeader org, EntityHeader user)
+        {
+            var queue = BackgroundServiceTaskQueueProvider.Instance;
+            var refreshOrg = EntityHeader.Create(org.Id, org.Text);
+            var refreshUser = EntityHeader.Create(user.Id, user.Text);
+
+            if (queue == null)
+            {
+                _logger.AddCustomEvent(LogLevel.Warning, this.Tag(), $"Background task queue is unavailable. Provider video status refresh was not queued for production '{productionId}'.");
+                return;
+            }
+
+            var queued = queue.TryQueueBackgroundWorkItem(cancellationToken => RefreshProviderVideoStatusInBackgroundAsync(productionId, refreshOrg, refreshUser, cancellationToken));
+
+            if (!queued)
+            {
+                _logger.AddCustomEvent(LogLevel.Warning, this.Tag(), $"Provider video status refresh could not be queued for production '{productionId}'.");
+            }
+        }
+
+        private async Task RefreshProviderVideoStatusInBackgroundAsync(string productionId, EntityHeader org, EntityHeader user, CancellationToken cancellationToken)
+        {
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var refreshResult = await RefreshVideoProductionStatusAsync(productionId, org, user);
+
+                if (!refreshResult.Successful)
+                {
+                    var errorMessage = refreshResult.Errors?.FirstOrDefault()?.Message ?? "The provider video status refresh failed.";
+                    _logger.AddCustomEvent(LogLevel.Warning, this.Tag(), $"Provider video status refresh failed for production '{productionId}'. {errorMessage}");
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                _logger.AddException(this.Tag(), ex, new KeyValuePair<string, string>("ProductionId", productionId));
+            }
+        }
+
         private static string CreateWebhookProcessingLockKey(string eventId)
         {
             return $"media-services:heygen:webhook-processing:{eventId}".ToLowerInvariant();

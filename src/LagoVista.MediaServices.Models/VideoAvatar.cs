@@ -144,6 +144,8 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.VideoAvatar_Status, FieldType: FieldTypes.Picker, EnumType: typeof(VideoAvatarStatus), ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: false)]
         public EntityHeader<VideoAvatarStatus> Status { get; set; }
 
+        public string ProviderAvatarGroupId { get; set; }
+
         [FormField(LabelResource: MediaServicesResources.Names.VideoAvatar_ProviderAssetId, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: false)]
         public string ProviderAssetId { get; set; }
 

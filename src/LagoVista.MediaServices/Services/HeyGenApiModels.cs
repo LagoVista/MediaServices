@@ -14,6 +14,9 @@ namespace LagoVista.MediaServices.Services
 
         [JsonProperty("file")]
         public HeyGenPhotoAvatarFile File { get; set; }
+
+        [JsonProperty("avatar_group_id", NullValueHandling = NullValueHandling.Ignore)]
+        public string AvatarGroupId { get; set; }
     }
 
     public sealed class HeyGenPhotoAvatarFile
@@ -33,14 +36,35 @@ namespace LagoVista.MediaServices.Services
 
     internal sealed class HeyGenCreateAvatarData
     {
+        [JsonProperty("avatar_group")]
+        public HeyGenAvatarGroup AvatarGroup { get; set; }
+
         [JsonProperty("avatar_item")]
         public HeyGenAvatarItem AvatarItem { get; set; }
+    }
+
+    internal sealed class HeyGenAvatarGroup
+    {
+        [JsonProperty("id")]
+        public string Id { get; set; }
+
+        [JsonProperty("name")]
+        public string Name { get; set; }
+
+        [JsonProperty("looks_count")]
+        public int LooksCount { get; set; }
+
+        [JsonProperty("status")]
+        public string Status { get; set; }
     }
 
     internal sealed class HeyGenAvatarItem
     {
         [JsonProperty("id")]
         public string Id { get; set; }
+
+        [JsonProperty("group_id")]
+        public string GroupId { get; set; }
 
         [JsonProperty("status")]
         public string Status { get; set; }

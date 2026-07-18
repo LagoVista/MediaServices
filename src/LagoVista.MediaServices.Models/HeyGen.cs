@@ -82,7 +82,9 @@ namespace LagoVista.MediaServices.Models
 
     public sealed class HeyGenAvatarCreationResult
     {
+        public string AvatarGroupId { get; set; }
         public string AvatarId { get; set; }
+        public string Status { get; set; }
     }
 
 

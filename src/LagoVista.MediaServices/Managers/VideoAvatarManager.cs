@@ -94,6 +94,8 @@ namespace LagoVista.MediaServices.Managers
 
             var updatedAvatar = await _repo.UpdateVideoAvatarAsync(avatar);
 
+            QueueProviderAvatarReconciliation(updatedAvatar.Id, org, user);
+
             return InvokeResult<VideoAvatar>.Create(updatedAvatar);
         }
 
@@ -184,8 +186,13 @@ namespace LagoVista.MediaServices.Managers
                     look.LastStatusCheck = UtcTimestamp.Now;
 
                     UpdateAggregateStatus(avatar);
-                    avatar = await _repo.UpdateVideoAvatarAsync(avatar);
-                    look = avatar.Looks.First(item => item.Id == look.Id);
+                    avatar = await _repo.UpdateVideoAvatarProviderLifecycleAsync(avatar);
+                    look = avatar.Looks.FirstOrDefault(item => String.Equals(item.Id, look.Id, StringComparison.OrdinalIgnoreCase));
+
+                    if (look == null)
+                    {
+                        throw new InvalidOperationException($"Provider avatar look '{sourceLook.Id}' was not persisted for avatar '{avatar.Id}'.");
+                    }
 
                     var avatarRequest = new HeyGenPhotoAvatarRequest
                     {
@@ -214,7 +221,7 @@ namespace LagoVista.MediaServices.Managers
                 }
 
                 UpdateAggregateStatus(avatar);
-                var currentAvatar = await _repo.UpdateVideoAvatarAsync(avatar);
+                var currentAvatar = await _repo.UpdateVideoAvatarProviderLifecycleAsync(avatar);
 
                 if (shouldPoll)
                 {
@@ -242,6 +249,49 @@ namespace LagoVista.MediaServices.Managers
                 ErrorMessage = avatar.ErrorMessage,
                 LastStatusCheck = avatar.LastStatusCheck
             };
+        }
+
+        private void QueueProviderAvatarReconciliation(string avatarId, EntityHeader org, EntityHeader user)
+        {
+            var queue = BackgroundServiceTaskQueueProvider.Instance;
+            var reconciliationOrg = EntityHeader.Create(org.Id, org.Text);
+            var reconciliationUser = EntityHeader.Create(user.Id, user.Text);
+
+            if (queue == null)
+            {
+                _adminLogger.AddCustomEvent(LogLevel.Warning, this.Tag(), $"Background task queue is unavailable. Provider reconciliation was not queued for avatar '{avatarId}'.");
+                return;
+            }
+
+            var queued = queue.TryQueueBackgroundWorkItem(cancellationToken => ReconcileProviderAvatarInBackgroundAsync(avatarId, reconciliationOrg, reconciliationUser, cancellationToken));
+
+            if (!queued)
+            {
+                _adminLogger.AddCustomEvent(LogLevel.Warning, this.Tag(), $"Provider reconciliation could not be queued for avatar '{avatarId}'.");
+            }
+        }
+
+        private async Task ReconcileProviderAvatarInBackgroundAsync(string avatarId, EntityHeader org, EntityHeader user, CancellationToken cancellationToken)
+        {
+            try
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var reconcileResult = await ReconcileProviderAvatarAsync(avatarId, org, user);
+
+                if (!reconcileResult.Successful)
+                {
+                    var errorMessage = reconcileResult.Errors?.FirstOrDefault()?.Message ?? "Provider avatar reconciliation failed.";
+                    _adminLogger.AddCustomEvent(LogLevel.Warning, this.Tag(), $"Provider reconciliation failed for avatar '{avatarId}'. {errorMessage}");
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                _adminLogger.AddException(this.Tag(), ex, new KeyValuePair<string, string>("AvatarId", avatarId));
+            }
         }
 
         private void QueueProviderAvatarStatusPolling(string avatarId, EntityHeader org, EntityHeader user)
@@ -327,7 +377,7 @@ namespace LagoVista.MediaServices.Managers
                     if (changed)
                     {
                         UpdateAggregateStatus(avatar);
-                        avatar = await _repo.UpdateVideoAvatarAsync(avatar);
+                        avatar = await _repo.UpdateVideoAvatarProviderLifecycleAsync(avatar);
                         await PublishAvatarUpdatedAsync(avatar);
                     }
 
@@ -380,7 +430,7 @@ namespace LagoVista.MediaServices.Managers
 
             UpdateAggregateStatus(avatar);
 
-            var currentAvatar = await _repo.UpdateVideoAvatarAsync(avatar);
+            var currentAvatar = await _repo.UpdateVideoAvatarProviderLifecycleAsync(avatar);
             await PublishAvatarUpdatedAsync(currentAvatar);
         }
 
@@ -459,7 +509,7 @@ namespace LagoVista.MediaServices.Managers
 
             UpdateAggregateStatus(avatar);
 
-            var currentAvatar = await _repo.UpdateVideoAvatarAsync(avatar);
+            var currentAvatar = await _repo.UpdateVideoAvatarProviderLifecycleAsync(avatar);
             await PublishAvatarUpdatedAsync(currentAvatar);
 
             return InvokeResult<VideoAvatar>.Create(currentAvatar);
@@ -482,7 +532,7 @@ namespace LagoVista.MediaServices.Managers
                 .Where(look => look != null && look.IsActive && !String.IsNullOrWhiteSpace(look.SourceMediaResource?.Id))
                 .ToList();
 
-            avatar = await _repo.UpdateVideoAvatarAsync(avatar);
+            avatar = await _repo.UpdateVideoAvatarProviderLifecycleAsync(avatar);
 
             if (activeLooks.Count == 0)
             {

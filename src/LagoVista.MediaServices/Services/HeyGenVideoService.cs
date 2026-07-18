@@ -541,6 +541,8 @@ namespace LagoVista.MediaServices.Services
                 return InvokeResult<HeyGenAvatarCreationResult>.FromError($"HeyGen photo avatar creation failed with status {(int)response.StatusCode}: {responseContent}");
             }
 
+            _adminLogger.WriteJson("CREATEAVATR", responseContent);
+
             var createResponse = JsonConvert.DeserializeObject<HeyGenCreateAvatarResponse>(responseContent);
 
             if (string.IsNullOrWhiteSpace(createResponse?.Data?.AvatarItem?.Id))
@@ -548,9 +550,24 @@ namespace LagoVista.MediaServices.Services
                 return InvokeResult<HeyGenAvatarCreationResult>.FromError("HeyGen photo avatar creation completed without returning an avatar ID.");
             }
 
+            var avatarGroupId = createResponse.Data.AvatarGroup?.Id ?? createResponse.Data.AvatarItem.GroupId;
+
+            if (string.IsNullOrWhiteSpace(avatarGroupId))
+            {
+                return InvokeResult<HeyGenAvatarCreationResult>.FromError("HeyGen photo avatar creation completed without returning an avatar group ID.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.AvatarGroupId) &&
+                !string.Equals(request.AvatarGroupId, avatarGroupId, StringComparison.OrdinalIgnoreCase))
+            {
+                return InvokeResult<HeyGenAvatarCreationResult>.FromError($"HeyGen created avatar look '{createResponse.Data.AvatarItem.Id}' under unexpected avatar group '{avatarGroupId}'. Expected '{request.AvatarGroupId}'.");
+            }
+
             return InvokeResult<HeyGenAvatarCreationResult>.Create(new HeyGenAvatarCreationResult
             {
-                AvatarId = createResponse.Data.AvatarItem.Id
+                AvatarGroupId = avatarGroupId,
+                AvatarId = createResponse.Data.AvatarItem.Id,
+                Status = createResponse.Data.AvatarItem.Status
             });
         }
 

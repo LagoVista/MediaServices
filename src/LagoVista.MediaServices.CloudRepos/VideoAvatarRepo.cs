@@ -115,6 +115,35 @@ namespace LagoVista.MediaServices.CloudRepos
             return current;
         }
 
+
+        public async Task<VideoAvatar> UpdateVideoAvatarProviderLifecycleAsync(VideoAvatar source)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
+            var current = await GetVideoAvatarAsync(source.Id);
+
+            if (current == null)
+            {
+                throw new InvalidOperationException($"Could not find video avatar '{source.Id}'.");
+            }
+
+            current.Looks = source.Looks;
+            current.ProviderAvatarGroupId = source.ProviderAvatarGroupId;
+            current.ProviderAssetId = source.ProviderAssetId;
+            current.ProviderAvatarId = source.ProviderAvatarId;
+            current.ProviderAvatarStatus = source.ProviderAvatarStatus;
+            current.Status = source.Status;
+            current.ErrorMessage = source.ErrorMessage;
+            current.LastStatusCheck = source.LastStatusCheck;
+
+            await UpsertDocumentAsync(current);
+
+            return current;
+        }
+
         public async Task<VideoAvatar> UpdateVideoAvatarProviderStateAsync(string id, VideoAvatarProviderState state)
         {
             if (String.IsNullOrWhiteSpace(id))
