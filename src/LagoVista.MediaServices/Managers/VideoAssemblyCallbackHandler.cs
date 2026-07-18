@@ -22,10 +22,12 @@ namespace LagoVista.MediaServices.Managers
         private readonly IVideoProcessorCallbackRegistrationStore _callbackRegistrationStore;
         private readonly INotificationPublisher _notificationPublisher;
         private readonly ILogger _adminLogger;
+        private readonly IBillingEventRecorder _billingEventRecorder;
 
-        public VideoAssemblyCallbackHandler(IVideoCompositionRepo videoCompositionRepo, IMediaServicesRepo mediaServicesRepo, IVideoProcessorCallbackRegistrationStore callbackRegistrationStore, ICoreAppServices coreAppServices)
+        public VideoAssemblyCallbackHandler(IVideoCompositionRepo videoCompositionRepo, IBillingEventRecorder billingEventRecorder, IMediaServicesRepo mediaServicesRepo, IVideoProcessorCallbackRegistrationStore callbackRegistrationStore, ICoreAppServices coreAppServices)
         {
             _videoCompositionRepo = videoCompositionRepo ?? throw new ArgumentNullException(nameof(videoCompositionRepo));
+            _billingEventRecorder = billingEventRecorder ?? throw new ArgumentNullException(nameof(billingEventRecorder));
             _mediaServicesRepo = mediaServicesRepo ?? throw new ArgumentNullException(nameof(mediaServicesRepo));
             _callbackRegistrationStore = callbackRegistrationStore ?? throw new ArgumentNullException(nameof(callbackRegistrationStore));
             _notificationPublisher = coreAppServices?.NotificationPublisher ?? throw new ArgumentNullException(nameof(coreAppServices.NotificationPublisher));
@@ -153,9 +155,12 @@ namespace LagoVista.MediaServices.Managers
                         return mediaResourceUpdateResult.ToInvokeResult<VideoComposition>();
                     }
 
-
-
                     var completedVideoOutput = mediaResourceUpdateResult.Result;
+                    if (!isVimeoPublish)
+                    {
+                        await _billingEventRecorder.RecordUsageAsync( BillingEventType.VideoAssembly, completedVideoOutput.DurationSeconds.Value, $"Video Composition Assembly, {composition.Name}, Duration: {completedVideoOutput.DurationSeconds.Value}", composition.OwnerOrganization, composition.LastUpdatedBy);
+                    }
+
                     composition.OutputInputSha256 = composition.ExecutionInputSha256;
                     composition.IsReady = true;
                     composition.CompletedUtc = UtcTimestamp.Now;

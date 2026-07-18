@@ -5,7 +5,6 @@ using LagoVista.IoT.Logging.Loggers;
 using LagoVista.IoT.Web.Common.Attributes;
 using LagoVista.IoT.Web.Common.Controllers;
 using LagoVista.MediaServices.Interfaces;
-using LagoVista.MediaServices.Managers;
 using LagoVista.MediaServices.Models;
 using LagoVista.UserAdmin.Models.Users;
 using Microsoft.AspNetCore.Identity;
@@ -55,14 +54,14 @@ namespace LagoVista.MediaServices.Rest.Controllers
         }
 
         [HttpPost("/api/media/videoproduction")]
-        public Task<InvokeResult> AddVideoProductionAsync([FromBody] VideoProduction production)
+        public Task<InvokeResult<VideoProduction>> AddVideoProductionAsync([FromBody] VideoProduction production)
         {
             SetAuditProperties(production);
             return _manager.AddVideoProductionAsync(production, OrgEntityHeader, UserEntityHeader);
         }
 
         [HttpPut("/api/media/videoproduction")]
-        public Task<InvokeResult> UpdateVideoProductionAsync([FromBody] VideoProduction production)
+        public Task<InvokeResult<VideoProduction>> UpdateVideoProductionAsync([FromBody] VideoProduction production)
         {
             SetUpdatedProperties(production);
             return _manager.UpdateVideoProductionAsync(production, OrgEntityHeader, UserEntityHeader);

@@ -1,5 +1,6 @@
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Managers;
+using LagoVista.MediaServices.Models;
 using LagoVista.MediaServices.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System.Resources;
@@ -30,6 +31,7 @@ namespace LagoVista.MediaServices
             services.AddTransient<ILagoVistaIconGenerationManager, LagoVistaIconGenerationManager>();
             services.AddTransient<ILagoVistaEntityInstanceIconGenerationManager, LagoVistaEntityInstanceIconGenerationManager>();
             services.AddTransient<ILagoVistaSystemDefaultIconGenerationManager, LagoVistaSystemDefaultIconGenerationManager>();
-         }
+
+        }
     }
 }

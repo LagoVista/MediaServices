@@ -100,6 +100,7 @@ namespace LagoVista.MediaServices.Models
 
     public sealed class VideoProductionProviderState
     {
+        public decimal? ActualCost { get; set; }
         public string ProviderVideoUrl { get; set; }
 
         public string ProviderThumbnailUrl { get; set; }

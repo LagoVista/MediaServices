@@ -31,6 +31,8 @@ namespace LagoVista.MediaServices.Managers
         private readonly IVimeoVideoService _vimeoVideoService;
         private readonly IOrganizationLoaderRepo _organizationLoaderRepo;
         private readonly ISecureStorage _secureStorage;
+        private readonly IMediaServicesRepo _mediaRepo;
+        private readonly IBillingEventRecorder _billingEventRecorder;
 
         private static readonly TimeSpan VimeoStatusPollingInterval = TimeSpan.FromSeconds(20);
         private static readonly TimeSpan VimeoStatusPollingTimeout = TimeSpan.FromMinutes(30);
@@ -40,17 +42,20 @@ namespace LagoVista.MediaServices.Managers
         private readonly ILogger _logger;
 
 
-        public VideoProductionManager(IVideoProductionRepo repo, IVideoAvatarManager videoAvatarManager, IHeyGenVideoService heyGenVideoService, IVimeoVideoService vimeoVideoService, IOrganizationLoaderRepo organizationLoaderRepo, ISecureStorage secureStorage, ICacheProvider cacheProvider, ICoreAppServices coreAppServices) : base(coreAppServices)
+        public VideoProductionManager(IVideoProductionRepo repo, IVideoAvatarManager videoAvatarManager, IHeyGenVideoService heyGenVideoService, IVimeoVideoService vimeoVideoService, IMediaServicesRepo mediaRepo,
+            IOrganizationLoaderRepo organizationLoaderRepo, ISecureStorage secureStorage, ICacheProvider cacheProvider, ICoreAppServices coreAppServices, IBillingEventRecorder billingEventRecorder) : base(coreAppServices)
         {
             _repo = repo ?? throw new NullReferenceException(nameof(repo));
             _videoAvatarManager = videoAvatarManager ?? throw new NullReferenceException(nameof(videoAvatarManager));
             _heyGenVideoService = heyGenVideoService ?? throw new NullReferenceException(nameof(heyGenVideoService));
+            _billingEventRecorder = billingEventRecorder ?? throw new NullReferenceException(nameof(billingEventRecorder));
             _vimeoVideoService = vimeoVideoService ?? throw new NullReferenceException(nameof(vimeoVideoService));
             _organizationLoaderRepo = organizationLoaderRepo ?? throw new NullReferenceException(nameof(organizationLoaderRepo));
             _secureStorage = secureStorage ?? throw new NullReferenceException(nameof(secureStorage));
             _notificationPublisher = coreAppServices?.NotificationPublisher ?? throw new ArgumentNullException(nameof(coreAppServices.NotificationPublisher));
             _webhookSecretOwner = coreAppServices.AppConfig.SystemOwnerOrg;
             _cacheProvider = cacheProvider ?? throw new ArgumentNullException(nameof(cacheProvider));
+            _mediaRepo = mediaRepo ?? throw new ArgumentNullException(nameof(mediaRepo));
 
             _logger = coreAppServices.Logger ?? throw new ArgumentNullException(nameof(coreAppServices.Logger));
             var siteUrl = coreAppServices.AppConfig.Environment == Environments.LocalDevelopment || coreAppServices.AppConfig.Environment == Environments.Development ? "https://dev.nuviot.com" : coreAppServices.AppConfig.WebAddress;
@@ -58,7 +63,7 @@ namespace LagoVista.MediaServices.Managers
             _heyGenWebhookCallbackUrl = $"{siteUrl.TrimEnd('/')}{HeyGenWebhookPath}";
         }
 
-        public async Task<InvokeResult> AddVideoProductionAsync(VideoProduction production, EntityHeader org, EntityHeader user)
+        public async Task<InvokeResult<VideoProduction>> AddVideoProductionAsync(VideoProduction production, EntityHeader org, EntityHeader user)
         {
             NormalizeVideoProduction(production);
 
@@ -67,19 +72,28 @@ namespace LagoVista.MediaServices.Managers
 
             await _repo.AddVideoProductionAsync(production);
 
-            return InvokeResult.Success;
+            return InvokeResult< VideoProduction>.Create(production);
         }
 
-        public async Task<InvokeResult> UpdateVideoProductionAsync(VideoProduction production, EntityHeader org, EntityHeader user)
+        public async Task<InvokeResult<VideoProduction>> UpdateVideoProductionAsync(VideoProduction production, EntityHeader org, EntityHeader user)
         {
             NormalizeVideoProduction(production);
+
 
             ValidationCheck(production, Actions.Update);
             await AuthorizeAsync(production, AuthorizeResult.AuthorizeActions.Update, user, org);
 
+            var existing = await _repo.GetVideoProductionAsync(production.Id);
+            if(production.FinalVideoMediaResource != null && existing.Name != production.Name)
+            {
+                var mediaResource = await _mediaRepo.GetMediaResourceRecordAsync(production.FinalVideoMediaResource.Id);
+                mediaResource.Name = production.Name;
+                await _mediaRepo.UpdateMediaResourceRecordAsync(mediaResource);
+            }
+
             await _repo.UpdateVideoProductionAsync(production);
 
-            return InvokeResult.Success;
+            return InvokeResult<VideoProduction>.Create(production);
         }
 
         public async Task<InvokeResult> DeleteVideoProductionAsync(string id, EntityHeader org, EntityHeader user)
@@ -232,6 +246,8 @@ namespace LagoVista.MediaServices.Managers
                 return;
             }
 
+            _logger.Trace($"{this.Tag()} - Starting provider status polling for avatar '{productionId}'.");
+
             BackgroundServiceTaskQueueProvider.Instance.QueueBackgroundWorkItemAsync(async cancellationToken =>
             {
                 var startedUtc = DateTime.UtcNow;
@@ -266,6 +282,7 @@ namespace LagoVista.MediaServices.Managers
 
                     if (IsTerminalVideoProductionStatus(refreshResult.Result.Status))
                     {
+                        _logger.Trace($"{this.Tag()} - Finished! {refreshResult.Result.Status} '{productionId}'.");
                         return;
                     }
                 }
@@ -680,7 +697,7 @@ namespace LagoVista.MediaServices.Managers
             return null;
         }
 
-        private Task<VideoProduction> ApplySuccessfulWebhookAsync(VideoProduction production, HeyGenVideoWebhookData eventData)
+        private async Task<VideoProduction> ApplySuccessfulWebhookAsync(VideoProduction production, HeyGenVideoWebhookData eventData)
         {
             var state = new VideoProductionProviderState
             {
@@ -694,10 +711,14 @@ namespace LagoVista.MediaServices.Managers
                 ErrorMessage = null
             };
 
-            return _repo.UpdateVideoProductionProviderStateAsync(production.Id, state);
+            var duration = production.ActualDurationSeconds.HasValue ? (double)production.ActualDurationSeconds : 0;
+
+            await _billingEventRecorder.RecordUsageAsync(BillingEventType.VideoGeneration, duration, $"HeyGen Video Pruduction {production.Name}, duration: {duration}", production.OwnerOrganization, production.LastUpdatedBy);
+
+            return await _repo.UpdateVideoProductionProviderStateAsync(production.Id, state);
         }
 
-        private Task<VideoProduction> ApplyFailedWebhookAsync(VideoProduction production, HeyGenVideoWebhookData eventData)
+        private async Task<VideoProduction> ApplyFailedWebhookAsync(VideoProduction production, HeyGenVideoWebhookData eventData)
         {
             var state = new VideoProductionProviderState
             {
@@ -711,7 +732,11 @@ namespace LagoVista.MediaServices.Managers
                 ErrorMessage = ResolveWebhookErrorMessage(eventData)
             };
 
-            return _repo.UpdateVideoProductionProviderStateAsync(production.Id, state);
+            var duration = production.ActualDurationSeconds.HasValue ? (double)production.ActualDurationSeconds : 0;
+
+            await _billingEventRecorder.RecordUsageAsync(BillingEventType.VideoGeneration, duration, $"Failed HeyGen Video Pruduction {production.Name}, duration {duration}", production.OwnerOrganization, production.LastUpdatedBy);
+
+            return await _repo.UpdateVideoProductionProviderStateAsync(production.Id, state);
         }
 
         public async Task<InvokeResult<VideoProduction>> RefreshVimeoVideoProductionStatusAsync(string id, EntityHeader org, EntityHeader user, CancellationToken cancellationToken = default)

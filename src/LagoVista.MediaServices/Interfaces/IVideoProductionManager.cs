@@ -13,8 +13,8 @@ namespace LagoVista.MediaServices.Interfaces
 {
     public interface IVideoProductionManager
     {
-        Task<InvokeResult> AddVideoProductionAsync(VideoProduction production, EntityHeader org, EntityHeader user);
-        Task<InvokeResult> UpdateVideoProductionAsync(VideoProduction production, EntityHeader org, EntityHeader user);
+        Task<InvokeResult<VideoProduction>> AddVideoProductionAsync(VideoProduction production, EntityHeader org, EntityHeader user);
+        Task<InvokeResult<VideoProduction>> UpdateVideoProductionAsync(VideoProduction production, EntityHeader org, EntityHeader user);
         Task<InvokeResult> DeleteVideoProductionAsync(string id, EntityHeader org, EntityHeader user);
         Task<VideoProduction> GetVideoProductionAsync(string id, EntityHeader org, EntityHeader user);
         Task<ListResponse<VideoProductionSummary>> GetVideoProductionsForOrgAsync(EntityHeader org, EntityHeader user, ListRequest listRequest);

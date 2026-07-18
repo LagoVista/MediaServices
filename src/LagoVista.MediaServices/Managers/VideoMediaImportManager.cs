@@ -426,7 +426,7 @@ namespace LagoVista.MediaServices.Managers
         {
             const string libraryKey = "rawvideo";
 
-            var existingLibrary = await _mediaLibraryRepo.GetMediaLibraryByKeyAsync(libraryKey, org.Id);
+            var existingLibrary = await _mediaLibraryRepo.GetMediaLibraryByKeyAsync(org.Id, libraryKey);
             if (existingLibrary != null)
             {
                 return InvokeResult<MediaLibrary>.Create(existingLibrary);
@@ -440,7 +440,7 @@ namespace LagoVista.MediaServices.Managers
             {
                 await Task.Delay(250);
 
-                existingLibrary = await _mediaLibraryRepo.GetMediaLibraryByKeyAsync(libraryKey, org.Id);
+                existingLibrary = await _mediaLibraryRepo.GetMediaLibraryByKeyAsync(org.Id, libraryKey);
                 if (existingLibrary != null)
                 {
                     return InvokeResult<MediaLibrary>.Create(existingLibrary);
@@ -451,7 +451,7 @@ namespace LagoVista.MediaServices.Managers
 
             try
             {
-                existingLibrary = await _mediaLibraryRepo.GetMediaLibraryByKeyAsync(libraryKey, org.Id);
+                existingLibrary = await _mediaLibraryRepo.GetMediaLibraryByKeyAsync(org.Id, libraryKey);
                 if (existingLibrary != null)
                 {
                     return InvokeResult<MediaLibrary>.Create(existingLibrary);

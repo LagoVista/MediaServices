@@ -36,8 +36,13 @@ namespace LagoVista.MediaServices.Managers
         private readonly INotificationPublisher _notificationPublisher;
         private readonly ILogger _adminLogger;
         private readonly IAppConfig _appConfig;
+        private readonly ICacheProvider _cacheProvider;
+        private readonly IMediaLibraryRepo _mediaLibraryRepo;
 
-        public VideoAssemblyRequestManager(IVideoCompositionRepo videoCompositionRepo, IMediaServicesManager mediaServicesManager, IVideoAssemblyMediaSourceResolver mediaSourceResolver, IVideoProcessorStorageUrlService videoProcessorStorageUrlService, IVideoProcessorRequestStore videoProcessorRequestStore, IVideoProcessorCallbackRegistrationStore videoProcessorCallbackRegistrationStore, IVideoProcessorLauncher videoProcessorLauncher, IVimeoVideoService vimeoVideoService, IOrganizationLoaderRepo organizationLoaderRepo, ISecureStorage secureStorage, ICoreAppServices coreAppServices)
+        public VideoAssemblyRequestManager(IVideoCompositionRepo videoCompositionRepo, IMediaServicesManager mediaServicesManager, IVideoAssemblyMediaSourceResolver mediaSourceResolver, 
+            IVideoProcessorStorageUrlService videoProcessorStorageUrlService, IVideoProcessorRequestStore videoProcessorRequestStore, IVideoProcessorCallbackRegistrationStore videoProcessorCallbackRegistrationStore, 
+            IVideoProcessorLauncher videoProcessorLauncher, IVimeoVideoService vimeoVideoService, IOrganizationLoaderRepo organizationLoaderRepo, ISecureStorage secureStorage, 
+            IMediaLibraryRepo mediaLibraryRepo, ICacheProvider cacheProvider, ICoreAppServices coreAppServices)
         {
             _videoCompositionRepo = videoCompositionRepo ?? throw new ArgumentNullException(nameof(videoCompositionRepo));
             _mediaServicesManager = mediaServicesManager ?? throw new ArgumentNullException(nameof(mediaServicesManager));
@@ -52,6 +57,8 @@ namespace LagoVista.MediaServices.Managers
             _notificationPublisher = coreAppServices?.NotificationPublisher ?? throw new ArgumentNullException(nameof(coreAppServices.NotificationPublisher));
             _adminLogger = coreAppServices?.Logger ?? throw new ArgumentNullException(nameof(coreAppServices.Logger));
             _appConfig = coreAppServices?.AppConfig ?? throw new ArgumentNullException(nameof(coreAppServices.AppConfig));
+            _cacheProvider = cacheProvider ?? throw new ArgumentNullException(nameof(cacheProvider));
+            _mediaLibraryRepo = mediaLibraryRepo ?? throw new ArgumentNullException(nameof(mediaLibraryRepo));
         }
 
         public async Task<InvokeResult<VideoAssemblyPreparationResult>> PrepareAssemblyRequestAsync(string compositionId, double? thumbnailTimeSeconds, EntityHeader org, EntityHeader user, CancellationToken cancellationToken = default)
@@ -118,6 +125,17 @@ namespace LagoVista.MediaServices.Managers
             if (outputMediaResource == null)
             {
                 return await ApplyPreparationFailureAsync(composition, "Could not create the output media resource.");
+            }
+
+            if (outputMediaResource.MediaLibrary == null)
+            {
+                var createLibraryResult = await GetOrCreateRawVideoLibraryAsync("publishedvideo", org, user);
+                if (!createLibraryResult.Successful)
+                {
+                    return createLibraryResult.ToInvokeResult<VideoAssemblyPreparationResult>();
+                }
+
+                outputMediaResource.MediaLibrary = createLibraryResult.Result.ToEntityHeader();
             }
 
             var pendingRevision = PreparePendingRevision(outputMediaResource, user);
@@ -308,6 +326,63 @@ namespace LagoVista.MediaServices.Managers
             });
         }
 
+        private async Task<InvokeResult<MediaLibrary>> GetOrCreateRawVideoLibraryAsync(string libraryKey, EntityHeader org, EntityHeader user)
+        {
+
+            var existingLibrary = await _mediaLibraryRepo.GetMediaLibraryByKeyAsync(org.Id, libraryKey);
+            if (existingLibrary != null)
+            {
+                return InvokeResult<MediaLibrary>.Create(existingLibrary);
+            }
+
+            var lockKey = $"media-library:create:{org.Id}:{libraryKey}";
+            var lockToken = Guid.NewGuid().ToId().Value;
+            var lockAcquired = await _cacheProvider.AttemptAcquireLockAsync(lockKey, lockToken, TimeSpan.FromSeconds(15));
+
+            if (!lockAcquired)
+            {
+                await Task.Delay(250);
+
+                existingLibrary = await _mediaLibraryRepo.GetMediaLibraryByKeyAsync(org.Id, libraryKey);
+                if (existingLibrary != null)
+                {
+                    return InvokeResult<MediaLibrary>.Create(existingLibrary);
+                }
+
+                return InvokeResult<MediaLibrary>.FromError("The video clips media library is currently being created. Please retry.");
+            }
+
+            try
+            {
+                existingLibrary = await _mediaLibraryRepo.GetMediaLibraryByKeyAsync(org.Id, libraryKey);
+                if (existingLibrary != null)
+                {
+                    return InvokeResult<MediaLibrary>.Create(existingLibrary);
+                }
+
+                var now = UtcTimestamp.Now;
+                var library = new MediaLibrary
+                {
+                    Id = Guid.NewGuid().ToId(),
+                    Key = libraryKey,
+                    Name = libraryKey == "rawvideo" ? "Video Clips" : "Published Video",
+                    Description = libraryKey == "rawvideo" ? "Reusable raw video clips available for video compositions." : "Published and Produced Video",
+                    OwnerOrganization = org,
+                    CreatedBy = user,
+                    LastUpdatedBy = user,
+                    CreationDate = now,
+                    LastUpdatedDate = now
+                };
+
+                await _mediaLibraryRepo.AddMediaLibraryAsync(library);
+                return InvokeResult<MediaLibrary>.Create(library);
+            }
+            finally
+            {
+                await _cacheProvider.ReleaseLockAsync(lockKey, lockToken);
+            }
+        }
+
         public async Task<InvokeResult<VideoAssemblyPreparationResult>> PrepareVimeoPublishRequestAsync(string compositionId, EntityHeader org, EntityHeader user, CancellationToken cancellationToken = default)
         {
             _adminLogger.Trace($"{this.Tag()} [VIMEO PUBLISH PREPARE STARTED] CompositionId={compositionId}, OrgId={org?.Id}, Environment={_appConfig.Environment}");
@@ -380,6 +455,16 @@ namespace LagoVista.MediaServices.Managers
                 composition.PublishedVideoMediaResource = publishedMediaResource.ToEntityHeader();
             }
 
+            if (publishedMediaResource.MediaLibrary == null)
+            {
+                var createLibraryResult = await GetOrCreateRawVideoLibraryAsync("publishedvideo", org, user);
+                if(!createLibraryResult.Successful)
+                {
+                    return createLibraryResult.ToInvokeResult<VideoAssemblyPreparationResult>();
+                }
+
+                publishedMediaResource.MediaLibrary = createLibraryResult.Result.ToEntityHeader();
+            }
             publishedMediaResource.Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Pending);
             publishedMediaResource.ProcessingStartedUtc = UtcTimestamp.Now;
             publishedMediaResource.ProcessingCompletedUtc = null;

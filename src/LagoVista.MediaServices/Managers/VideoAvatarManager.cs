@@ -25,16 +25,20 @@ namespace LagoVista.MediaServices.Managers
         private readonly IHeyGenVideoService _heyGenVideoService;
         private readonly INotificationPublisher _notificationPublisher;
         private readonly ILogger _adminLogger;
+        private readonly IBillingEventRecorder _billingEventRecorder;
         private static readonly TimeSpan ProviderStatusPollInterval = TimeSpan.FromSeconds(20);
         private static readonly TimeSpan ProviderStatusPollTimeout = TimeSpan.FromMinutes(5);
 
-        public VideoAvatarManager(IVideoAvatarRepo repo, IMediaServicesManager mediaServicesManager, IHeyGenVideoService heyGenVideoService, ICoreAppServices coreAppServices) : base(coreAppServices)
+        public VideoAvatarManager(IVideoAvatarRepo repo, IMediaServicesManager mediaServicesManager, IBillingEventRecorder billingEventRecorder, 
+                                  IHeyGenVideoService heyGenVideoService, ICoreAppServices coreAppServices) : base(coreAppServices)
         {
             _repo = repo ?? throw new NullReferenceException(nameof(repo));
             _mediaServicesManager = mediaServicesManager ?? throw new NullReferenceException(nameof(mediaServicesManager));
             _heyGenVideoService = heyGenVideoService ?? throw new NullReferenceException(nameof(heyGenVideoService));
             _adminLogger = coreAppServices?.Logger ?? throw new ArgumentNullException(nameof(coreAppServices.Logger)); 
             _notificationPublisher = coreAppServices?.NotificationPublisher ?? throw new ArgumentNullException(nameof(coreAppServices.NotificationPublisher));
+            _billingEventRecorder = billingEventRecorder ?? throw new NullReferenceException(nameof(billingEventRecorder));
+
         }
 
         public async Task<InvokeResult<VideoAvatar>> AddVideoAvatarAsync(VideoAvatar avatar, EntityHeader org, EntityHeader user)
@@ -249,6 +253,9 @@ namespace LagoVista.MediaServices.Managers
         {
             var startedUtc = DateTime.UtcNow;
 
+            var idx = 0;
+            _adminLogger.Trace($"{this.Tag()} - Starting provider status polling for avatar '{avatarId}'.");
+
             try
             {
                 while (DateTime.UtcNow - startedUtc < ProviderStatusPollTimeout)
@@ -275,22 +282,16 @@ namespace LagoVista.MediaServices.Managers
 
                         if (statusResult.Result.IsReady || !String.IsNullOrWhiteSpace(statusResult.Result.ErrorCode))
                         {
+                            _adminLogger.Trace($"{this.Tag()} - Avatar IS ready Congratulations -'{avatarId}' - {idx++}.");
+                            await _billingEventRecorder.RecordUsageAsync(BillingEventType.VideoAvatarCreated, 1, $"HeyGen Video Avatar '{avatarId}' is ready", avatar.OwnerOrganization, avatar.LastUpdatedBy);
                             await PublishAvatarUpdatedAsync(updatedAvatar);
                             return;
                         }
                     }
-                    else
-                    {
-                        var updatedAvatar = await ApplyProviderStatusAsync(avatar, statusResult.Result);
-
-                        if (statusResult.Result.IsReady || !String.IsNullOrWhiteSpace(statusResult.Result.ErrorCode))
-                        {
-                            await PublishAvatarUpdatedAsync(updatedAvatar);
-                            return;
-                        }
-                    }
-
+                  
                     await Task.Delay(ProviderStatusPollInterval, cancellationToken);
+                    _adminLogger.Trace($"{this.Tag()} - Avatar not ready '{avatarId}' - {idx++}.");
+
                 }
 
                 await RecordProviderPollingTimeoutAsync(avatarId, org, user);

@@ -100,6 +100,9 @@ namespace LagoVista.MediaServices.CloudRepos
                 throw new InvalidOperationException($"Could not find video production '{id}'.");
             }
 
+            if(state.ActualCost.HasValue)
+                production.ActualVideoGenerationCost = state.ActualCost.Value;
+           
             production.ProviderVideoUrl = state.ProviderVideoUrl;
             production.ProviderThumbnailUrl = state.ProviderThumbnailUrl;
             production.ProviderCaptionUrl = state.ProviderCaptionUrl;
