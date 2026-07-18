@@ -75,6 +75,31 @@ namespace LagoVista.MediaServices.Models
         HeyGen
     }
 
+    public enum VideoProductionQuality
+    {
+        Standard,
+        Premium
+    }
+
+    public sealed class VideoProductionSettings
+    {
+        public string SpecialInstructions { get; set; }
+
+        public decimal? VoiceSpeed { get; set; }
+
+        public decimal? VoicePitch { get; set; }
+
+        public int Width { get; set; } = 1920;
+
+        public int Height { get; set; } = 1080;
+
+        public bool CaptionsEnabled { get; set; }
+
+        public string MotionPrompt { get; set; }
+
+        public string Expressiveness { get; set; }
+    }
+
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.VideoProduction_Title, MediaServicesResources.Names.VideoProduction_Help, MediaServicesResources.Names.VideoProduction_Description, EntityDescriptionAttribute.EntityTypes.CoreIoTModel, typeof(MediaServicesResources),
         GetUrl: "/api/media/videoproduction/{id}", GetListUrl: "/api/media/videoproductions", FactoryUrl: "/api/media/videoproduction/factory", SaveUrl: "/api/media/videoproduction", DeleteUrl: "/api/media/videoproduction/{id}",
         ListUIUrl: "/contentmanagement/videoproductions", EditUIUrl: "/contentmanagement/videoproduction/{id}", CreateUIUrl: "/contentmanagement/videoproduction/add",
@@ -84,6 +109,9 @@ namespace LagoVista.MediaServices.Models
     public class VideoProduction : EntityBase, IValidateable, IFormDescriptor, IFormDescriptorCol2, ISummaryFactory
     {
         public const string Provider_HeyGen = "heygen";
+
+        public const string Quality_Standard = "standard";
+        public const string Quality_Premium = "premium";
 
         public const string Status_Draft = "draft";
         public const string Status_PreparingAvatar = "preparing-avatar";
@@ -110,6 +138,8 @@ namespace LagoVista.MediaServices.Models
         {
             Icon = "lago-icon://system/nuvos-semantic-icon/video-production-default";
             Provider = EntityHeader<VideoProductionProvider>.Create(VideoProductionProvider.HeyGen);
+            Quality = EntityHeader<VideoProductionQuality>.Create(VideoProductionQuality.Standard);
+            Settings = new VideoProductionSettings();
             Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Draft);
             StatusChangedUtc = UtcTimestamp.Now;
             DefaultLocale = DefaultLocaleCode;
@@ -183,6 +213,10 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.VideoProduction_Provider, FieldType: FieldTypes.Picker, EnumType: typeof(VideoProductionProvider), ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
         public EntityHeader<VideoProductionProvider> Provider { get; set; }
 
+        public EntityHeader<VideoProductionQuality> Quality { get; set; }
+
+        public VideoProductionSettings Settings { get; set; }
+
         [FormField(LabelResource: MediaServicesResources.Names.VideoProduction_Status, FieldType: FieldTypes.Picker, EnumType: typeof(VideoProductionStatus), ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: false)]
         public EntityHeader<VideoProductionStatus> Status { get; set; }
 
@@ -251,7 +285,7 @@ namespace LagoVista.MediaServices.Models
         {
             var content = String.Join("\n", new[]
             {
-        $"version=1",
+        $"version=2",
         $"defaultLocale={NormalizeHashValue(DefaultLocale)}",
         $"locale={NormalizeHashValue(Locale)}",
         $"languageCode={NormalizeHashValue(LanguageCode)}",
@@ -262,7 +296,16 @@ namespace LagoVista.MediaServices.Models
         $"videoAvatarId={NormalizeHashValue(VideoAvatar?.Id)}",
         $"providerAvatarId={NormalizeHashValue(ProviderAvatarId)}",
         $"backgroundMediaResourceId={NormalizeHashValue(BackgroundMediaResource?.Id)}",
-        $"provider={NormalizeHashValue(Provider?.Id)}"
+        $"provider={NormalizeHashValue(Provider?.Id)}",
+        $"quality={NormalizeHashValue(Quality?.Id)}",
+        $"specialInstructions={NormalizeHashValue(Settings?.SpecialInstructions)}",
+        $"voiceSpeed={NormalizeHashValue(Settings?.VoiceSpeed)}",
+        $"voicePitch={NormalizeHashValue(Settings?.VoicePitch)}",
+        $"width={Settings?.Width ?? 0}",
+        $"height={Settings?.Height ?? 0}",
+        $"captionsEnabled={Settings?.CaptionsEnabled ?? false}",
+        $"motionPrompt={NormalizeHashValue(Settings?.MotionPrompt)}",
+        $"expressiveness={NormalizeHashValue(Settings?.Expressiveness)}"
     });
 
             using (var sha256 = SHA256.Create())
@@ -277,6 +320,11 @@ namespace LagoVista.MediaServices.Models
         private static string NormalizeHashValue(string value)
         {
             return value?.Trim() ?? String.Empty;
+        }
+
+        private static string NormalizeHashValue(decimal? value)
+        {
+            return value.HasValue ? value.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : String.Empty;
         }
 
         public bool SetStatus(VideoProductionStatus status)
@@ -306,6 +354,7 @@ namespace LagoVista.MediaServices.Models
                 TargetEntityName = TargetEntityName,
                 TargetEntityProperty = TargetEntityProperty,
                 Provider = Provider,
+                Quality = Quality,
                 ProviderVideoId = ProviderVideoId,
                 VimeoVideoUrl = VimeoVideoUrl,
                 Status = Status,
@@ -349,6 +398,7 @@ namespace LagoVista.MediaServices.Models
             return new List<string>()
             {
                 nameof(Provider),
+                nameof(Quality),
                 nameof(Status),
                 nameof(VoiceId),
                 nameof(VoiceName),
@@ -380,6 +430,38 @@ namespace LagoVista.MediaServices.Models
             if (Provider == null)
             {
                 result.AddUserError("Provider is required.");
+            }
+
+            if (Quality == null)
+            {
+                result.AddUserError("Video production quality is required.");
+            }
+
+            if (Settings == null)
+            {
+                result.AddUserError("Video production settings are required.");
+            }
+            else
+            {
+                if (Settings.Width <= 0 || Settings.Height <= 0)
+                {
+                    result.AddUserError("Video width and height must be greater than zero.");
+                }
+
+                if (Settings.VoiceSpeed.HasValue && (Settings.VoiceSpeed.Value < 0.5m || Settings.VoiceSpeed.Value > 2.0m))
+                {
+                    result.AddUserError("Voice speed must be between 0.5 and 2.0.");
+                }
+
+                if (Settings.VoicePitch.HasValue && (Settings.VoicePitch.Value < -50m || Settings.VoicePitch.Value > 50m))
+                {
+                    result.AddUserError("Voice pitch must be between -50 and 50.");
+                }
+
+                if (Quality?.Value == VideoProductionQuality.Standard && (!String.IsNullOrWhiteSpace(Settings.MotionPrompt) || !String.IsNullOrWhiteSpace(Settings.Expressiveness)))
+                {
+                    result.AddUserError("Motion prompt and expressiveness require Premium video quality.");
+                }
             }
 
             if (Status == null)
@@ -427,6 +509,7 @@ namespace LagoVista.MediaServices.Models
         public string TargetEntityProperty { get; set; }
 
         public EntityHeader<VideoProductionProvider> Provider { get; set; }
+        public EntityHeader<VideoProductionQuality> Quality { get; set; }
         public string ProviderVideoId { get; set; }
         public string VimeoVideoUrl { get; set; }
 
