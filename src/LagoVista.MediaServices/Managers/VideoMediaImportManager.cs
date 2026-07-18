@@ -227,7 +227,7 @@ namespace LagoVista.MediaServices.Managers
                 thumbnailWriteDestination = thumbnailWriteDestinationResult.Result;
             }
 
-            mediaResource.Link = videoWriteDestinationResult.Result.BlobUrl;
+            mediaResource.ExternalUrl = videoWriteDestinationResult.Result.BlobUrl;
             mediaResource.StorageReferenceName = videoWriteDestinationResult.Result.StorageReferenceName;
             mediaResource.ThumbnailUrl = thumbnailWriteDestination?.BlobUrl;
             mediaResource.ThumbnailStorageReferenceName = thumbnailWriteDestination?.StorageReferenceName;

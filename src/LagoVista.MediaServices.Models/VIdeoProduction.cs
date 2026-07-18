@@ -119,6 +119,8 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.VideoProduction_VideoAvatar, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
         public EntityHeader VideoAvatar { get; set; }
 
+        public string VideoAvatarLookId { get; set; }
+
         [FormField(LabelResource: MediaServicesResources.Names.VideoProduction_BackgroundMediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
         public EntityHeader BackgroundMediaResource { get; set; }
 

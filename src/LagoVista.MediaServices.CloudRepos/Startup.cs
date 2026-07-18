@@ -28,8 +28,6 @@ namespace LagoVista.MediaServices.CloudRepos
             services.AddTransient<IVideoCompositionRepo, VideoCompositionRepo>();
 
             services.AddTransient<IMediaLibraryRepo, MediaLibraryRepo>();
-            services.AddTransient<IVideoGenerationRequestStore, VideoGenerationRequestStore>();
-            services.AddTransient<IVideoGenerationManager, VideoGenerationManager>();
             services.AddTransient<IHeyGenVideoService, HeyGenVideoService>();
             services.AddTransient<ILagoVistaIconAssetPublisher, LagoVistaIconAssetPublisher>();
             services.AddTransient<ILagoVistaIconCatalogManager, LagoVistaIconCatalogManager>();

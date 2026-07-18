@@ -153,8 +153,8 @@ namespace LagoVista.MediaServices.CloudRepos
             target.IsDefault = source.IsDefault;
             target.Icon = source.Icon;
             target.Description = source.Description;
-            target.AvatarImage = source.AvatarImage;
-            target.EditorialImages = source.EditorialImages;
+            target.PrimaryLookResource = source.PrimaryLookResource;
+            target.AlternateLookResources = source.AlternateLookResources;
             target.Voices = source.Voices;
         }
     }

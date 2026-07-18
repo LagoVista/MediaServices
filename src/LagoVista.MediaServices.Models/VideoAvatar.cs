@@ -240,6 +240,10 @@ namespace LagoVista.MediaServices.Models
 
         public UtcTimestamp? LastStatusCheck { get; set; }
 
+        public string BillingEventId { get; set; }
+
+        public UtcTimestamp? BilledUtc { get; set; }
+
         public string ErrorMessage { get; set; }
     }
 

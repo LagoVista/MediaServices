@@ -320,7 +320,7 @@ namespace LagoVista.MediaServices.Managers
 
                         if (!wasReady && statusResult.Result.IsReady)
                         {
-                            await _billingEventRecorder.RecordUsageAsync(BillingEventType.VideoAvatarCreated, 1, $"HeyGen Video Avatar Look '{look.ProviderAvatarId}' is ready", avatar.OwnerOrganization, avatar.LastUpdatedBy);
+                            await RecordLookBillingIfNeededAsync(avatar, look);
                         }
                     }
 
@@ -384,6 +384,26 @@ namespace LagoVista.MediaServices.Managers
             await PublishAvatarUpdatedAsync(currentAvatar);
         }
 
+        private async Task RecordLookBillingIfNeededAsync(VideoAvatar avatar, VideoAvatarLook look)
+        {
+            if (!IsLookStatus(look, VideoAvatarStatus.Ready) || !String.IsNullOrWhiteSpace(look.BillingEventId))
+            {
+                return;
+            }
+
+            try
+            {
+                await _billingEventRecorder.RecordUsageAsync(BillingEventType.VideoAvatarCreated, 1, $"HeyGen Video Avatar Look '{look.Name ?? look.Id}' is ready", avatar.OwnerOrganization, avatar.LastUpdatedBy);
+
+                look.BillingEventId = $"video-avatar-look:{avatar.Id}:{look.Id}".ToLowerInvariant();
+                look.BilledUtc = UtcTimestamp.Now;
+            }
+            catch (Exception ex)
+            {
+                _adminLogger.AddException(this.Tag(), ex, new KeyValuePair<string, string>("AvatarId", avatar.Id), new KeyValuePair<string, string>("LookId", look.Id));
+            }
+        }
+
         private static void ApplyProviderStatus(VideoAvatarLook look, HeyGenAvatarStatusResult providerStatus)
         {
             look.ProviderAvatarStatus = providerStatus.Status;
@@ -434,6 +454,7 @@ namespace LagoVista.MediaServices.Managers
                 }
 
                 ApplyProviderStatus(look, statusResult.Result);
+                await RecordLookBillingIfNeededAsync(avatar, look);
             }
 
             UpdateAggregateStatus(avatar);

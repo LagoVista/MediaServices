@@ -13,6 +13,7 @@ using LagoVista.UserAdmin.Interfaces.Repos.Orgs;
 using LagoVista.UserAdmin.Models.Orgs;
 using Newtonsoft.Json;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -533,16 +534,28 @@ namespace LagoVista.MediaServices.Managers
                 return avatarStatusResult.ToInvokeResult<VideoProduction>();
             }
 
-            if (avatarStatusResult.Result.Status.Value != VideoAvatarStatus.Ready)
+            var lookResult = ResolveAvatarLook(production, avatarStatusResult.Result);
+            if (!lookResult.Successful)
             {
-                production.SetStatus(VideoProductionStatus.WaitingForAvatar);
-                production.ErrorMessage = "Video avatar is not ready.";
+                production.SetStatus(VideoProductionStatus.Failed);
+                production.ErrorMessage = lookResult.Errors[0].Message;
                 production.LastStatusCheckUtc = UtcTimestamp.Now;
                 await _repo.UpdateVideoProductionAsync(production);
-                return InvokeResult<VideoProduction>.FromError("Video avatar is not ready.");
+                return lookResult.ToInvokeResult<VideoProduction>();
             }
 
-            ApplyAvatarToProduction(production, avatarStatusResult.Result);
+            var selectedLook = lookResult.Result;
+
+            if (selectedLook.Status?.Value != VideoAvatarStatus.Ready || String.IsNullOrWhiteSpace(selectedLook.ProviderAvatarId))
+            {
+                production.SetStatus(VideoProductionStatus.WaitingForAvatar);
+                production.ErrorMessage = $"Video avatar look '{selectedLook.Name ?? selectedLook.Id}' is not ready.";
+                production.LastStatusCheckUtc = UtcTimestamp.Now;
+                await _repo.UpdateVideoProductionAsync(production);
+                return InvokeResult<VideoProduction>.FromError(production.ErrorMessage);
+            }
+
+            ApplyAvatarToProduction(production, avatarStatusResult.Result, selectedLook);
 
             var webhookResult = await _heyGenVideoService.EnsureWebhookRegistrationAsync(_webhookSecretOwner, user, _heyGenWebhookCallbackUrl);
             if (!webhookResult.Successful)
@@ -936,9 +949,40 @@ namespace LagoVista.MediaServices.Managers
             };
         }
 
-        private static void ApplyAvatarToProduction(VideoProduction production, VideoAvatar avatar)
+        private static InvokeResult<VideoAvatarLook> ResolveAvatarLook(VideoProduction production, VideoAvatar avatar)
         {
-            production.ProviderAvatarId = avatar.ProviderAvatarId;
+            var activeLooks = avatar.Looks?
+                .Where(look => look != null && look.IsActive)
+                .ToList() ?? new System.Collections.Generic.List<VideoAvatarLook>();
+
+            if (activeLooks.Count == 0)
+            {
+                return InvokeResult<VideoAvatarLook>.FromError($"Video avatar '{avatar.Name}' does not have any active looks.");
+            }
+
+            VideoAvatarLook selectedLook;
+
+            if (!String.IsNullOrWhiteSpace(production.VideoAvatarLookId))
+            {
+                selectedLook = activeLooks.FirstOrDefault(look => String.Equals(look.Id, production.VideoAvatarLookId, StringComparison.OrdinalIgnoreCase));
+
+                if (selectedLook == null)
+                {
+                    return InvokeResult<VideoAvatarLook>.FromError($"Video avatar look '{production.VideoAvatarLookId}' could not be found or is inactive.");
+                }
+            }
+            else
+            {
+                selectedLook = activeLooks.FirstOrDefault(look => look.IsPrimary) ?? activeLooks.First();
+            }
+
+            return InvokeResult<VideoAvatarLook>.Create(selectedLook);
+        }
+
+        private static void ApplyAvatarToProduction(VideoProduction production, VideoAvatar avatar, VideoAvatarLook look)
+        {
+            production.VideoAvatarLookId = look.Id;
+            production.ProviderAvatarId = look.ProviderAvatarId;
 
             var defaultVoice = avatar.GetDefaultVoice();
 
