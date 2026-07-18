@@ -1,4 +1,4 @@
-﻿using LagoVista.Core;
+using LagoVista.Core;
 using LagoVista.Core.Interfaces;
 using LagoVista.Core.Managers;
 using LagoVista.Core.Models;
@@ -444,9 +444,32 @@ namespace LagoVista.MediaServices.Managers
             return InvokeResult<VideoAvatar>.Create(currentAvatar);
         }
 
-        public Task<InvokeResult<VideoAvatar>> ReconcileProviderAvatarAsync(string id, EntityHeader org, EntityHeader user)
+        public async Task<InvokeResult<VideoAvatar>> ReconcileProviderAvatarAsync(string id, EntityHeader org, EntityHeader user)
         {
-            return RefreshProviderAvatarStatusAsync(id, org, user);
+            if (String.IsNullOrWhiteSpace(id))
+            {
+                return InvokeResult<VideoAvatar>.FromError("Video avatar ID is required.");
+            }
+
+            var avatar = await GetVideoAvatarAsync(id, org, user);
+
+            NormalizeVideoAvatar(avatar);
+            ReconcileLooks(avatar);
+            UpdateAggregateStatus(avatar);
+
+            var activeLooks = avatar.Looks
+                .Where(look => look != null && look.IsActive && !String.IsNullOrWhiteSpace(look.SourceMediaResource?.Id))
+                .ToList();
+
+            avatar = await _repo.UpdateVideoAvatarAsync(avatar);
+
+            if (activeLooks.Count == 0)
+            {
+                await PublishAvatarUpdatedAsync(avatar);
+                return InvokeResult<VideoAvatar>.Create(avatar);
+            }
+
+            return await EnsureProviderAvatarAsync(id, org, user);
         }
 
         private static void UpdateAggregateStatus(VideoAvatar avatar)
