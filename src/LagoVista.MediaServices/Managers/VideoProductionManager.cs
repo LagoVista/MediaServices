@@ -763,11 +763,6 @@ namespace LagoVista.MediaServices.Managers
                 ErrorMessage = null
             };
 
-            var duration = production.ActualDurationSeconds.HasValue ? (double)production.ActualDurationSeconds : 0;
-
-            var quality = production.Quality?.Text ?? production.Quality?.Id ?? VideoProductionQuality.Standard.ToString();
-            await _billingEventRecorder.RecordUsageAsync(BillingEventType.VideoGenerationStandard, duration, $"HeyGen {quality} Video Production {production.Name}, duration: {duration}", production.OwnerOrganization, production.LastUpdatedBy);
-
             return await _repo.UpdateVideoProductionProviderStateAsync(production.Id, state);
         }
 
@@ -784,11 +779,6 @@ namespace LagoVista.MediaServices.Managers
                 LastStatusCheckUtc = UtcTimestamp.Now,
                 ErrorMessage = ResolveWebhookErrorMessage(eventData)
             };
-
-            var duration = production.ActualDurationSeconds.HasValue ? (double)production.ActualDurationSeconds : 0;
-
-            var quality = production.Quality?.Text ?? production.Quality?.Id ?? VideoProductionQuality.Standard.ToString();
-            await _billingEventRecorder.RecordUsageAsync(BillingEventType.VideoGenerationPremium, duration, $"Failed HeyGen {quality} Video Production {production.Name}, duration: {duration}", production.OwnerOrganization, production.LastUpdatedBy);
 
             return await _repo.UpdateVideoProductionProviderStateAsync(production.Id, state);
         }
@@ -982,6 +972,7 @@ namespace LagoVista.MediaServices.Managers
                     production.SetStatus(VideoProductionStatus.ProviderCompleted);
                     production.CompletedUtc = production.CompletedUtc ?? UtcTimestamp.Now;
                     production.ErrorMessage = null;
+                    await ApplyActualVideoGenerationCostAsync(production);
                     break;
 
                 case "failed":
@@ -998,6 +989,42 @@ namespace LagoVista.MediaServices.Managers
             await PublishVideoProductionUpdatedAsync(production);
 
             return InvokeResult<VideoProduction>.Create(production);
+        }
+
+        private async Task ApplyActualVideoGenerationCostAsync(VideoProduction production)
+        {
+            if (!production.ActualDurationSeconds.HasValue || production.ActualDurationSeconds.Value <= 0)
+            {
+                return;
+            }
+
+            var quality = production.Quality?.Value ?? VideoProductionQuality.Standard;
+            var videoGenerationCostPerSecond = quality == VideoProductionQuality.Standard ? 1.0m / 60.0m : 3.0m / 60.0m;
+
+            production.ActualVideoGenerationCost = EstimateCost(production.ActualDurationSeconds.Value, videoGenerationCostPerSecond);
+            production.ActualTotalCost =
+                (production.ActualPreviewAudioCost ?? 0) +
+                (production.ActualAvatarCreationCost ?? 0) +
+                (production.ActualVideoGenerationCost ?? 0);
+            production.CostCurrency = String.IsNullOrWhiteSpace(production.CostCurrency) ? "USD" : production.CostCurrency;
+            production.CostModelVersion = String.IsNullOrWhiteSpace(production.CostModelVersion) ? "heygen-standard-premium-2026-07" : production.CostModelVersion;
+
+            if (!String.IsNullOrWhiteSpace(production.VideoGenerationBillingEventId))
+            {
+                return;
+            }
+
+            var billingEventType = quality == VideoProductionQuality.Standard
+                ? BillingEventType.VideoGenerationStandard
+                : BillingEventType.VideoGenerationPremium;
+            var qualityLabel = production.Quality?.Text ?? production.Quality?.Id ?? quality.ToString();
+            var duration = (double)production.ActualDurationSeconds.Value;
+
+            await _billingEventRecorder.RecordUsageAsync(billingEventType, duration, $"HeyGen {qualityLabel} Video Production {production.Name}, duration: {duration}", production.OwnerOrganization, production.LastUpdatedBy);
+
+            production.VideoGenerationBillingEventId = !String.IsNullOrWhiteSpace(production.ProviderVideoId)
+                ? production.ProviderVideoId
+                : Guid.NewGuid().ToString("D");
         }
 
         private static string ResolveVideoStatusErrorMessage(HeyGenVideoStatusResult status)
