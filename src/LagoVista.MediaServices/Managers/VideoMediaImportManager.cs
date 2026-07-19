@@ -512,7 +512,7 @@ namespace LagoVista.MediaServices.Managers
         {
             var extension = preserveTransparency ? ".webm" : ".mp4";
             var mimeType = preserveTransparency ? "video/webm" : "video/mp4";
-            var baseFileName = String.IsNullOrWhiteSpace(mediaResource.FileName) ? mediaResource.Id : System.IO.Path.GetFileNameWithoutExtension(mediaResource.FileName);
+            var baseFileName = String.IsNullOrWhiteSpace(mediaResource.FileName) ? mediaResource.Id.Value : System.IO.Path.GetFileNameWithoutExtension(mediaResource.FileName);
             var pendingRevision = mediaResource.GetPendingRevision();
             if (pendingRevision == null || pendingRevision.Status?.Value != MediaResourceStatus.Pending)
             {

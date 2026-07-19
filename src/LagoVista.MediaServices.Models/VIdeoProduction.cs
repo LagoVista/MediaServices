@@ -179,6 +179,8 @@ namespace LagoVista.MediaServices.Models
 
         public bool RemoveBackground { get; set; }
 
+        public bool GenerateTransparentPresenter { get; set; }
+
         public bool BurnInCaptions { get; set; }
 
         public string CaptionStyle { get; set; }
@@ -399,7 +401,7 @@ namespace LagoVista.MediaServices.Models
         {
             var content = String.Join("\n", new[]
             {
-        $"version=2",
+        $"version=3",
         $"defaultLocale={NormalizeHashValue(DefaultLocale)}",
         $"locale={NormalizeHashValue(Locale)}",
         $"languageCode={NormalizeHashValue(LanguageCode)}",
@@ -422,6 +424,7 @@ namespace LagoVista.MediaServices.Models
         $"aspectRatio={NormalizeHashValue(Settings?.AspectRatio?.Id)}",
         $"fit={NormalizeHashValue(Settings?.Fit?.Id)}",
         $"removeBackground={Settings?.RemoveBackground ?? false}",
+        $"generateTransparentPresenter={Settings?.GenerateTransparentPresenter ?? false}",
         $"burnInCaptions={Settings?.BurnInCaptions ?? false}",
         $"captionStyle={NormalizeHashValue(Settings?.CaptionStyle)}",
         $"motionPrompt={NormalizeHashValue(Settings?.MotionPrompt)}",

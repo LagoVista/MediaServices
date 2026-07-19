@@ -268,6 +268,11 @@ namespace LagoVista.MediaServices.Services
                 return InvokeResult<HeyGenVideoSubmission>.FromError("HeyGen rendering engine is required.");
             }
 
+            if (String.Equals(request.OutputFormat, "webm", StringComparison.OrdinalIgnoreCase) && request.Background != null)
+            {
+                return InvokeResult<HeyGenVideoSubmission>.FromError("Transparent WebM output cannot include a HeyGen background.");
+            }
+
             if (String.IsNullOrWhiteSpace(_settings.HeyGenApiKey))
             {
                 return InvokeResult<HeyGenVideoSubmission>.FromError("HeyGen API key has not been configured.");
@@ -704,22 +709,20 @@ namespace LagoVista.MediaServices.Services
                 return InvokeResult.FromError("HeyGen webhook signature is required.");
             }
 
-            if (String.IsNullOrWhiteSpace(timestamp))
+            if (!String.IsNullOrWhiteSpace(timestamp))
             {
-                return InvokeResult.FromError("HeyGen webhook timestamp is required.");
-            }
+                if (!Int64.TryParse(timestamp, NumberStyles.Integer, CultureInfo.InvariantCulture, out var timestampSeconds))
+                {
+                    return InvokeResult.FromError("HeyGen webhook timestamp is invalid.");
+                }
 
-            if (!Int64.TryParse(timestamp, NumberStyles.Integer, CultureInfo.InvariantCulture, out var timestampSeconds))
-            {
-                return InvokeResult.FromError("HeyGen webhook timestamp is invalid.");
-            }
+                var webhookUtc = DateTimeOffset.FromUnixTimeSeconds(timestampSeconds);
+                var timestampDelta = DateTimeOffset.UtcNow - webhookUtc;
 
-            var webhookUtc = DateTimeOffset.FromUnixTimeSeconds(timestampSeconds);
-            var timestampDelta = DateTimeOffset.UtcNow - webhookUtc;
-
-            if (timestampDelta.Duration() > WebhookTimestampTolerance)
-            {
-                return InvokeResult.FromError("HeyGen webhook timestamp is outside the accepted window.");
+                if (timestampDelta.Duration() > WebhookTimestampTolerance)
+                {
+                    return InvokeResult.FromError("HeyGen webhook timestamp is outside the accepted window.");
+                }
             }
 
             cancellationToken.ThrowIfCancellationRequested();

@@ -563,20 +563,27 @@ namespace LagoVista.MediaServices.Managers
 
             ApplyAvatarToProduction(production, avatarStatusResult.Result, selectedLook);
 
-            var backgroundResult = await ResolveProviderBackgroundAssetAsync(production, org, user);
-            if (!backgroundResult.Successful)
+            if (production.Settings?.GenerateTransparentPresenter == true)
             {
-                production.SetStatus(VideoProductionStatus.Failed);
-                production.ErrorMessage = backgroundResult.Errors[0].Message;
-                production.LastStatusCheckUtc = UtcTimestamp.Now;
-
-                await _repo.UpdateVideoProductionAsync(production);
-                await PublishVideoProductionUpdatedAsync(production);
-
-                return backgroundResult.ToInvokeResult<VideoProduction>();
+                production.ProviderBackgroundAssetId = null;
             }
+            else
+            {
+                var backgroundResult = await ResolveProviderBackgroundAssetAsync(production, org, user);
+                if (!backgroundResult.Successful)
+                {
+                    production.SetStatus(VideoProductionStatus.Failed);
+                    production.ErrorMessage = backgroundResult.Errors[0].Message;
+                    production.LastStatusCheckUtc = UtcTimestamp.Now;
 
-            production.ProviderBackgroundAssetId = backgroundResult.Result;
+                    await _repo.UpdateVideoProductionAsync(production);
+                    await PublishVideoProductionUpdatedAsync(production);
+
+                    return backgroundResult.ToInvokeResult<VideoProduction>();
+                }
+
+                production.ProviderBackgroundAssetId = backgroundResult.Result;
+            }
             production.SetStatus(VideoProductionStatus.Submitting);
             production.ErrorMessage = null;
             production.LastStatusCheckUtc = UtcTimestamp.Now;
@@ -746,7 +753,7 @@ namespace LagoVista.MediaServices.Managers
         {
             var state = new VideoProductionProviderState
             {
-                ProviderVideoUrl = null,
+                ProviderVideoUrl = eventData.VideoUrl,
                 ProviderThumbnailUrl = production.ProviderThumbnailUrl,
                 ProviderCaptionUrl = production.ProviderCaptionUrl,
                 ActualDurationSeconds = production.ActualDurationSeconds,
@@ -1104,9 +1111,9 @@ namespace LagoVista.MediaServices.Managers
                 Resolution = ResolveHeyGenResolution(settings.Resolution),
                 AspectRatio = ResolveHeyGenAspectRatio(settings.AspectRatio),
                 Fit = ResolveHeyGenFit(settings.Fit),
-                RemoveBackground = settings.RemoveBackground ? true : (bool?)null,
-                OutputFormat = "mp4",
-                Background = String.IsNullOrWhiteSpace(production.ProviderBackgroundAssetId) ? null : new HeyGenBackground { Type = "image", AssetId = production.ProviderBackgroundAssetId },
+                RemoveBackground = settings.GenerateTransparentPresenter || settings.RemoveBackground ? true : (bool?)null,
+                OutputFormat = settings.GenerateTransparentPresenter ? "webm" : "mp4",
+                Background = settings.GenerateTransparentPresenter || String.IsNullOrWhiteSpace(production.ProviderBackgroundAssetId) ? null : new HeyGenBackground { Type = "image", AssetId = production.ProviderBackgroundAssetId },
                 Caption = settings.BurnInCaptions ? new HeyGenCaptionSettings { FileFormat = "srt", Style = String.IsNullOrWhiteSpace(settings.CaptionStyle) ? "default" : settings.CaptionStyle } : null,
                 MotionPrompt = settings.MotionPrompt,
                 Expressiveness = production.Engine?.Value == VideoProductionEngine.AvatarIV ? ResolveHeyGenExpressiveness(settings.Expressiveness) : null,
