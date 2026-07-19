@@ -152,6 +152,31 @@ namespace LagoVista.MediaServices.Models
         High
     }
 
+    public sealed class VideoProductionRun
+    {
+        public VideoProductionRun()
+        {
+            Id = Guid.NewGuid().ToId();
+            Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Draft);
+        }
+
+        public string Id { get; set; }
+        public string ProviderVideoId { get; set; }
+        public EntityHeader<VideoProductionStatus> Status { get; set; }
+        public string InputSha256 { get; set; }
+        public string SubmittedUtc { get; set; }
+        public string CompletedUtc { get; set; }
+        public string LastStatusCheckUtc { get; set; }
+        public int? DurationSeconds { get; set; }
+        public decimal? ActualVideoGenerationCost { get; set; }
+        public string BillingEventId { get; set; }
+        public string ProviderVideoUrl { get; set; }
+        public string ProviderThumbnailUrl { get; set; }
+        public string ProviderCaptionUrl { get; set; }
+        public EntityHeader OutputMediaResource { get; set; }
+        public string ErrorMessage { get; set; }
+    }
+
     public sealed class VideoProductionSettings
     {
         public VideoProductionSettings()
@@ -358,15 +383,20 @@ namespace LagoVista.MediaServices.Models
 
         public decimal? EstimatedPreviewAudioCost { get; set; }
         public decimal? ActualPreviewAudioCost { get; set; }
+        public int PreviewAudioGenerationCount { get; set; }
+        public decimal? TotalPreviewAudioCost { get; set; }
 
         public decimal? EstimatedAvatarCreationCost { get; set; }
         public decimal? ActualAvatarCreationCost { get; set; }
 
         public decimal? EstimatedVideoGenerationCost { get; set; }
         public decimal? ActualVideoGenerationCost { get; set; }
+        public int VideoGenerationCount { get; set; }
+        public decimal? TotalVideoGenerationCost { get; set; }
 
         public decimal? EstimatedTotalCost { get; set; }
         public decimal? ActualTotalCost { get; set; }
+        public decimal? TotalProductionCost { get; set; }
 
         public string CostCurrency { get; set; }
         public string CostModelVersion { get; set; }
@@ -374,6 +404,8 @@ namespace LagoVista.MediaServices.Models
         public string PreviewAudioBillingEventId { get; set; }
         public string AvatarCreationBillingEventId { get; set; }
         public string VideoGenerationBillingEventId { get; set; }
+
+        public List<VideoProductionRun> Runs { get; set; } = new List<VideoProductionRun>();
 
         public string SubmittedUtc { get; set; }
         public string CompletedUtc { get; set; }
@@ -491,6 +523,7 @@ namespace LagoVista.MediaServices.Models
                 StatusChangedUtc = StatusChangedUtc,
                 EstimatedTotalCost = EstimatedTotalCost,
                 ActualTotalCost = ActualTotalCost,
+                TotalProductionCost = TotalProductionCost,
                 CostCurrency = CostCurrency,
                 SubmittedUtc = SubmittedUtc,
                 CompletedUtc = CompletedUtc
@@ -679,6 +712,7 @@ namespace LagoVista.MediaServices.Models
 
         public decimal? EstimatedTotalCost { get; set; }
         public decimal? ActualTotalCost { get; set; }
+        public decimal? TotalProductionCost { get; set; }
         public string CostCurrency { get; set; }
 
         public string SubmittedUtc { get; set; }

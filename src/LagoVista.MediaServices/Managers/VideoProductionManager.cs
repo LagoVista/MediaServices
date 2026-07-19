@@ -675,10 +675,9 @@ namespace LagoVista.MediaServices.Managers
             production.PreviewAudioGeneratedUtc = generatedUtc;
             production.PreviewAudioBillingEventId = billingEventId?.ToString();
             production.ActualPreviewAudioCost = actualCost;
-            production.ActualTotalCost =
-                (production.ActualPreviewAudioCost ?? 0) +
-                (production.ActualAvatarCreationCost ?? 0) +
-                (production.ActualVideoGenerationCost ?? 0);
+            production.PreviewAudioGenerationCount++;
+            production.TotalPreviewAudioCost = (production.TotalPreviewAudioCost ?? 0) + (actualCost ?? 0);
+            RecalculateProductionCosts(production);
             production.CostCurrency = String.IsNullOrWhiteSpace(previewResult.Result.Currency) ? "USD" : previewResult.Result.Currency;
             production.SetStatus(VideoProductionStatus.PreviewAudioReady);
             production.ErrorMessage = null;
@@ -843,6 +842,17 @@ namespace LagoVista.MediaServices.Managers
             production.SubmittedUtc = UtcTimestamp.Now;
             production.LastStatusCheckUtc = production.SubmittedUtc;
             production.ErrorMessage = null;
+            production.VideoGenerationBillingEventId = null;
+
+            EnsureRuns(production);
+            production.Runs.Insert(0, new VideoProductionRun
+            {
+                ProviderVideoId = production.ProviderVideoId,
+                Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Submitted),
+                InputSha256 = production.ExecutionInputSha256 ?? production.CurrentInputSha256,
+                SubmittedUtc = production.SubmittedUtc,
+                LastStatusCheckUtc = production.LastStatusCheckUtc
+            });
 
             await _repo.UpdateVideoProductionAsync(production);
 
@@ -1209,6 +1219,8 @@ namespace LagoVista.MediaServices.Managers
                     break;
             }
 
+            SyncCurrentRun(production);
+
             await _repo.UpdateVideoProductionAsync(production);
             await PublishVideoProductionUpdatedAsync(production);
 
@@ -1222,33 +1234,116 @@ namespace LagoVista.MediaServices.Managers
                 return;
             }
 
+            var run = GetCurrentRun(production);
+            if (run == null)
+            {
+                EnsureRuns(production);
+                run = new VideoProductionRun
+                {
+                    ProviderVideoId = production.ProviderVideoId,
+                    Status = production.Status,
+                    InputSha256 = production.ExecutionInputSha256 ?? production.CurrentInputSha256,
+                    SubmittedUtc = production.SubmittedUtc
+                };
+                production.Runs.Insert(0, run);
+            }
+
             var quality = production.Quality?.Value ?? VideoProductionQuality.Standard;
             var videoGenerationCostPerSecond = quality == VideoProductionQuality.Standard ? 1.0m / 60.0m : 3.0m / 60.0m;
+            var actualCost = EstimateCost(production.ActualDurationSeconds.Value, videoGenerationCostPerSecond);
 
-            production.ActualVideoGenerationCost = EstimateCost(production.ActualDurationSeconds.Value, videoGenerationCostPerSecond);
-            production.ActualTotalCost =
-                (production.ActualPreviewAudioCost ?? 0) +
-                (production.ActualAvatarCreationCost ?? 0) +
-                (production.ActualVideoGenerationCost ?? 0);
+            production.ActualVideoGenerationCost = actualCost;
             production.CostCurrency = String.IsNullOrWhiteSpace(production.CostCurrency) ? "USD" : production.CostCurrency;
             production.CostModelVersion = String.IsNullOrWhiteSpace(production.CostModelVersion) ? "heygen-standard-premium-2026-07" : production.CostModelVersion;
 
-            if (!String.IsNullOrWhiteSpace(production.VideoGenerationBillingEventId))
+            run.DurationSeconds = production.ActualDurationSeconds;
+            run.ActualVideoGenerationCost = actualCost;
+            run.ProviderVideoUrl = production.ProviderVideoUrl;
+            run.ProviderThumbnailUrl = production.ProviderThumbnailUrl;
+            run.ProviderCaptionUrl = production.ProviderCaptionUrl;
+            run.Status = production.Status;
+            run.CompletedUtc = production.CompletedUtc;
+            run.LastStatusCheckUtc = production.LastStatusCheckUtc;
+            run.ErrorMessage = production.ErrorMessage;
+
+            if (String.IsNullOrWhiteSpace(run.BillingEventId))
+            {
+                var billingEventType = quality == VideoProductionQuality.Standard
+                    ? BillingEventType.VideoGenerationStandard
+                    : BillingEventType.VideoGenerationPremium;
+                var qualityLabel = production.Quality?.Text ?? production.Quality?.Id ?? quality.ToString();
+                var duration = (double)production.ActualDurationSeconds.Value;
+                var billingEventId = await _billingEventRecorder.RecordUsageAsync(billingEventType, duration, $"HeyGen {qualityLabel} Video Production {production.Name}, provider video: {production.ProviderVideoId}, duration: {duration}", production.OwnerOrganization, production.LastUpdatedBy);
+
+                run.BillingEventId = billingEventId.ToString();
+                production.VideoGenerationBillingEventId = run.BillingEventId;
+                production.VideoGenerationCount++;
+                production.TotalVideoGenerationCost = (production.TotalVideoGenerationCost ?? 0) + actualCost;
+            }
+
+            RecalculateProductionCosts(production);
+        }
+
+        private static void EnsureRuns(VideoProduction production)
+        {
+            if (production.Runs == null)
+            {
+                production.Runs = new List<VideoProductionRun>();
+            }
+        }
+
+        private static VideoProductionRun GetCurrentRun(VideoProduction production)
+        {
+            EnsureRuns(production);
+
+            if (!String.IsNullOrWhiteSpace(production.ProviderVideoId))
+            {
+                var providerRun = production.Runs.FirstOrDefault(run => run != null && String.Equals(run.ProviderVideoId, production.ProviderVideoId, StringComparison.OrdinalIgnoreCase));
+                if (providerRun != null)
+                {
+                    return providerRun;
+                }
+            }
+
+            return production.Runs.FirstOrDefault(run => run != null);
+        }
+
+        private static void SyncCurrentRun(VideoProduction production)
+        {
+            var run = GetCurrentRun(production);
+            if (run == null)
             {
                 return;
             }
 
-            var billingEventType = quality == VideoProductionQuality.Standard
-                ? BillingEventType.VideoGenerationStandard
-                : BillingEventType.VideoGenerationPremium;
-            var qualityLabel = production.Quality?.Text ?? production.Quality?.Id ?? quality.ToString();
-            var duration = (double)production.ActualDurationSeconds.Value;
+            run.ProviderVideoId = production.ProviderVideoId;
+            run.Status = production.Status;
+            run.SubmittedUtc = production.SubmittedUtc;
+            run.CompletedUtc = production.CompletedUtc;
+            run.LastStatusCheckUtc = production.LastStatusCheckUtc;
+            run.DurationSeconds = production.ActualDurationSeconds;
+            run.ProviderVideoUrl = production.ProviderVideoUrl;
+            run.ProviderThumbnailUrl = production.ProviderThumbnailUrl;
+            run.ProviderCaptionUrl = production.ProviderCaptionUrl;
+            run.ErrorMessage = production.ErrorMessage;
 
-            await _billingEventRecorder.RecordUsageAsync(billingEventType, duration, $"HeyGen {qualityLabel} Video Production {production.Name}, duration: {duration}", production.OwnerOrganization, production.LastUpdatedBy);
+            if (production.FinalVideoMediaResource != null)
+            {
+                run.OutputMediaResource = production.FinalVideoMediaResource;
+            }
+        }
 
-            production.VideoGenerationBillingEventId = !String.IsNullOrWhiteSpace(production.ProviderVideoId)
-                ? production.ProviderVideoId
-                : Guid.NewGuid().ToString("D");
+        private static void RecalculateProductionCosts(VideoProduction production)
+        {
+            production.ActualTotalCost =
+                (production.ActualPreviewAudioCost ?? 0) +
+                (production.ActualAvatarCreationCost ?? 0) +
+                (production.ActualVideoGenerationCost ?? 0);
+
+            production.TotalProductionCost =
+                (production.TotalPreviewAudioCost ?? 0) +
+                (production.ActualAvatarCreationCost ?? 0) +
+                (production.TotalVideoGenerationCost ?? 0);
         }
 
         private static string ResolveVideoStatusErrorMessage(HeyGenVideoStatusResult status)
