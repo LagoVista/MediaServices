@@ -1,4 +1,4 @@
-﻿/*7/19/2026 12:10:08 PM*/
+﻿/*7/19/2026 3:52:51 PM*/
 using System.Globalization;
 using System.Reflection;
 
@@ -438,6 +438,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:VideoAvatarStatus_WaitingForProvider
 
 		public static string VideoAvatarStatus_WaitingForProvider { get { return GetResourceString("VideoAvatarStatus_WaitingForProvider"); } }
+//Resources:MediaServicesResources:VideoComposition_BackgroundMediaResource
+
+		public static string VideoComposition_BackgroundMediaResource { get { return GetResourceString("VideoComposition_BackgroundMediaResource"); } }
 //Resources:MediaServicesResources:VideoComposition_Blocks
 
 		public static string VideoComposition_Blocks { get { return GetResourceString("VideoComposition_Blocks"); } }
@@ -498,6 +501,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:VideoCompositionAssemblyStage_UploadingToVimeo
 
 		public static string VideoCompositionAssemblyStage_UploadingToVimeo { get { return GetResourceString("VideoCompositionAssemblyStage_UploadingToVimeo"); } }
+//Resources:MediaServicesResources:VideoCompositionBlock_BackgroundMediaResource
+
+		public static string VideoCompositionBlock_BackgroundMediaResource { get { return GetResourceString("VideoCompositionBlock_BackgroundMediaResource"); } }
 //Resources:MediaServicesResources:VideoCompositionBlock_Description
 
 		public static string VideoCompositionBlock_Description { get { return GetResourceString("VideoCompositionBlock_Description"); } }
@@ -528,6 +534,15 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:VideoCompositionBlock_MediaResourceMimeType
 
 		public static string VideoCompositionBlock_MediaResourceMimeType { get { return GetResourceString("VideoCompositionBlock_MediaResourceMimeType"); } }
+//Resources:MediaServicesResources:VideoCompositionBlock_PresenterPositionX
+
+		public static string VideoCompositionBlock_PresenterPositionX { get { return GetResourceString("VideoCompositionBlock_PresenterPositionX"); } }
+//Resources:MediaServicesResources:VideoCompositionBlock_PresenterPositionY
+
+		public static string VideoCompositionBlock_PresenterPositionY { get { return GetResourceString("VideoCompositionBlock_PresenterPositionY"); } }
+//Resources:MediaServicesResources:VideoCompositionBlock_PresenterScale
+
+		public static string VideoCompositionBlock_PresenterScale { get { return GetResourceString("VideoCompositionBlock_PresenterScale"); } }
 //Resources:MediaServicesResources:VideoCompositionBlock_SortOrder
 
 		public static string VideoCompositionBlock_SortOrder { get { return GetResourceString("VideoCompositionBlock_SortOrder"); } }
@@ -935,6 +950,7 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string VideoAvatarStatus_Preparing = "VideoAvatarStatus_Preparing";
 			public const string VideoAvatarStatus_Ready = "VideoAvatarStatus_Ready";
 			public const string VideoAvatarStatus_WaitingForProvider = "VideoAvatarStatus_WaitingForProvider";
+			public const string VideoComposition_BackgroundMediaResource = "VideoComposition_BackgroundMediaResource";
 			public const string VideoComposition_Blocks = "VideoComposition_Blocks";
 			public const string VideoComposition_Description = "VideoComposition_Description";
 			public const string VideoComposition_ErrorMessage = "VideoComposition_ErrorMessage";
@@ -955,6 +971,7 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string VideoCompositionAssemblyStage_UploadingThumbnail = "VideoCompositionAssemblyStage_UploadingThumbnail";
 			public const string VideoCompositionAssemblyStage_UploadingToAzure = "VideoCompositionAssemblyStage_UploadingToAzure";
 			public const string VideoCompositionAssemblyStage_UploadingToVimeo = "VideoCompositionAssemblyStage_UploadingToVimeo";
+			public const string VideoCompositionBlock_BackgroundMediaResource = "VideoCompositionBlock_BackgroundMediaResource";
 			public const string VideoCompositionBlock_Description = "VideoCompositionBlock_Description";
 			public const string VideoCompositionBlock_DurationSeconds = "VideoCompositionBlock_DurationSeconds";
 			public const string VideoCompositionBlock_FadeInSeconds = "VideoCompositionBlock_FadeInSeconds";
@@ -965,6 +982,9 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string VideoCompositionBlock_MediaResource = "VideoCompositionBlock_MediaResource";
 			public const string VideoCompositionBlock_MediaResourceFileName = "VideoCompositionBlock_MediaResourceFileName";
 			public const string VideoCompositionBlock_MediaResourceMimeType = "VideoCompositionBlock_MediaResourceMimeType";
+			public const string VideoCompositionBlock_PresenterPositionX = "VideoCompositionBlock_PresenterPositionX";
+			public const string VideoCompositionBlock_PresenterPositionY = "VideoCompositionBlock_PresenterPositionY";
+			public const string VideoCompositionBlock_PresenterScale = "VideoCompositionBlock_PresenterScale";
 			public const string VideoCompositionBlock_SortOrder = "VideoCompositionBlock_SortOrder";
 			public const string VideoCompositionBlock_Title = "VideoCompositionBlock_Title";
 			public const string VideoCompositionBlock_Type = "VideoCompositionBlock_Type";

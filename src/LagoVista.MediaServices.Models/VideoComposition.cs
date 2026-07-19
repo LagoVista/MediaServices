@@ -179,6 +179,9 @@ namespace LagoVista.MediaServices.Models
 
         public string StatusChangedUtc { get; set; }
 
+        [FormField(LabelResource: MediaServicesResources.Names.VideoComposition_BackgroundMediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
+        public EntityHeader BackgroundMediaResource { get; set; }
+
         [FormField(LabelResource: MediaServicesResources.Names.VideoComposition_OutputMediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: false)]
         public EntityHeader OutputMediaResource { get; set; }
 
@@ -226,8 +229,9 @@ namespace LagoVista.MediaServices.Models
         {
             var content = new StringBuilder();
 
-            content.AppendLine("version=1");
+            content.AppendLine("version=2");
             content.AppendLine($"defaultLocale={NormalizeHashValue(DefaultLocale)}");
+            content.AppendLine($"backgroundMediaResourceId={NormalizeHashValue(BackgroundMediaResource?.Id)}");
 
             foreach (var block in (Blocks ?? new List<VideoCompositionBlock>()).OrderBy(block => block.SortOrder).ThenBy(block => block.Id, StringComparer.OrdinalIgnoreCase))
             {
@@ -237,6 +241,10 @@ namespace LagoVista.MediaServices.Models
                 content.AppendLine($"sortOrder={block.SortOrder.ToString(CultureInfo.InvariantCulture)}");
                 content.AppendLine($"type={block.Type}");
                 content.AppendLine($"mediaResourceId={NormalizeHashValue(block.MediaResource?.Id)}");
+                content.AppendLine($"backgroundMediaResourceId={NormalizeHashValue(block.BackgroundMediaResource?.Id)}");
+                content.AppendLine($"presenterScale={NormalizeHashValue(block.PresenterScale)}");
+                content.AppendLine($"presenterPositionX={NormalizeHashValue(block.PresenterPositionX)}");
+                content.AppendLine($"presenterPositionY={NormalizeHashValue(block.PresenterPositionY)}");
                 content.AppendLine($"durationSeconds={NormalizeHashValue(block.DurationSeconds)}");
                 content.AppendLine($"fadeInSeconds={NormalizeHashValue(block.FadeInSeconds)}");
                 content.AppendLine($"fadeOutSeconds={NormalizeHashValue(block.FadeOutSeconds)}");
@@ -301,6 +309,7 @@ namespace LagoVista.MediaServices.Models
                 nameof(Key),
                 nameof(Icon),
                 nameof(Description),
+                nameof(BackgroundMediaResource),
                 nameof(Blocks)
             };
         }
@@ -402,6 +411,9 @@ namespace LagoVista.MediaServices.Models
         public VideoCompositionBlock()
         {
             Id = Guid.NewGuid().ToId();
+            PresenterScale = 1.0;
+            PresenterPositionX = 0.5;
+            PresenterPositionY = 0.5;
         }
 
         public string Id { get; set; }
@@ -423,6 +435,18 @@ namespace LagoVista.MediaServices.Models
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_MediaResourceMimeType, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: false)]
         public string MediaResourceMimeType { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_BackgroundMediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
+        public EntityHeader BackgroundMediaResource { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_PresenterScale, FieldType: FieldTypes.Decimal, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
+        public double PresenterScale { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_PresenterPositionX, FieldType: FieldTypes.Decimal, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
+        public double PresenterPositionX { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_PresenterPositionY, FieldType: FieldTypes.Decimal, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
+        public double PresenterPositionY { get; set; }
 
         public string ThumbnailUrl { get; set; }
 
@@ -448,6 +472,10 @@ namespace LagoVista.MediaServices.Models
                 nameof(MediaResource),
                 nameof(MediaResourceFileName),
                 nameof(MediaResourceMimeType),
+                nameof(BackgroundMediaResource),
+                nameof(PresenterScale),
+                nameof(PresenterPositionX),
+                nameof(PresenterPositionY),
                 nameof(DurationSeconds),
                 nameof(FadeInSeconds),
                 nameof(FadeOutSeconds),
@@ -475,6 +503,26 @@ namespace LagoVista.MediaServices.Models
             if (FadeInSeconds < 0 || FadeOutSeconds < 0)
             {
                 result.AddUserError($"Video composition block '{Key}' cannot have negative fade durations.");
+            }
+
+            if (PresenterScale <= 0)
+            {
+                result.AddUserError($"Video composition block '{Key}' presenter scale must be greater than zero.");
+            }
+
+            if (PresenterPositionX < 0 || PresenterPositionX > 1)
+            {
+                result.AddUserError($"Video composition block '{Key}' presenter X position must be between zero and one.");
+            }
+
+            if (PresenterPositionY < 0 || PresenterPositionY > 1)
+            {
+                result.AddUserError($"Video composition block '{Key}' presenter Y position must be between zero and one.");
+            }
+
+            if (Type == VideoCompositionBlockType.Image && BackgroundMediaResource != null && !String.IsNullOrWhiteSpace(BackgroundMediaResource.Id))
+            {
+                result.AddUserError($"Image block '{Key}' cannot configure a presenter background override.");
             }
 
             if (Type == VideoCompositionBlockType.Image && (!DurationSeconds.HasValue || DurationSeconds.Value <= 0))

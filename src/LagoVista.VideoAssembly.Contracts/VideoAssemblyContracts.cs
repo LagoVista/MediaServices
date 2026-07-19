@@ -4,7 +4,7 @@ namespace LagoVista.VideoAssembly.Contracts
 {
     public static class VideoAssemblyContractVersions
     {
-        public const string Current = "2.0";
+        public const string Current = "2.1";
     }
 
     public enum VideoAssemblyBlockType
@@ -117,6 +117,8 @@ namespace LagoVista.VideoAssembly.Contracts
         public string Key { get; set; }
         public VideoAssemblyBlockType Type { get; set; }
         public VideoAssemblySource Source { get; set; }
+        public VideoAssemblySource Background { get; set; }
+        public VideoAssemblyPresenterLayout PresenterLayout { get; set; }
         public double? DurationSeconds { get; set; }
         public double FadeInSeconds { get; set; }
         public double FadeOutSeconds { get; set; }
@@ -128,6 +130,13 @@ namespace LagoVista.VideoAssembly.Contracts
         public string Url { get; set; }
         public string FileName { get; set; }
         public string ContentType { get; set; }
+    }
+
+    public sealed class VideoAssemblyPresenterLayout
+    {
+        public double Scale { get; set; } = 1.0;
+        public double PositionX { get; set; } = 0.5;
+        public double PositionY { get; set; } = 0.5;
     }
 
     public sealed class VideoAssemblyTextLabel

@@ -846,6 +846,65 @@
     <value>Premium</value>
   </data>
 
+  <data name="VideoProductionEngine_AvatarIII" xml:space="preserve">
+    <value>Avatar III</value>
+  </data>
+  <data name="VideoProductionEngine_AvatarIV" xml:space="preserve">
+    <value>Avatar IV</value>
+  </data>
+  <data name="VideoProductionEngine_AvatarV" xml:space="preserve">
+    <value>Avatar V</value>
+  </data>
+
+  <data name="VideoProductionResolution_HD720" xml:space="preserve">
+    <value>720p</value>
+  </data>
+  <data name="VideoProductionResolution_FullHD1080" xml:space="preserve">
+    <value>1080p</value>
+  </data>
+  <data name="VideoProductionResolution_UHD4K" xml:space="preserve">
+    <value>4K</value>
+  </data>
+
+  <data name="VideoProductionAspectRatio_Landscape16x9" xml:space="preserve">
+    <value>16:9 Landscape</value>
+  </data>
+  <data name="VideoProductionAspectRatio_Portrait9x16" xml:space="preserve">
+    <value>9:16 Portrait</value>
+  </data>
+  <data name="VideoProductionAspectRatio_Portrait4x5" xml:space="preserve">
+    <value>4:5 Portrait</value>
+  </data>
+  <data name="VideoProductionAspectRatio_Landscape5x4" xml:space="preserve">
+    <value>5:4 Landscape</value>
+  </data>
+  <data name="VideoProductionAspectRatio_Square1x1" xml:space="preserve">
+    <value>1:1 Square</value>
+  </data>
+  <data name="VideoProductionAspectRatio_Auto" xml:space="preserve">
+    <value>Automatic</value>
+  </data>
+
+  <data name="VideoProductionFit_Automatic" xml:space="preserve">
+    <value>Automatic</value>
+  </data>
+  <data name="VideoProductionFit_Contain" xml:space="preserve">
+    <value>Contain</value>
+  </data>
+  <data name="VideoProductionFit_Cover" xml:space="preserve">
+    <value>Cover</value>
+  </data>
+
+  <data name="VideoProductionExpressiveness_Low" xml:space="preserve">
+    <value>Low</value>
+  </data>
+  <data name="VideoProductionExpressiveness_Medium" xml:space="preserve">
+    <value>Medium</value>
+  </data>
+  <data name="VideoProductionExpressiveness_High" xml:space="preserve">
+    <value>High</value>
+  </data>
+
 
 
   <data name="MediaResource_ThumbnailUrl" xml:space="preserve">
@@ -853,5 +912,20 @@
   </data>
   <data name="MediaResource_ThumbnailUrl_Help" xml:space="preserve">
     <value>Link to download a smaller representation of the image or video, not alaways available</value>
+  </data>
+  <data name="VideoComposition_BackgroundMediaResource" xml:space="preserve">
+    <value>Default Background</value>
+  </data>
+  <data name="VideoCompositionBlock_BackgroundMediaResource" xml:space="preserve">
+    <value>Background Override</value>
+  </data>
+  <data name="VideoCompositionBlock_PresenterScale" xml:space="preserve">
+    <value>Presenter Scale</value>
+  </data>
+  <data name="VideoCompositionBlock_PresenterPositionX" xml:space="preserve">
+    <value>Presenter Horizontal Position</value>
+  </data>
+  <data name="VideoCompositionBlock_PresenterPositionY" xml:space="preserve">
+    <value>Presenter Vertical Position</value>
   </data>
 </root>

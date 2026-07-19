@@ -702,11 +702,50 @@ namespace LagoVista.MediaServices.Managers
 
                 _adminLogger.Trace($"{this.Tag()} [ASSEMBLY SOURCE URL CREATED] CompositionId={composition.Id}, BlockKey={block.Key}, MediaResourceId={mediaResource.Id}, FileName={sourceResult.Result.FileName}, ContentType={sourceResult.Result.ContentType}");
 
+                VideoAssemblySource backgroundSource = null;
+                var effectiveBackground = block.Type == VideoCompositionBlockType.Video
+                    ? block.BackgroundMediaResource ?? composition.BackgroundMediaResource
+                    : null;
+
+                if (effectiveBackground != null && !String.IsNullOrWhiteSpace(effectiveBackground.Id))
+                {
+                    _adminLogger.Trace($"{this.Tag()} [ASSEMBLY BACKGROUND RESOLVING] CompositionId={composition.Id}, BlockKey={block.Key}, MediaResourceId={effectiveBackground.Id}, IsOverride={block.BackgroundMediaResource != null}");
+
+                    var backgroundMediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(effectiveBackground.Id, org, user);
+                    if (backgroundMediaResource == null)
+                    {
+                        return InvokeResult<List<VideoAssemblyBlock>>.FromError($"Could not find background media resource '{effectiveBackground.Id}' for block '{block.Key}'.");
+                    }
+
+                    if (backgroundMediaResource.Status?.Value != MediaResourceStatus.Ready)
+                    {
+                        return InvokeResult<List<VideoAssemblyBlock>>.FromError($"Background media resource '{backgroundMediaResource.Name}' for block '{block.Key}' is not ready.");
+                    }
+
+                    var backgroundResult = await _mediaSourceResolver.ResolveAsync(backgroundMediaResource, org.Id, cancellationToken);
+                    if (!backgroundResult.Successful)
+                    {
+                        return backgroundResult.ToInvokeResult<List<VideoAssemblyBlock>>();
+                    }
+
+                    backgroundSource = backgroundResult.Result;
+                    _adminLogger.Trace($"{this.Tag()} [ASSEMBLY BACKGROUND RESOLVED] CompositionId={composition.Id}, BlockKey={block.Key}, MediaResourceId={backgroundMediaResource.Id}, FileName={backgroundSource.FileName}, ContentType={backgroundSource.ContentType}");
+                }
+
                 assemblyBlocks.Add(new VideoAssemblyBlock
                 {
                     Key = block.Key,
                     Type = block.Type == VideoCompositionBlockType.Image ? VideoAssemblyBlockType.Image : VideoAssemblyBlockType.Video,
                     Source = sourceResult.Result,
+                    Background = backgroundSource,
+                    PresenterLayout = backgroundSource == null
+                        ? null
+                        : new VideoAssemblyPresenterLayout
+                        {
+                            Scale = block.PresenterScale,
+                            PositionX = block.PresenterPositionX,
+                            PositionY = block.PresenterPositionY
+                        },
                     DurationSeconds = block.DurationSeconds,
                     FadeInSeconds = block.FadeInSeconds,
                     FadeOutSeconds = block.FadeOutSeconds,
