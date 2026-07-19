@@ -563,6 +563,43 @@ namespace LagoVista.MediaServices.Models
         }
     }
 
+    public sealed class AudioGenerationReceipt
+    {
+        public string Provider { get; set; }
+        public string ProviderRequestId { get; set; }
+        public string ScriptSha256 { get; set; }
+        public string VoiceId { get; set; }
+        public string Locale { get; set; }
+        public decimal? VoiceSpeed { get; set; }
+        public decimal? VoicePitch { get; set; }
+        public decimal? VoiceVolume { get; set; }
+        public int? DurationSeconds { get; set; }
+        public decimal? ActualCost { get; set; }
+        public string Currency { get; set; }
+        public string BillingEventId { get; set; }
+        public string GeneratedUtc { get; set; }
+
+        public AudioGenerationReceipt CreateSnapshot()
+        {
+            return new AudioGenerationReceipt
+            {
+                Provider = Provider,
+                ProviderRequestId = ProviderRequestId,
+                ScriptSha256 = ScriptSha256,
+                VoiceId = VoiceId,
+                Locale = Locale,
+                VoiceSpeed = VoiceSpeed,
+                VoicePitch = VoicePitch,
+                VoiceVolume = VoiceVolume,
+                DurationSeconds = DurationSeconds,
+                ActualCost = ActualCost,
+                Currency = Currency,
+                BillingEventId = BillingEventId,
+                GeneratedUtc = GeneratedUtc
+            };
+        }
+    }
+
     public class MediaResourceHistory
     { 
         public string Id { get; set; } = Guid.NewGuid().ToId(); 
@@ -587,6 +624,8 @@ namespace LagoVista.MediaServices.Models
         public string CompletedUtc { get; set; }
         public string Notes { get; set; }
         public TextToSpeechRequest TextGenerationRequest { get; set; }
+
+        public AudioGenerationReceipt AudioGenerationReceipt { get; set; }
 
         public ImageGenerationRequest ImageGenerationRequest { get; set; }
     }

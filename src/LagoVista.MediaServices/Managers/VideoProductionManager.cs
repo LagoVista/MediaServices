@@ -16,6 +16,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -38,6 +41,7 @@ namespace LagoVista.MediaServices.Managers
         private readonly IMediaServicesManager _mediaServicesManager;
         private readonly IBillingEventRecorder _billingEventRecorder;
 
+        private static readonly HttpClient PreviewAudioHttpClient = new HttpClient();
         private static readonly TimeSpan VimeoStatusPollingInterval = TimeSpan.FromSeconds(20);
         private static readonly TimeSpan VimeoStatusPollingTimeout = TimeSpan.FromMinutes(30);
 
@@ -505,10 +509,230 @@ namespace LagoVista.MediaServices.Managers
             }
 
             production.SetStatus(VideoProductionStatus.GeneratingPreviewAudio);
+            production.ErrorMessage = null;
             production.LastStatusCheckUtc = UtcTimestamp.Now;
-            await _repo.UpdateVideoProductionAsync(production);
 
-            return InvokeResult<VideoProduction>.FromError("Preview audio generation has not been implemented yet.");
+            await _repo.UpdateVideoProductionAsync(production);
+            await PublishVideoProductionUpdatedAsync(production);
+
+            var previewResult = await _heyGenVideoService.GenerateSpeechPreviewAsync(new HeyGenSpeechPreviewRequest
+            {
+                VoiceId = production.VoiceId,
+                Text = production.Script,
+                Locale = String.IsNullOrWhiteSpace(production.Locale) ? production.DefaultLocale : production.Locale
+            });
+
+            if (!previewResult.Successful)
+            {
+                production.SetStatus(VideoProductionStatus.Failed);
+                production.ErrorMessage = previewResult.Errors[0].Message;
+                production.LastStatusCheckUtc = UtcTimestamp.Now;
+
+                await _repo.UpdateVideoProductionAsync(production);
+                await PublishVideoProductionUpdatedAsync(production);
+
+                return previewResult.ToInvokeResult<VideoProduction>();
+            }
+
+            if (String.IsNullOrWhiteSpace(previewResult.Result.AudioUrl))
+            {
+                production.SetStatus(VideoProductionStatus.Failed);
+                production.ErrorMessage = "HeyGen did not return a preview audio URL.";
+                production.LastStatusCheckUtc = UtcTimestamp.Now;
+
+                await _repo.UpdateVideoProductionAsync(production);
+                await PublishVideoProductionUpdatedAsync(production);
+
+                return InvokeResult<VideoProduction>.FromError(production.ErrorMessage);
+            }
+
+            byte[] audioBytes;
+            string contentType;
+
+            try
+            {
+                using var audioResponse = await PreviewAudioHttpClient.GetAsync(previewResult.Result.AudioUrl);
+                if (!audioResponse.IsSuccessStatusCode)
+                {
+                    production.SetStatus(VideoProductionStatus.Failed);
+                    production.ErrorMessage = $"Could not download HeyGen preview audio. Status: {(int)audioResponse.StatusCode}.";
+                    production.LastStatusCheckUtc = UtcTimestamp.Now;
+
+                    await _repo.UpdateVideoProductionAsync(production);
+                    await PublishVideoProductionUpdatedAsync(production);
+
+                    return InvokeResult<VideoProduction>.FromError(production.ErrorMessage);
+                }
+
+                audioBytes = await audioResponse.Content.ReadAsByteArrayAsync();
+                contentType = audioResponse.Content.Headers.ContentType?.MediaType;
+            }
+            catch (Exception ex)
+            {
+                production.SetStatus(VideoProductionStatus.Failed);
+                production.ErrorMessage = $"Could not download HeyGen preview audio. {ex.Message}";
+                production.LastStatusCheckUtc = UtcTimestamp.Now;
+
+                await _repo.UpdateVideoProductionAsync(production);
+                await PublishVideoProductionUpdatedAsync(production);
+
+                return InvokeResult<VideoProduction>.FromError(production.ErrorMessage);
+            }
+
+            if (audioBytes == null || audioBytes.Length == 0)
+            {
+                production.SetStatus(VideoProductionStatus.Failed);
+                production.ErrorMessage = "HeyGen preview audio was empty.";
+                production.LastStatusCheckUtc = UtcTimestamp.Now;
+
+                await _repo.UpdateVideoProductionAsync(production);
+                await PublishVideoProductionUpdatedAsync(production);
+
+                return InvokeResult<VideoProduction>.FromError(production.ErrorMessage);
+            }
+
+            contentType = String.IsNullOrWhiteSpace(contentType) ? "audio/mpeg" : contentType;
+            var fileExtension = ResolvePreviewAudioExtension(contentType);
+            var fileName = $"{CreatePreviewAudioFileName(production)}.{fileExtension}";
+            var scriptSha256 = ComputeSha256(production.Script);
+            var generatedUtc = UtcTimestamp.Now;
+
+            InvokeResult<MediaResource> mediaResult;
+            using (var audioStream = new MemoryStream(audioBytes, writable: false))
+            {
+                if (production.PreviewAudioMediaResource == null || String.IsNullOrWhiteSpace(production.PreviewAudioMediaResource.Id))
+                {
+                    mediaResult = await _mediaServicesManager.AddResourceMediaAsync(Guid.NewGuid().ToId(), audioStream, fileName, contentType, org, user, true, false, resourceName: $"{production.Name} Preview Audio");
+                }
+                else
+                {
+                    mediaResult = await _mediaServicesManager.AddResourceMediaRevisionAsync(production.PreviewAudioMediaResource.Id, audioStream, fileName, contentType, org, user, true);
+                }
+            }
+
+            if (!mediaResult.Successful)
+            {
+                production.SetStatus(VideoProductionStatus.Failed);
+                production.ErrorMessage = mediaResult.Errors[0].Message;
+                production.LastStatusCheckUtc = UtcTimestamp.Now;
+
+                await _repo.UpdateVideoProductionAsync(production);
+                await PublishVideoProductionUpdatedAsync(production);
+
+                return mediaResult.ToInvokeResult<VideoProduction>();
+            }
+
+            var mediaResource = mediaResult.Result;
+            mediaResource.DurationSeconds = previewResult.Result.DurationSeconds;
+            mediaResource.SourceEntityType = nameof(VideoProduction);
+            mediaResource.SourceEntity = EntityHeader.Create(production.Id, production.Name);
+
+            var currentRevision = mediaResource.GetCurrentRevision();
+            if (currentRevision == null)
+            {
+                return InvokeResult<VideoProduction>.FromError("Preview audio Media Resource was created without a current revision.");
+            }
+
+            currentRevision.DurationSeconds = previewResult.Result.DurationSeconds;
+            currentRevision.MimeType = contentType;
+            currentRevision.FileName = fileName;
+            currentRevision.ContentSize = audioBytes.LongLength;
+            currentRevision.ContentSha256 = ComputeSha256(audioBytes);
+            currentRevision.Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Ready);
+            currentRevision.CompletedUtc = generatedUtc;
+
+            var actualCost = previewResult.Result.EstimatedCost ?? (previewResult.Result.DurationSeconds.HasValue
+                ? EstimateCost(previewResult.Result.DurationSeconds.Value, 0.000667m)
+                : (decimal?)null);
+
+            GuidString36? billingEventId = null;
+            if (previewResult.Result.DurationSeconds.HasValue && previewResult.Result.DurationSeconds.Value > 0)
+            {
+                billingEventId = await _billingEventRecorder.RecordUsageAsync(BillingEventType.AudioGeneration, previewResult.Result.DurationSeconds.Value, $"HeyGen preview audio for Video Production {production.Name}, duration: {previewResult.Result.DurationSeconds.Value}", production.OwnerOrganization, production.LastUpdatedBy);
+            }
+
+            currentRevision.AudioGenerationReceipt = new AudioGenerationReceipt
+            {
+                Provider = "HeyGen",
+                ProviderRequestId = previewResult.Result.AudioUrl,
+                ScriptSha256 = scriptSha256,
+                VoiceId = production.VoiceId,
+                Locale = String.IsNullOrWhiteSpace(production.Locale) ? production.DefaultLocale : production.Locale,
+                VoiceSpeed = production.Settings?.VoiceSpeed,
+                VoicePitch = production.Settings?.VoicePitch,
+                VoiceVolume = production.Settings?.VoiceVolume,
+                DurationSeconds = previewResult.Result.DurationSeconds,
+                ActualCost = actualCost,
+                Currency = String.IsNullOrWhiteSpace(previewResult.Result.Currency) ? "USD" : previewResult.Result.Currency,
+                BillingEventId = billingEventId?.ToString(),
+                GeneratedUtc = generatedUtc
+            };
+
+            await _mediaRepo.UpdateMediaResourceRecordAsync(mediaResource);
+
+            production.PreviewAudioMediaResource = EntityHeader.Create(mediaResource.Id, mediaResource.Name);
+            production.PreviewAudioScriptSha256 = scriptSha256;
+            production.PreviewAudioGeneratedUtc = generatedUtc;
+            production.PreviewAudioBillingEventId = billingEventId?.ToString();
+            production.ActualPreviewAudioCost = actualCost;
+            production.ActualTotalCost =
+                (production.ActualPreviewAudioCost ?? 0) +
+                (production.ActualAvatarCreationCost ?? 0) +
+                (production.ActualVideoGenerationCost ?? 0);
+            production.CostCurrency = String.IsNullOrWhiteSpace(previewResult.Result.Currency) ? "USD" : previewResult.Result.Currency;
+            production.SetStatus(VideoProductionStatus.PreviewAudioReady);
+            production.ErrorMessage = null;
+            production.LastStatusCheckUtc = generatedUtc;
+
+            await _repo.UpdateVideoProductionAsync(production);
+            await PublishVideoProductionUpdatedAsync(production);
+
+            return InvokeResult<VideoProduction>.Create(production);
+        }
+
+        private static string ComputeSha256(string value)
+        {
+            return ComputeSha256(Encoding.UTF8.GetBytes(value ?? String.Empty));
+        }
+
+        private static string ComputeSha256(byte[] value)
+        {
+            using var sha256 = SHA256.Create();
+            var hash = sha256.ComputeHash(value ?? Array.Empty<byte>());
+            return String.Concat(hash.Select(item => item.ToString("x2")));
+        }
+
+        private static string CreatePreviewAudioFileName(VideoProduction production)
+        {
+            var sourceName = String.IsNullOrWhiteSpace(production.VideoName) ? production.Name : production.VideoName;
+            var safeName = new String((sourceName ?? "video-production-preview")
+                .Select(character => Char.IsLetterOrDigit(character) ? Char.ToLowerInvariant(character) : '-')
+                .ToArray());
+
+            while (safeName.Contains("--"))
+            {
+                safeName = safeName.Replace("--", "-");
+            }
+
+            safeName = safeName.Trim('-');
+            return String.IsNullOrWhiteSpace(safeName) ? "video-production-preview" : $"{safeName}-preview";
+        }
+
+        private static string ResolvePreviewAudioExtension(string contentType)
+        {
+            switch ((contentType ?? String.Empty).Trim().ToLowerInvariant())
+            {
+                case "audio/wav":
+                case "audio/x-wav":
+                    return "wav";
+                case "audio/ogg":
+                    return "ogg";
+                case "audio/mp4":
+                case "audio/m4a":
+                    return "m4a";
+                default:
+                    return "mp3";
+            }
         }
 
         public async Task<InvokeResult<VideoProduction>> SubmitVideoProductionAsync(string id, EntityHeader org, EntityHeader user)

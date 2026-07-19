@@ -271,6 +271,10 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.VideoProduction_PreviewAudioMediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: false)]
         public EntityHeader PreviewAudioMediaResource { get; set; }
 
+        public string PreviewAudioScriptSha256 { get; set; }
+
+        public string PreviewAudioGeneratedUtc { get; set; }
+
         [FormField(LabelResource: MediaServicesResources.Names.VideoProduction_FinalVideoMediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: false)]
         public EntityHeader FinalVideoMediaResource { get; set; }
 
