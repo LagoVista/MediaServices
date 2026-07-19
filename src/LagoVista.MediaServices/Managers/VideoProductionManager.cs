@@ -1091,6 +1091,8 @@ namespace LagoVista.MediaServices.Managers
 
         private static HeyGenVideoRequest BuildHeyGenRequest(VideoProduction production)
         {
+            var settings = production.Settings ?? new VideoProductionSettings();
+
             return new HeyGenVideoRequest
             {
                 Type = "avatar",
@@ -1099,12 +1101,95 @@ namespace LagoVista.MediaServices.Managers
                 VoiceId = production.VoiceId,
                 Title = production.VideoName,
                 CallbackId = production.Id,
-                Resolution = "1080p",
-                AspectRatio = "16:9",
+                Resolution = ResolveHeyGenResolution(settings.Resolution),
+                AspectRatio = ResolveHeyGenAspectRatio(settings.AspectRatio),
+                Fit = ResolveHeyGenFit(settings.Fit),
+                RemoveBackground = settings.RemoveBackground ? true : (bool?)null,
                 OutputFormat = "mp4",
                 Background = String.IsNullOrWhiteSpace(production.ProviderBackgroundAssetId) ? null : new HeyGenBackground { AssetId = production.ProviderBackgroundAssetId },
-                VoiceSettings = String.IsNullOrWhiteSpace(production.Locale) ? null : new HeyGenVoiceSettings { Locale = production.Locale }
+                Caption = settings.BurnInCaptions ? new HeyGenCaptionSettings { FileFormat = "srt", Style = String.IsNullOrWhiteSpace(settings.CaptionStyle) ? "default" : settings.CaptionStyle } : null,
+                MotionPrompt = settings.MotionPrompt,
+                Expressiveness = production.Engine?.Value == VideoProductionEngine.AvatarIV ? ResolveHeyGenExpressiveness(settings.Expressiveness) : null,
+                Engine = new HeyGenEngineSettings { Type = ResolveHeyGenEngine(production.Engine) },
+                VoiceSettings = new HeyGenVoiceSettings
+                {
+                    Speed = settings.VoiceSpeed,
+                    Pitch = settings.VoicePitch,
+                    Volume = settings.VoiceVolume,
+                    Locale = production.Locale
+                }
             };
+        }
+
+        private static string ResolveHeyGenEngine(EntityHeader<VideoProductionEngine> engine)
+        {
+            switch (engine?.Value ?? VideoProductionEngine.AvatarIV)
+            {
+                case VideoProductionEngine.AvatarIII:
+                    return "avatar_iii";
+                case VideoProductionEngine.AvatarV:
+                    return "avatar_v";
+                default:
+                    return "avatar_iv";
+            }
+        }
+
+        private static string ResolveHeyGenResolution(EntityHeader<VideoProductionResolution> resolution)
+        {
+            switch (resolution?.Value ?? VideoProductionResolution.FullHD1080)
+            {
+                case VideoProductionResolution.HD720:
+                    return "720p";
+                case VideoProductionResolution.UHD4K:
+                    return "4k";
+                default:
+                    return "1080p";
+            }
+        }
+
+        private static string ResolveHeyGenAspectRatio(EntityHeader<VideoProductionAspectRatio> aspectRatio)
+        {
+            switch (aspectRatio?.Value ?? VideoProductionAspectRatio.Landscape16x9)
+            {
+                case VideoProductionAspectRatio.Portrait9x16:
+                    return "9:16";
+                case VideoProductionAspectRatio.Portrait4x5:
+                    return "4:5";
+                case VideoProductionAspectRatio.Landscape5x4:
+                    return "5:4";
+                case VideoProductionAspectRatio.Square1x1:
+                    return "1:1";
+                case VideoProductionAspectRatio.Auto:
+                    return "auto";
+                default:
+                    return "16:9";
+            }
+        }
+
+        private static string ResolveHeyGenFit(EntityHeader<VideoProductionFit> fit)
+        {
+            switch (fit?.Value ?? VideoProductionFit.Automatic)
+            {
+                case VideoProductionFit.Contain:
+                    return "contain";
+                case VideoProductionFit.Cover:
+                    return "cover";
+                default:
+                    return null;
+            }
+        }
+
+        private static string ResolveHeyGenExpressiveness(EntityHeader<VideoProductionExpressiveness> expressiveness)
+        {
+            switch (expressiveness?.Value ?? VideoProductionExpressiveness.Low)
+            {
+                case VideoProductionExpressiveness.Medium:
+                    return "medium";
+                case VideoProductionExpressiveness.High:
+                    return "high";
+                default:
+                    return "low";
+            }
         }
 
         private static InvokeResult<VideoAvatarLook> ResolveAvatarLook(VideoProduction production, VideoAvatar avatar)
@@ -1175,6 +1260,36 @@ namespace LagoVista.MediaServices.Managers
             if (production == null)
             {
                 return;
+            }
+
+            production.Settings = production.Settings ?? new VideoProductionSettings();
+            production.Engine = production.Engine ?? EntityHeader<VideoProductionEngine>.Create(VideoProductionEngine.AvatarIV);
+            production.Settings.Resolution = production.Settings.Resolution ?? EntityHeader<VideoProductionResolution>.Create(VideoProductionResolution.FullHD1080);
+            production.Settings.AspectRatio = production.Settings.AspectRatio ?? EntityHeader<VideoProductionAspectRatio>.Create(VideoProductionAspectRatio.Landscape16x9);
+            production.Settings.Fit = production.Settings.Fit ?? EntityHeader<VideoProductionFit>.Create(VideoProductionFit.Automatic);
+            production.Settings.Expressiveness = production.Settings.Expressiveness ?? EntityHeader<VideoProductionExpressiveness>.Create(VideoProductionExpressiveness.Low);
+            production.Settings.CaptionStyle = String.IsNullOrWhiteSpace(production.Settings.CaptionStyle) ? "default" : production.Settings.CaptionStyle.Trim();
+            production.Settings.MotionPrompt = production.Settings.MotionPrompt?.Trim();
+            production.Settings.SpecialInstructions = production.Settings.SpecialInstructions?.Trim();
+
+            if (production.Settings.Width <= 0)
+            {
+                production.Settings.Width = 1920;
+            }
+
+            if (production.Settings.Height <= 0)
+            {
+                production.Settings.Height = 1080;
+            }
+
+            production.Settings.SpecialInstructions = production.Settings.SpecialInstructions?.Trim();
+            production.Settings.MotionPrompt = production.Settings.MotionPrompt?.Trim();
+            production.Settings.Expressiveness = production.Settings.Expressiveness?.Trim();
+
+            if (production.Quality?.Value == VideoProductionQuality.Standard)
+            {
+                production.Settings.MotionPrompt = null;
+                production.Settings.Expressiveness = null;
             }
 
             if (production.Provider == null)

@@ -35,6 +35,24 @@ namespace LagoVista.MediaServices.Models
         [JsonProperty("aspect_ratio")]
         public string AspectRatio { get; set; }
 
+        [JsonProperty("fit", NullValueHandling = NullValueHandling.Ignore)]
+        public string Fit { get; set; }
+
+        [JsonProperty("remove_background", NullValueHandling = NullValueHandling.Ignore)]
+        public bool? RemoveBackground { get; set; }
+
+        [JsonProperty("caption", NullValueHandling = NullValueHandling.Ignore)]
+        public HeyGenCaptionSettings Caption { get; set; }
+
+        [JsonProperty("motion_prompt", NullValueHandling = NullValueHandling.Ignore)]
+        public string MotionPrompt { get; set; }
+
+        [JsonProperty("expressiveness", NullValueHandling = NullValueHandling.Ignore)]
+        public string Expressiveness { get; set; }
+
+        [JsonProperty("engine", NullValueHandling = NullValueHandling.Ignore)]
+        public HeyGenEngineSettings Engine { get; set; }
+
         [JsonProperty("output_format")]
         public string OutputFormat { get; set; } = "mp4";
 
@@ -59,12 +77,47 @@ namespace LagoVista.MediaServices.Models
 
     public sealed class HeyGenBackground
     {
+        [JsonProperty("asset_id", NullValueHandling = NullValueHandling.Ignore)]
         public string AssetId { get; set; }
+
+        [JsonProperty("url", NullValueHandling = NullValueHandling.Ignore)]
+        public string Url { get; set; }
+
+        [JsonProperty("value", NullValueHandling = NullValueHandling.Ignore)]
+        public string Value { get; set; }
     }
 
     public sealed class HeyGenVoiceSettings
     {
+        [JsonProperty("speed", NullValueHandling = NullValueHandling.Ignore)]
+        public decimal? Speed { get; set; }
+
+        [JsonProperty("pitch", NullValueHandling = NullValueHandling.Ignore)]
+        public decimal? Pitch { get; set; }
+
+        [JsonProperty("volume", NullValueHandling = NullValueHandling.Ignore)]
+        public decimal? Volume { get; set; }
+
+        [JsonProperty("locale", NullValueHandling = NullValueHandling.Ignore)]
         public string Locale { get; set; }
+    }
+
+    public sealed class HeyGenCaptionSettings
+    {
+        [JsonProperty("file_format")]
+        public string FileFormat { get; set; } = "srt";
+
+        [JsonProperty("style", NullValueHandling = NullValueHandling.Ignore)]
+        public string Style { get; set; }
+    }
+
+    public sealed class HeyGenEngineSettings
+    {
+        [JsonProperty("type")]
+        public string Type { get; set; }
+
+        [JsonProperty("reference_look_id", NullValueHandling = NullValueHandling.Ignore)]
+        public string ReferenceLookId { get; set; }
     }
 
     public sealed class HeyGenVideoSubmission

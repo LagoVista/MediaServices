@@ -450,6 +450,10 @@ namespace LagoVista.MediaServices.Models
                 {
                     result.AddUserError("Video width and height must be greater than zero.");
                 }
+                else if (Settings.Width > 4096 || Settings.Height > 4096)
+                {
+                    result.AddUserError("Video width and height cannot exceed 4096 pixels.");
+                }
 
                 if (Settings.VoiceSpeed.HasValue && (Settings.VoiceSpeed.Value < 0.5m || Settings.VoiceSpeed.Value > 2.0m))
                 {
@@ -464,6 +468,21 @@ namespace LagoVista.MediaServices.Models
                 if (Quality?.Value == VideoProductionQuality.Standard && (!String.IsNullOrWhiteSpace(Settings.MotionPrompt) || !String.IsNullOrWhiteSpace(Settings.Expressiveness)))
                 {
                     result.AddUserError("Motion prompt and expressiveness require Premium video quality.");
+                }
+
+                if (!String.IsNullOrWhiteSpace(Settings.SpecialInstructions) && Settings.SpecialInstructions.Length > 1000)
+                {
+                    result.AddUserError("Special instructions cannot exceed 1000 characters.");
+                }
+
+                if (!String.IsNullOrWhiteSpace(Settings.MotionPrompt) && Settings.MotionPrompt.Length > 1000)
+                {
+                    result.AddUserError("Motion prompt cannot exceed 1000 characters.");
+                }
+
+                if (!String.IsNullOrWhiteSpace(Settings.Expressiveness) && Settings.Expressiveness.Length > 100)
+                {
+                    result.AddUserError("Expressiveness cannot exceed 100 characters.");
                 }
             }
 
