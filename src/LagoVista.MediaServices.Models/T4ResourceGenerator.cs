@@ -1,4 +1,4 @@
-﻿/*7/16/2026 4:14:22 PM*/
+﻿/*7/19/2026 8:46:13 AM*/
 using System.Globalization;
 using System.Reflection;
 
@@ -690,6 +690,12 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:VideoProductionProvider_HeyGen
 
 		public static string VideoProductionProvider_HeyGen { get { return GetResourceString("VideoProductionProvider_HeyGen"); } }
+//Resources:MediaServicesResources:VideoProductionProvider_QualityPremium
+
+		public static string VideoProductionProvider_QualityPremium { get { return GetResourceString("VideoProductionProvider_QualityPremium"); } }
+//Resources:MediaServicesResources:VideoProductionProvider_QualityStandard
+
+		public static string VideoProductionProvider_QualityStandard { get { return GetResourceString("VideoProductionProvider_QualityStandard"); } }
 //Resources:MediaServicesResources:VideoProductionStatus_Cancelled
 
 		public static string VideoProductionStatus_Cancelled { get { return GetResourceString("VideoProductionStatus_Cancelled"); } }
@@ -959,6 +965,8 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string VideoProduction_VoiceId = "VideoProduction_VoiceId";
 			public const string VideoProduction_VoiceName = "VideoProduction_VoiceName";
 			public const string VideoProductionProvider_HeyGen = "VideoProductionProvider_HeyGen";
+			public const string VideoProductionProvider_QualityPremium = "VideoProductionProvider_QualityPremium";
+			public const string VideoProductionProvider_QualityStandard = "VideoProductionProvider_QualityStandard";
 			public const string VideoProductionStatus_Cancelled = "VideoProductionStatus_Cancelled";
 			public const string VideoProductionStatus_Completed = "VideoProductionStatus_Completed";
 			public const string VideoProductionStatus_Draft = "VideoProductionStatus_Draft";

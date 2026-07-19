@@ -759,7 +759,7 @@ namespace LagoVista.MediaServices.Managers
             var duration = production.ActualDurationSeconds.HasValue ? (double)production.ActualDurationSeconds : 0;
 
             var quality = production.Quality?.Text ?? production.Quality?.Id ?? VideoProductionQuality.Standard.ToString();
-            await _billingEventRecorder.RecordUsageAsync(BillingEventType.VideoGeneration, duration, $"HeyGen {quality} Video Production {production.Name}, duration: {duration}", production.OwnerOrganization, production.LastUpdatedBy);
+            await _billingEventRecorder.RecordUsageAsync(BillingEventType.VideoGenerationStandard, duration, $"HeyGen {quality} Video Production {production.Name}, duration: {duration}", production.OwnerOrganization, production.LastUpdatedBy);
 
             return await _repo.UpdateVideoProductionProviderStateAsync(production.Id, state);
         }
@@ -781,7 +781,7 @@ namespace LagoVista.MediaServices.Managers
             var duration = production.ActualDurationSeconds.HasValue ? (double)production.ActualDurationSeconds : 0;
 
             var quality = production.Quality?.Text ?? production.Quality?.Id ?? VideoProductionQuality.Standard.ToString();
-            await _billingEventRecorder.RecordUsageAsync(BillingEventType.VideoGeneration, duration, $"Failed HeyGen {quality} Video Production {production.Name}, duration: {duration}", production.OwnerOrganization, production.LastUpdatedBy);
+            await _billingEventRecorder.RecordUsageAsync(BillingEventType.VideoGenerationPremium, duration, $"Failed HeyGen {quality} Video Production {production.Name}, duration: {duration}", production.OwnerOrganization, production.LastUpdatedBy);
 
             return await _repo.UpdateVideoProductionProviderStateAsync(production.Id, state);
         }

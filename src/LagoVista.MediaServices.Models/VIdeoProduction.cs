@@ -77,7 +77,9 @@ namespace LagoVista.MediaServices.Models
 
     public enum VideoProductionQuality
     {
+        [EnumLabel(VideoProduction.Quality_Standard, MediaServicesResources.Names.VideoProductionProvider_QualityStandard, typeof(MediaServicesResources))]
         Standard,
+        [EnumLabel(VideoProduction.Quality_Premium, MediaServicesResources.Names.VideoProductionProvider_QualityPremium, typeof(MediaServicesResources))]
         Premium
     }
 
