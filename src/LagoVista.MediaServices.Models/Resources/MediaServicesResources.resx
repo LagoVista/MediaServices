@@ -839,6 +839,15 @@
   </data>
 
 
+  <data name="VideoProductionProvider_QualityStandard" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="VideoProductionProvider_QualityPremium" xml:space="preserve">
+    <value>Premium</value>
+  </data>
+
+
+
   <data name="MediaResource_ThumbnailUrl" xml:space="preserve">
     <value>Thumbnail Url</value>
   </data>

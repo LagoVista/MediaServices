@@ -296,6 +296,7 @@ namespace LagoVista.MediaServices.Models
         $"voiceBindingId={NormalizeHashValue(VoiceBindingId)}",
         $"voiceId={NormalizeHashValue(VoiceId)}",
         $"videoAvatarId={NormalizeHashValue(VideoAvatar?.Id)}",
+        $"videoAvatarLookId={NormalizeHashValue(VideoAvatarLookId)}",
         $"providerAvatarId={NormalizeHashValue(ProviderAvatarId)}",
         $"backgroundMediaResourceId={NormalizeHashValue(BackgroundMediaResource?.Id)}",
         $"provider={NormalizeHashValue(Provider?.Id)}",
