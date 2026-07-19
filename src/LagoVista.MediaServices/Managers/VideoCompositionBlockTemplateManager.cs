@@ -157,7 +157,7 @@ namespace LagoVista.MediaServices.Managers
                 }
                 else if (!previousWasSeparator && chars.Count > 0)
                 {
-                    chars.Add('-');
+                    chars.Add('-'); 
                     previousWasSeparator = true;
                 }
             }

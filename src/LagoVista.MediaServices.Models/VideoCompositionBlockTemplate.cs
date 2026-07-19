@@ -15,7 +15,7 @@ namespace LagoVista.MediaServices.Models
         GetListUrl: "/api/media/videocomposition/blocktemplates", SaveUrl: "/api/media/videocomposition/blocktemplate", GetUrl: "/api/media/videocomposition/blocktemplate/{id}", FactoryUrl: "/api/media/videocomposition/blocktemplate/factory", DeleteUrl: "/api/media/videocomposition/blocktemplate/{id}",
         ClusterKey: "video", ModelType: EntityDescriptionAttribute.ModelTypes.Document, Shape: EntityDescriptionAttribute.EntityShapes.Entity, Lifecycle: EntityDescriptionAttribute.Lifecycles.RunTime,
         Sensitivity: EntityDescriptionAttribute.Sensitivities.Internal, IndexInclude: true, IndexTier: EntityDescriptionAttribute.IndexTiers.Primary, IndexPriority: 75, IndexTagsCsv: "media,video,composition,block,template")]
-    public class VideoCompositionBlockTemplate : EntityBase, IValidateable, IFormDescriptor, ISummaryFactory
+    public class VideoCompositionBlockTemplate : EntityBase, IValidateable, ISummaryFactory
     {
         public VideoCompositionBlockTemplate()
         {
@@ -24,24 +24,11 @@ namespace LagoVista.MediaServices.Models
             IsActive = true;
         }
 
-        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_Title, FieldType: FieldTypes.ChildListInline, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: false)]
         public VideoCompositionBlock Block { get; set; }
 
-        [FormField(LabelResource: MediaServicesResources.Names.Common_IsActive, FieldType: FieldTypes.CheckBox, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
         public bool IsActive { get; set; }
 
-        public List<string> GetFormFields()
-        {
-            return new List<string>()
-            {
-                nameof(Name),
-                nameof(Key),
-                nameof(Icon),
-                nameof(Description),
-                nameof(IsActive)
-            };
-        }
-
+        
         public void Validate(ValidationResult result)
         {
             if (String.IsNullOrWhiteSpace(Name))
