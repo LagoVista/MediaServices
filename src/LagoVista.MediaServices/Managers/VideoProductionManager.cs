@@ -597,7 +597,7 @@ namespace LagoVista.MediaServices.Managers
             }
 
             var submitRequest = BuildHeyGenRequest(production);
-            var submitResult = await _heyGenVideoService.SubmitVideoAsync(submitRequest, production.Quality?.Value ?? VideoProductionQuality.Standard, production.Settings);
+            var submitResult = await _heyGenVideoService.SubmitVideoAsync(submitRequest);
             if (!submitResult.Successful)
             {
                 production.SetStatus(VideoProductionStatus.Failed);
@@ -1106,7 +1106,7 @@ namespace LagoVista.MediaServices.Managers
                 Fit = ResolveHeyGenFit(settings.Fit),
                 RemoveBackground = settings.RemoveBackground ? true : (bool?)null,
                 OutputFormat = "mp4",
-                Background = String.IsNullOrWhiteSpace(production.ProviderBackgroundAssetId) ? null : new HeyGenBackground { AssetId = production.ProviderBackgroundAssetId },
+                Background = String.IsNullOrWhiteSpace(production.ProviderBackgroundAssetId) ? null : new HeyGenBackground { Type = "image", AssetId = production.ProviderBackgroundAssetId },
                 Caption = settings.BurnInCaptions ? new HeyGenCaptionSettings { FileFormat = "srt", Style = String.IsNullOrWhiteSpace(settings.CaptionStyle) ? "default" : settings.CaptionStyle } : null,
                 MotionPrompt = settings.MotionPrompt,
                 Expressiveness = production.Engine?.Value == VideoProductionEngine.AvatarIV ? ResolveHeyGenExpressiveness(settings.Expressiveness) : null,
@@ -1262,44 +1262,9 @@ namespace LagoVista.MediaServices.Managers
                 return;
             }
 
-            production.Settings = production.Settings ?? new VideoProductionSettings();
-            production.Engine = production.Engine ?? EntityHeader<VideoProductionEngine>.Create(VideoProductionEngine.AvatarIV);
-            production.Settings.Resolution = production.Settings.Resolution ?? EntityHeader<VideoProductionResolution>.Create(VideoProductionResolution.FullHD1080);
-            production.Settings.AspectRatio = production.Settings.AspectRatio ?? EntityHeader<VideoProductionAspectRatio>.Create(VideoProductionAspectRatio.Landscape16x9);
-            production.Settings.Fit = production.Settings.Fit ?? EntityHeader<VideoProductionFit>.Create(VideoProductionFit.Automatic);
-            production.Settings.Expressiveness = production.Settings.Expressiveness ?? EntityHeader<VideoProductionExpressiveness>.Create(VideoProductionExpressiveness.Low);
-            production.Settings.CaptionStyle = String.IsNullOrWhiteSpace(production.Settings.CaptionStyle) ? "default" : production.Settings.CaptionStyle.Trim();
-            production.Settings.MotionPrompt = production.Settings.MotionPrompt?.Trim();
-            production.Settings.SpecialInstructions = production.Settings.SpecialInstructions?.Trim();
-
-            if (production.Settings.Width <= 0)
-            {
-                production.Settings.Width = 1920;
-            }
-
-            if (production.Settings.Height <= 0)
-            {
-                production.Settings.Height = 1080;
-            }
-
-            production.Settings.SpecialInstructions = production.Settings.SpecialInstructions?.Trim();
-            production.Settings.MotionPrompt = production.Settings.MotionPrompt?.Trim();
-            production.Settings.Expressiveness = production.Settings.Expressiveness?.Trim();
-
-            if (production.Quality?.Value == VideoProductionQuality.Standard)
-            {
-                production.Settings.MotionPrompt = null;
-                production.Settings.Expressiveness = null;
-            }
-
             if (production.Provider == null)
             {
                 production.Provider = EntityHeader<VideoProductionProvider>.Create(VideoProductionProvider.HeyGen);
-            }
-
-            if (production.Status == null)
-            {
-                production.SetStatus(VideoProductionStatus.Draft);
             }
 
             if (production.Quality == null)
@@ -1307,19 +1272,48 @@ namespace LagoVista.MediaServices.Managers
                 production.Quality = EntityHeader<VideoProductionQuality>.Create(VideoProductionQuality.Standard);
             }
 
+            if (production.Engine == null)
+            {
+                production.Engine = EntityHeader<VideoProductionEngine>.Create(VideoProductionEngine.AvatarIV);
+            }
+
             if (production.Settings == null)
             {
                 production.Settings = new VideoProductionSettings();
             }
 
-            if (production.Settings.Width <= 0)
+            if (production.Settings.Resolution == null)
             {
-                production.Settings.Width = 1920;
+                production.Settings.Resolution = EntityHeader<VideoProductionResolution>.Create(VideoProductionResolution.FullHD1080);
             }
 
-            if (production.Settings.Height <= 0)
+            if (production.Settings.AspectRatio == null)
             {
-                production.Settings.Height = 1080;
+                production.Settings.AspectRatio = EntityHeader<VideoProductionAspectRatio>.Create(VideoProductionAspectRatio.Landscape16x9);
+            }
+
+            if (production.Settings.Fit == null)
+            {
+                production.Settings.Fit = EntityHeader<VideoProductionFit>.Create(VideoProductionFit.Automatic);
+            }
+
+            if (production.Engine.Value == VideoProductionEngine.AvatarIV && production.Settings.Expressiveness == null)
+            {
+                production.Settings.Expressiveness = EntityHeader<VideoProductionExpressiveness>.Create(VideoProductionExpressiveness.Low);
+            }
+
+            if (production.Engine.Value != VideoProductionEngine.AvatarIV)
+            {
+                production.Settings.Expressiveness = null;
+            }
+
+            production.Settings.SpecialInstructions = production.Settings.SpecialInstructions?.Trim();
+            production.Settings.MotionPrompt = production.Settings.MotionPrompt?.Trim();
+            production.Settings.CaptionStyle = String.IsNullOrWhiteSpace(production.Settings.CaptionStyle) ? "default" : production.Settings.CaptionStyle.Trim();
+
+            if (production.Status == null)
+            {
+                production.SetStatus(VideoProductionStatus.Draft);
             }
 
             if (String.IsNullOrWhiteSpace(production.CostCurrency))

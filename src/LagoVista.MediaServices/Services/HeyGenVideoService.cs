@@ -231,7 +231,7 @@ namespace LagoVista.MediaServices.Services
             return InvokeResult.Success;
         }
 
-        public async Task<InvokeResult<HeyGenVideoSubmission>> SubmitVideoAsync(HeyGenVideoRequest request, VideoProductionQuality quality, VideoProductionSettings settings, CancellationToken cancellationToken = default)
+        public async Task<InvokeResult<HeyGenVideoSubmission>> SubmitVideoAsync(HeyGenVideoRequest request, CancellationToken cancellationToken = default)
         {
             if (request == null)
             {
@@ -253,43 +253,36 @@ namespace LagoVista.MediaServices.Services
                 return InvokeResult<HeyGenVideoSubmission>.FromError("HeyGen voice ID is required.");
             }
 
+            if (String.IsNullOrWhiteSpace(request.Resolution))
+            {
+                return InvokeResult<HeyGenVideoSubmission>.FromError("HeyGen video resolution is required.");
+            }
+
+            if (String.IsNullOrWhiteSpace(request.AspectRatio))
+            {
+                return InvokeResult<HeyGenVideoSubmission>.FromError("HeyGen video aspect ratio is required.");
+            }
+
+            if (String.IsNullOrWhiteSpace(request.Engine?.Type))
+            {
+                return InvokeResult<HeyGenVideoSubmission>.FromError("HeyGen rendering engine is required.");
+            }
+
             if (String.IsNullOrWhiteSpace(_settings.HeyGenApiKey))
             {
                 return InvokeResult<HeyGenVideoSubmission>.FromError("HeyGen API key has not been configured.");
             }
 
-            settings ??= new VideoProductionSettings();
-
-            if (settings.Width <= 0)
-            {
-                settings.Width = 1920;
-            }
-
-            if (settings.Height <= 0)
-            {
-                settings.Height = 1080;
-            }
-
-            if (quality == VideoProductionQuality.Standard && request.Background != null && !String.IsNullOrWhiteSpace(request.Background.AssetId))
-            {
-                return InvokeResult<HeyGenVideoSubmission>.FromError("Standard video generation does not yet support backgrounds registered through the HeyGen V3 asset API.");
-            }
-
-            var endpoint = quality == VideoProductionQuality.Standard ? "v2/video/generate" : "v3/videos";
-            var payload = quality == VideoProductionQuality.Standard ? BuildStandardVideoPayload(request, settings) : BuildPremiumVideoPayload(request, settings);
-
-            return await SubmitVideoPayloadAsync(endpoint, payload, quality, cancellationToken);
-        }
-
-        private async Task<InvokeResult<HeyGenVideoSubmission>> SubmitVideoPayloadAsync(string endpoint, JObject payload, VideoProductionQuality quality, CancellationToken cancellationToken)
-        {
-            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint);
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "v3/videos");
 
             httpRequest.Headers.Add("x-api-key", _settings.HeyGenApiKey);
 
-            var requestJson = payload.ToString(Formatting.None);
+            var requestJson = JsonConvert.SerializeObject(request, new JsonSerializerSettings
+            {
+                NullValueHandling = NullValueHandling.Ignore
+            });
 
-            _adminLogger.WriteJson($"HeyGen{quality}VideoRequest", payload);
+            _adminLogger.WriteJson(nameof(HeyGenVideoRequest), request);
 
             httpRequest.Content = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
@@ -298,151 +291,30 @@ namespace LagoVista.MediaServices.Services
 
             if (!response.IsSuccessStatusCode)
             {
-                return InvokeResult<HeyGenVideoSubmission>.FromError($"HeyGen {quality} video submission failed with status {(int)response.StatusCode}: {responseContent}");
+                return InvokeResult<HeyGenVideoSubmission>.FromError($"HeyGen video submission failed with status {(int)response.StatusCode}: {responseContent}");
             }
 
-            var submissionResponse = JsonConvert.DeserializeObject<HeyGenVideoSubmissionResponse>(responseContent);
+            HeyGenVideoSubmissionResponse submissionResponse;
+
+            try
+            {
+                submissionResponse = JsonConvert.DeserializeObject<HeyGenVideoSubmissionResponse>(responseContent);
+            }
+            catch (JsonException ex)
+            {
+                _adminLogger.AddException(this.Tag(), ex);
+                return InvokeResult<HeyGenVideoSubmission>.FromError("HeyGen video submission returned an invalid response.");
+            }
 
             if (String.IsNullOrWhiteSpace(submissionResponse?.Data?.VideoId))
             {
-                return InvokeResult<HeyGenVideoSubmission>.FromError($"HeyGen {quality} video submission completed without returning a video ID.");
+                return InvokeResult<HeyGenVideoSubmission>.FromError("HeyGen video submission completed without returning a video ID.");
             }
 
             return InvokeResult<HeyGenVideoSubmission>.Create(new HeyGenVideoSubmission
             {
                 VideoId = submissionResponse.Data.VideoId
             });
-        }
-
-        private static JObject BuildStandardVideoPayload(HeyGenVideoRequest request, VideoProductionSettings settings)
-        {
-            var voice = new JObject
-            {
-                ["type"] = "text",
-                ["input_text"] = request.Script,
-                ["voice_id"] = request.VoiceId
-            };
-
-            if (settings.VoiceSpeed.HasValue)
-            {
-                voice["speed"] = settings.VoiceSpeed.Value;
-            }
-
-            if (settings.VoicePitch.HasValue)
-            {
-                voice["pitch"] = settings.VoicePitch.Value;
-            }
-
-            return new JObject
-            {
-                ["video_inputs"] = new JArray
-                {
-                    new JObject
-                    {
-                        ["character"] = new JObject
-                        {
-                            ["type"] = "avatar",
-                            ["avatar_id"] = request.AvatarId,
-                            ["avatar_style"] = "normal"
-                        },
-                        ["voice"] = voice
-                    }
-                },
-                ["title"] = request.Title,
-                ["test"] = false,
-                ["caption"] = settings.CaptionsEnabled,
-                ["callback_id"] = request.CallbackId,
-                ["dimension"] = new JObject
-                {
-                    ["width"] = settings.Width,
-                    ["height"] = settings.Height
-                }
-            };
-        }
-
-        private static JObject BuildPremiumVideoPayload(HeyGenVideoRequest request, VideoProductionSettings settings)
-        {
-            var serializer = JsonSerializer.Create(new JsonSerializerSettings
-            {
-                NullValueHandling = NullValueHandling.Ignore
-            });
-
-            var payload = JObject.FromObject(request, serializer);
-
-            payload["resolution"] = ResolvePremiumResolution(settings.Width, settings.Height);
-            payload["aspect_ratio"] = ResolvePremiumAspectRatio(settings.Width, settings.Height);
-            payload["engine"] = new JObject
-            {
-                ["type"] = "avatar_iv"
-            };
-
-            var voiceSettings = payload["voice_settings"] as JObject ?? new JObject();
-
-            if (settings.VoiceSpeed.HasValue)
-            {
-                voiceSettings["speed"] = settings.VoiceSpeed.Value;
-            }
-
-            if (settings.VoicePitch.HasValue)
-            {
-                voiceSettings["pitch"] = settings.VoicePitch.Value;
-            }
-
-            payload["voice_settings"] = voiceSettings;
-
-            if (settings.CaptionsEnabled)
-            {
-                payload["caption"] = new JObject
-                {
-                    ["file_format"] = "srt"
-                };
-            }
-            else
-            {
-                payload.Remove("caption");
-            }
-
-            if (!String.IsNullOrWhiteSpace(settings.MotionPrompt))
-            {
-                payload["motion_prompt"] = settings.MotionPrompt.Trim();
-            }
-            else
-            {
-                payload.Remove("motion_prompt");
-            }
-
-            if (!String.IsNullOrWhiteSpace(settings.Expressiveness))
-            {
-                payload["expressiveness"] = settings.Expressiveness.Trim().ToLowerInvariant();
-            }
-            else
-            {
-                payload.Remove("expressiveness");
-            }
-
-            return payload;
-        }
-
-        private static string ResolvePremiumResolution(int width, int height)
-        {
-            var longestDimension = Math.Max(width, height);
-
-            if (longestDimension >= 3840)
-            {
-                return "4k";
-            }
-
-            if (longestDimension <= 1280)
-            {
-                return "720p";
-            }
-
-            return "1080p";
-        }
-
-        private static string ResolvePremiumAspectRatio(int width, int height)
-        {
-            return width >= height ? "16:9" : "9:16";
         }
 
         public async Task<InvokeResult<HeyGenAssetUploadResult>> UploadAssetAsync(Stream stream, string fileName, string contentType, string idempotencyKey, CancellationToken cancellationToken = default)

@@ -83,23 +83,109 @@ namespace LagoVista.MediaServices.Models
         Premium
     }
 
+    public enum VideoProductionEngine
+    {
+        [EnumLabel(VideoProduction.Engine_AvatarIII, MediaServicesResources.Names.VideoProductionEngine_AvatarIII, typeof(MediaServicesResources))]
+        AvatarIII,
+
+        [EnumLabel(VideoProduction.Engine_AvatarIV, MediaServicesResources.Names.VideoProductionEngine_AvatarIV, typeof(MediaServicesResources))]
+        AvatarIV,
+
+        [EnumLabel(VideoProduction.Engine_AvatarV, MediaServicesResources.Names.VideoProductionEngine_AvatarV, typeof(MediaServicesResources))]
+        AvatarV
+    }
+
+    public enum VideoProductionResolution
+    {
+        [EnumLabel(VideoProduction.Resolution_HD720, MediaServicesResources.Names.VideoProductionResolution_HD720, typeof(MediaServicesResources))]
+        HD720,
+
+        [EnumLabel(VideoProduction.Resolution_FullHD1080, MediaServicesResources.Names.VideoProductionResolution_FullHD1080, typeof(MediaServicesResources))]
+        FullHD1080,
+
+        [EnumLabel(VideoProduction.Resolution_UHD4K, MediaServicesResources.Names.VideoProductionResolution_UHD4K, typeof(MediaServicesResources))]
+        UHD4K
+    }
+
+    public enum VideoProductionAspectRatio
+    {
+        [EnumLabel(VideoProduction.AspectRatio_Landscape16x9, MediaServicesResources.Names.VideoProductionAspectRatio_Landscape16x9, typeof(MediaServicesResources))]
+        Landscape16x9,
+
+        [EnumLabel(VideoProduction.AspectRatio_Portrait9x16, MediaServicesResources.Names.VideoProductionAspectRatio_Portrait9x16, typeof(MediaServicesResources))]
+        Portrait9x16,
+
+        [EnumLabel(VideoProduction.AspectRatio_Portrait4x5, MediaServicesResources.Names.VideoProductionAspectRatio_Portrait4x5, typeof(MediaServicesResources))]
+        Portrait4x5,
+
+        [EnumLabel(VideoProduction.AspectRatio_Landscape5x4, MediaServicesResources.Names.VideoProductionAspectRatio_Landscape5x4, typeof(MediaServicesResources))]
+        Landscape5x4,
+
+        [EnumLabel(VideoProduction.AspectRatio_Square1x1, MediaServicesResources.Names.VideoProductionAspectRatio_Square1x1, typeof(MediaServicesResources))]
+        Square1x1,
+
+        [EnumLabel(VideoProduction.AspectRatio_Auto, MediaServicesResources.Names.VideoProductionAspectRatio_Auto, typeof(MediaServicesResources))]
+        Auto
+    }
+
+    public enum VideoProductionFit
+    {
+        [EnumLabel(VideoProduction.Fit_Automatic, MediaServicesResources.Names.VideoProductionFit_Automatic, typeof(MediaServicesResources))]
+        Automatic,
+
+        [EnumLabel(VideoProduction.Fit_Contain, MediaServicesResources.Names.VideoProductionFit_Contain, typeof(MediaServicesResources))]
+        Contain,
+
+        [EnumLabel(VideoProduction.Fit_Cover, MediaServicesResources.Names.VideoProductionFit_Cover, typeof(MediaServicesResources))]
+        Cover
+    }
+
+    public enum VideoProductionExpressiveness
+    {
+        [EnumLabel(VideoProduction.Expressiveness_Low, MediaServicesResources.Names.VideoProductionExpressiveness_Low, typeof(MediaServicesResources))]
+        Low,
+
+        [EnumLabel(VideoProduction.Expressiveness_Medium, MediaServicesResources.Names.VideoProductionExpressiveness_Medium, typeof(MediaServicesResources))]
+        Medium,
+
+        [EnumLabel(VideoProduction.Expressiveness_High, MediaServicesResources.Names.VideoProductionExpressiveness_High, typeof(MediaServicesResources))]
+        High
+    }
+
     public sealed class VideoProductionSettings
     {
+        public VideoProductionSettings()
+        {
+            Resolution = EntityHeader<VideoProductionResolution>.Create(VideoProductionResolution.FullHD1080);
+            AspectRatio = EntityHeader<VideoProductionAspectRatio>.Create(VideoProductionAspectRatio.Landscape16x9);
+            Fit = EntityHeader<VideoProductionFit>.Create(VideoProductionFit.Automatic);
+            Expressiveness = EntityHeader<VideoProductionExpressiveness>.Create(VideoProductionExpressiveness.Low);
+            CaptionStyle = "default";
+        }
+
         public string SpecialInstructions { get; set; }
 
         public decimal? VoiceSpeed { get; set; }
 
         public decimal? VoicePitch { get; set; }
 
-        public int Width { get; set; } = 1920;
+        public decimal? VoiceVolume { get; set; }
 
-        public int Height { get; set; } = 1080;
+        public EntityHeader<VideoProductionResolution> Resolution { get; set; }
 
-        public bool CaptionsEnabled { get; set; }
+        public EntityHeader<VideoProductionAspectRatio> AspectRatio { get; set; }
+
+        public EntityHeader<VideoProductionFit> Fit { get; set; }
+
+        public bool RemoveBackground { get; set; }
+
+        public bool BurnInCaptions { get; set; }
+
+        public string CaptionStyle { get; set; }
 
         public string MotionPrompt { get; set; }
 
-        public string Expressiveness { get; set; }
+        public EntityHeader<VideoProductionExpressiveness> Expressiveness { get; set; }
     }
 
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.VideoProduction_Title, MediaServicesResources.Names.VideoProduction_Help, MediaServicesResources.Names.VideoProduction_Description, EntityDescriptionAttribute.EntityTypes.CoreIoTModel, typeof(MediaServicesResources),
@@ -114,6 +200,29 @@ namespace LagoVista.MediaServices.Models
 
         public const string Quality_Standard = "standard";
         public const string Quality_Premium = "premium";
+
+        public const string Engine_AvatarIII = "avatar-iii";
+        public const string Engine_AvatarIV = "avatar-iv";
+        public const string Engine_AvatarV = "avatar-v";
+
+        public const string Resolution_HD720 = "hd-720";
+        public const string Resolution_FullHD1080 = "full-hd-1080";
+        public const string Resolution_UHD4K = "uhd-4k";
+
+        public const string AspectRatio_Landscape16x9 = "landscape-16x9";
+        public const string AspectRatio_Portrait9x16 = "portrait-9x16";
+        public const string AspectRatio_Portrait4x5 = "portrait-4x5";
+        public const string AspectRatio_Landscape5x4 = "landscape-5x4";
+        public const string AspectRatio_Square1x1 = "square-1x1";
+        public const string AspectRatio_Auto = "auto";
+
+        public const string Fit_Automatic = "automatic";
+        public const string Fit_Contain = "contain";
+        public const string Fit_Cover = "cover";
+
+        public const string Expressiveness_Low = "low";
+        public const string Expressiveness_Medium = "medium";
+        public const string Expressiveness_High = "high";
 
         public const string Status_Draft = "draft";
         public const string Status_PreparingAvatar = "preparing-avatar";
@@ -141,6 +250,7 @@ namespace LagoVista.MediaServices.Models
             Icon = "lago-icon://system/nuvos-semantic-icon/video-production-default";
             Provider = EntityHeader<VideoProductionProvider>.Create(VideoProductionProvider.HeyGen);
             Quality = EntityHeader<VideoProductionQuality>.Create(VideoProductionQuality.Standard);
+            Engine = EntityHeader<VideoProductionEngine>.Create(VideoProductionEngine.AvatarIV);
             Settings = new VideoProductionSettings();
             Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Draft);
             StatusChangedUtc = UtcTimestamp.Now;
@@ -216,6 +326,8 @@ namespace LagoVista.MediaServices.Models
         public EntityHeader<VideoProductionProvider> Provider { get; set; }
 
         public EntityHeader<VideoProductionQuality> Quality { get; set; }
+
+        public EntityHeader<VideoProductionEngine> Engine { get; set; }
 
         public VideoProductionSettings Settings { get; set; }
 
@@ -301,14 +413,19 @@ namespace LagoVista.MediaServices.Models
         $"backgroundMediaResourceId={NormalizeHashValue(BackgroundMediaResource?.Id)}",
         $"provider={NormalizeHashValue(Provider?.Id)}",
         $"quality={NormalizeHashValue(Quality?.Id)}",
+        $"engine={NormalizeHashValue(Engine?.Id)}",
         $"specialInstructions={NormalizeHashValue(Settings?.SpecialInstructions)}",
         $"voiceSpeed={NormalizeHashValue(Settings?.VoiceSpeed)}",
         $"voicePitch={NormalizeHashValue(Settings?.VoicePitch)}",
-        $"width={Settings?.Width ?? 0}",
-        $"height={Settings?.Height ?? 0}",
-        $"captionsEnabled={Settings?.CaptionsEnabled ?? false}",
+        $"voiceVolume={NormalizeHashValue(Settings?.VoiceVolume)}",
+        $"resolution={NormalizeHashValue(Settings?.Resolution?.Id)}",
+        $"aspectRatio={NormalizeHashValue(Settings?.AspectRatio?.Id)}",
+        $"fit={NormalizeHashValue(Settings?.Fit?.Id)}",
+        $"removeBackground={Settings?.RemoveBackground ?? false}",
+        $"burnInCaptions={Settings?.BurnInCaptions ?? false}",
+        $"captionStyle={NormalizeHashValue(Settings?.CaptionStyle)}",
         $"motionPrompt={NormalizeHashValue(Settings?.MotionPrompt)}",
-        $"expressiveness={NormalizeHashValue(Settings?.Expressiveness)}"
+        $"expressiveness={NormalizeHashValue(Settings?.Expressiveness?.Id)}"
     });
 
             using (var sha256 = SHA256.Create())
@@ -440,19 +557,30 @@ namespace LagoVista.MediaServices.Models
                 result.AddUserError("Video production quality is required.");
             }
 
+            if (Engine == null)
+            {
+                result.AddUserError("Video production engine is required.");
+            }
+
             if (Settings == null)
             {
                 result.AddUserError("Video production settings are required.");
             }
             else
             {
-                if (Settings.Width <= 0 || Settings.Height <= 0)
+                if (Settings.Resolution == null)
                 {
-                    result.AddUserError("Video width and height must be greater than zero.");
+                    result.AddUserError("Video resolution is required.");
                 }
-                else if (Settings.Width > 4096 || Settings.Height > 4096)
+
+                if (Settings.AspectRatio == null)
                 {
-                    result.AddUserError("Video width and height cannot exceed 4096 pixels.");
+                    result.AddUserError("Video aspect ratio is required.");
+                }
+
+                if (Settings.Fit == null)
+                {
+                    result.AddUserError("Video fit is required.");
                 }
 
                 if (Settings.VoiceSpeed.HasValue && (Settings.VoiceSpeed.Value < 0.5m || Settings.VoiceSpeed.Value > 2.0m))
@@ -465,9 +593,14 @@ namespace LagoVista.MediaServices.Models
                     result.AddUserError("Voice pitch must be between -50 and 50.");
                 }
 
-                if (Quality?.Value == VideoProductionQuality.Standard && (!String.IsNullOrWhiteSpace(Settings.MotionPrompt) || !String.IsNullOrWhiteSpace(Settings.Expressiveness)))
+                if (Settings.VoiceVolume.HasValue && Settings.VoiceVolume.Value <= 0)
                 {
-                    result.AddUserError("Motion prompt and expressiveness require Premium video quality.");
+                    result.AddUserError("Voice volume must be greater than zero.");
+                }
+
+                if (Settings.Expressiveness != null && Engine?.Value != VideoProductionEngine.AvatarIV)
+                {
+                    result.AddUserError("Expressiveness is only supported by the Avatar IV engine.");
                 }
 
                 if (!String.IsNullOrWhiteSpace(Settings.SpecialInstructions) && Settings.SpecialInstructions.Length > 1000)
@@ -480,9 +613,9 @@ namespace LagoVista.MediaServices.Models
                     result.AddUserError("Motion prompt cannot exceed 1000 characters.");
                 }
 
-                if (!String.IsNullOrWhiteSpace(Settings.Expressiveness) && Settings.Expressiveness.Length > 100)
+                if (!String.IsNullOrWhiteSpace(Settings.CaptionStyle) && Settings.CaptionStyle.Length > 100)
                 {
-                    result.AddUserError("Expressiveness cannot exceed 100 characters.");
+                    result.AddUserError("Caption style cannot exceed 100 characters.");
                 }
             }
 

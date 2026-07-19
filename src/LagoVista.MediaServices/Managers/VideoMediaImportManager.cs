@@ -201,7 +201,7 @@ namespace LagoVista.MediaServices.Managers
                 _adminLogger.Trace($"{this.Tag()} [CREATED MEDIA RESOURCE MODEL] ProductionId={production.Id}, MediaResourceId={mediaResource.Id}");
             }
 
-            var pendingRevision = PreparePendingRevision(mediaResource, user);
+            var pendingRevision = PreparePendingRevision(mediaResource, user, production.Settings?.GenerateTransparentPresenter == true);
             var videoContentType = String.IsNullOrWhiteSpace(pendingRevision.MimeType) ? "video/mp4" : pendingRevision.MimeType;
             _adminLogger.Trace($"{this.Tag()} [CREATING VIDEO DESTINATION] ProductionId={production.Id}, MediaResourceId={mediaResource.Id}, StorageReferenceName={pendingRevision.StorageReferenceName}");
             var videoWriteDestinationResult = await _videoProcessorStorageUrlService.CreateWriteDestinationAsync(org.Id, pendingRevision.StorageReferenceName, videoContentType, cancellationToken);
@@ -508,8 +508,11 @@ namespace LagoVista.MediaServices.Managers
             }
         }
 
-        private static MediaResourceHistory PreparePendingRevision(MediaResource mediaResource, EntityHeader user)
+        private static MediaResourceHistory PreparePendingRevision(MediaResource mediaResource, EntityHeader user, bool preserveTransparency)
         {
+            var extension = preserveTransparency ? ".webm" : ".mp4";
+            var mimeType = preserveTransparency ? "video/webm" : "video/mp4";
+            var baseFileName = String.IsNullOrWhiteSpace(mediaResource.FileName) ? mediaResource.Id : System.IO.Path.GetFileNameWithoutExtension(mediaResource.FileName);
             var pendingRevision = mediaResource.GetPendingRevision();
             if (pendingRevision == null || pendingRevision.Status?.Value != MediaResourceStatus.Pending)
             {
@@ -518,10 +521,10 @@ namespace LagoVista.MediaServices.Managers
                     Name = $"Raw video import {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}",
                     CreatedBy = user,
                     CreationDate = UtcTimestamp.Now,
-                    StorageReferenceName = $"{Guid.NewGuid().ToId()}.mp4",
+                    StorageReferenceName = $"{Guid.NewGuid().ToId()}{extension}",
                     ThumbnailStorageReferenceName = $"{Guid.NewGuid().ToId()}.jpg",
-                    FileName = String.IsNullOrWhiteSpace(mediaResource.FileName) ? $"{mediaResource.Id}.mp4" : mediaResource.FileName,
-                    MimeType = "video/mp4",
+                    FileName = $"{baseFileName}{extension}",
+                    MimeType = mimeType,
                     Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Pending)
                 };
 

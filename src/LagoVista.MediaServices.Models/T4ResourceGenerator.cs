@@ -1,4 +1,4 @@
-﻿/*7/19/2026 8:46:13 AM*/
+﻿/*7/19/2026 12:10:08 PM*/
 using System.Globalization;
 using System.Reflection;
 
@@ -687,6 +687,51 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:VideoProduction_VoiceName
 
 		public static string VideoProduction_VoiceName { get { return GetResourceString("VideoProduction_VoiceName"); } }
+//Resources:MediaServicesResources:VideoProductionAspectRatio_Auto
+
+		public static string VideoProductionAspectRatio_Auto { get { return GetResourceString("VideoProductionAspectRatio_Auto"); } }
+//Resources:MediaServicesResources:VideoProductionAspectRatio_Landscape16x9
+
+		public static string VideoProductionAspectRatio_Landscape16x9 { get { return GetResourceString("VideoProductionAspectRatio_Landscape16x9"); } }
+//Resources:MediaServicesResources:VideoProductionAspectRatio_Landscape5x4
+
+		public static string VideoProductionAspectRatio_Landscape5x4 { get { return GetResourceString("VideoProductionAspectRatio_Landscape5x4"); } }
+//Resources:MediaServicesResources:VideoProductionAspectRatio_Portrait4x5
+
+		public static string VideoProductionAspectRatio_Portrait4x5 { get { return GetResourceString("VideoProductionAspectRatio_Portrait4x5"); } }
+//Resources:MediaServicesResources:VideoProductionAspectRatio_Portrait9x16
+
+		public static string VideoProductionAspectRatio_Portrait9x16 { get { return GetResourceString("VideoProductionAspectRatio_Portrait9x16"); } }
+//Resources:MediaServicesResources:VideoProductionAspectRatio_Square1x1
+
+		public static string VideoProductionAspectRatio_Square1x1 { get { return GetResourceString("VideoProductionAspectRatio_Square1x1"); } }
+//Resources:MediaServicesResources:VideoProductionEngine_AvatarIII
+
+		public static string VideoProductionEngine_AvatarIII { get { return GetResourceString("VideoProductionEngine_AvatarIII"); } }
+//Resources:MediaServicesResources:VideoProductionEngine_AvatarIV
+
+		public static string VideoProductionEngine_AvatarIV { get { return GetResourceString("VideoProductionEngine_AvatarIV"); } }
+//Resources:MediaServicesResources:VideoProductionEngine_AvatarV
+
+		public static string VideoProductionEngine_AvatarV { get { return GetResourceString("VideoProductionEngine_AvatarV"); } }
+//Resources:MediaServicesResources:VideoProductionExpressiveness_High
+
+		public static string VideoProductionExpressiveness_High { get { return GetResourceString("VideoProductionExpressiveness_High"); } }
+//Resources:MediaServicesResources:VideoProductionExpressiveness_Low
+
+		public static string VideoProductionExpressiveness_Low { get { return GetResourceString("VideoProductionExpressiveness_Low"); } }
+//Resources:MediaServicesResources:VideoProductionExpressiveness_Medium
+
+		public static string VideoProductionExpressiveness_Medium { get { return GetResourceString("VideoProductionExpressiveness_Medium"); } }
+//Resources:MediaServicesResources:VideoProductionFit_Automatic
+
+		public static string VideoProductionFit_Automatic { get { return GetResourceString("VideoProductionFit_Automatic"); } }
+//Resources:MediaServicesResources:VideoProductionFit_Contain
+
+		public static string VideoProductionFit_Contain { get { return GetResourceString("VideoProductionFit_Contain"); } }
+//Resources:MediaServicesResources:VideoProductionFit_Cover
+
+		public static string VideoProductionFit_Cover { get { return GetResourceString("VideoProductionFit_Cover"); } }
 //Resources:MediaServicesResources:VideoProductionProvider_HeyGen
 
 		public static string VideoProductionProvider_HeyGen { get { return GetResourceString("VideoProductionProvider_HeyGen"); } }
@@ -696,6 +741,15 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:VideoProductionProvider_QualityStandard
 
 		public static string VideoProductionProvider_QualityStandard { get { return GetResourceString("VideoProductionProvider_QualityStandard"); } }
+//Resources:MediaServicesResources:VideoProductionResolution_FullHD1080
+
+		public static string VideoProductionResolution_FullHD1080 { get { return GetResourceString("VideoProductionResolution_FullHD1080"); } }
+//Resources:MediaServicesResources:VideoProductionResolution_HD720
+
+		public static string VideoProductionResolution_HD720 { get { return GetResourceString("VideoProductionResolution_HD720"); } }
+//Resources:MediaServicesResources:VideoProductionResolution_UHD4K
+
+		public static string VideoProductionResolution_UHD4K { get { return GetResourceString("VideoProductionResolution_UHD4K"); } }
 //Resources:MediaServicesResources:VideoProductionStatus_Cancelled
 
 		public static string VideoProductionStatus_Cancelled { get { return GetResourceString("VideoProductionStatus_Cancelled"); } }
@@ -964,9 +1018,27 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string VideoProduction_VideoName = "VideoProduction_VideoName";
 			public const string VideoProduction_VoiceId = "VideoProduction_VoiceId";
 			public const string VideoProduction_VoiceName = "VideoProduction_VoiceName";
+			public const string VideoProductionAspectRatio_Auto = "VideoProductionAspectRatio_Auto";
+			public const string VideoProductionAspectRatio_Landscape16x9 = "VideoProductionAspectRatio_Landscape16x9";
+			public const string VideoProductionAspectRatio_Landscape5x4 = "VideoProductionAspectRatio_Landscape5x4";
+			public const string VideoProductionAspectRatio_Portrait4x5 = "VideoProductionAspectRatio_Portrait4x5";
+			public const string VideoProductionAspectRatio_Portrait9x16 = "VideoProductionAspectRatio_Portrait9x16";
+			public const string VideoProductionAspectRatio_Square1x1 = "VideoProductionAspectRatio_Square1x1";
+			public const string VideoProductionEngine_AvatarIII = "VideoProductionEngine_AvatarIII";
+			public const string VideoProductionEngine_AvatarIV = "VideoProductionEngine_AvatarIV";
+			public const string VideoProductionEngine_AvatarV = "VideoProductionEngine_AvatarV";
+			public const string VideoProductionExpressiveness_High = "VideoProductionExpressiveness_High";
+			public const string VideoProductionExpressiveness_Low = "VideoProductionExpressiveness_Low";
+			public const string VideoProductionExpressiveness_Medium = "VideoProductionExpressiveness_Medium";
+			public const string VideoProductionFit_Automatic = "VideoProductionFit_Automatic";
+			public const string VideoProductionFit_Contain = "VideoProductionFit_Contain";
+			public const string VideoProductionFit_Cover = "VideoProductionFit_Cover";
 			public const string VideoProductionProvider_HeyGen = "VideoProductionProvider_HeyGen";
 			public const string VideoProductionProvider_QualityPremium = "VideoProductionProvider_QualityPremium";
 			public const string VideoProductionProvider_QualityStandard = "VideoProductionProvider_QualityStandard";
+			public const string VideoProductionResolution_FullHD1080 = "VideoProductionResolution_FullHD1080";
+			public const string VideoProductionResolution_HD720 = "VideoProductionResolution_HD720";
+			public const string VideoProductionResolution_UHD4K = "VideoProductionResolution_UHD4K";
 			public const string VideoProductionStatus_Cancelled = "VideoProductionStatus_Cancelled";
 			public const string VideoProductionStatus_Completed = "VideoProductionStatus_Completed";
 			public const string VideoProductionStatus_Draft = "VideoProductionStatus_Draft";

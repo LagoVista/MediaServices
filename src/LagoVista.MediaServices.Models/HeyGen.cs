@@ -77,6 +77,9 @@ namespace LagoVista.MediaServices.Models
 
     public sealed class HeyGenBackground
     {
+        [JsonProperty("type")]
+        public string Type { get; set; }
+
         [JsonProperty("asset_id", NullValueHandling = NullValueHandling.Ignore)]
         public string AssetId { get; set; }
 
