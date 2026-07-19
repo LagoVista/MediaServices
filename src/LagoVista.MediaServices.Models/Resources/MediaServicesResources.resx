@@ -291,339 +291,303 @@
   <data name="DeviceResourceTypes_Audio" xml:space="preserve">
     <value>Audio</value>
   </data>
-
   <data name="GeneratedImageStyles_StudioPortrait" xml:space="preserve">
-  <value>Studio Portrait</value>
-</data>
-
+    <value>Studio Portrait</value>
+  </data>
   <data name="GeneratedImageStyles_EditorialPhotography" xml:space="preserve">
-  <value>Editorial Photography</value>
-</data>
-
+    <value>Editorial Photography</value>
+  </data>
   <data name="GeneratedImageStyles_FlatIllustration" xml:space="preserve">
-  <value>Flat Illustration</value>
-</data>
-
+    <value>Flat Illustration</value>
+  </data>
   <data name="GeneratedImageStyles_EditorialIllustration" xml:space="preserve">
-  <value>Editorial Illustration</value>
-</data>
-
+    <value>Editorial Illustration</value>
+  </data>
   <data name="GeneratedImageStyles_CorporateMemphis" xml:space="preserve">
-  <value>Corporate Memphis Illustration</value>
-</data>
-
+    <value>Corporate Memphis Illustration</value>
+  </data>
   <data name="GeneratedImageStyles_Abstract" xml:space="preserve">
-  <value>Abstract</value>
-</data>
-
+    <value>Abstract</value>
+  </data>
   <data name="GeneratedImageStyles_ThreeDimensionalIllustration" xml:space="preserve">
-  <value>3D Illustration</value>
-</data>
-
+    <value>3D Illustration</value>
+  </data>
   <data name="GeneratedImageQualities_Standard" xml:space="preserve">
-  <value>Standard</value>
-</data>
-
+    <value>Standard</value>
+  </data>
   <data name="GeneratedImageQualities_Premium" xml:space="preserve">
-  <value>Premium</value>
-</data>
-
+    <value>Premium</value>
+  </data>
   <data name="GeneratedImageSizes_Square" xml:space="preserve">
-  <value>Square (1024 × 1024)</value>
-</data>
-
+    <value>Square (1024 × 1024)</value>
+  </data>
   <data name="GeneratedImageSizes_Landscape" xml:space="preserve">
-  <value>Landscape (1536 × 1024)</value>
-</data>
-
+    <value>Landscape (1536 × 1024)</value>
+  </data>
   <data name="GeneratedImageSizes_Portrait" xml:space="preserve">
-  <value>Portrait (1024 × 1536)</value>
-</data>
-
+    <value>Portrait (1024 × 1536)</value>
+  </data>
   <data name="ImageGenerationRequest_Title" xml:space="preserve">
-  <value>Image Generation Request</value>
-</data>
-
+    <value>Image Generation Request</value>
+  </data>
   <data name="ImageGenerationRequest_Help" xml:space="preserve">
-  <value>Configure the content, style, dimensions, and quality of an AI-generated image.</value>
-</data>
-
+    <value>Configure the content, style, dimensions, and quality of an AI-generated image.</value>
+  </data>
   <data name="ImageGenerationRequest_Description" xml:space="preserve">
-  <value>Defines the creative and technical settings used to generate or revise an image.</value>
-</data>
-
+    <value>Defines the creative and technical settings used to generate or revise an image.</value>
+  </data>
   <data name="ImageGenerationRequest_ImageStyle" xml:space="preserve">
-  <value>Image Style</value>
-</data>
-
+    <value>Image Style</value>
+  </data>
   <data name="ImageGenerationRequest_ImageStyle_Help" xml:space="preserve">
-  <value>Select the broad visual medium and treatment for the generated image.</value>
-</data>
-
+    <value>Select the broad visual medium and treatment for the generated image.</value>
+  </data>
   <data name="ImageGenerationRequest_ImageSize" xml:space="preserve">
-  <value>Image Size</value>
-</data>
-
+    <value>Image Size</value>
+  </data>
   <data name="ImageGenerationRequest_ImageSize_Help" xml:space="preserve">
-  <value>Select the dimensions and orientation of the generated image.</value>
-</data>
-
+    <value>Select the dimensions and orientation of the generated image.</value>
+  </data>
   <data name="ImageGenerationRequest_ImageQuality" xml:space="preserve">
-  <value>Image Quality</value>
-</data>
-
+    <value>Image Quality</value>
+  </data>
   <data name="ImageGenerationRequest_ImageQuality_Help" xml:space="preserve">
-  <value>Select the generation quality. Premium images use a higher-quality generation setting and may cost more.</value>
-</data>
-
+    <value>Select the generation quality. Premium images use a higher-quality generation setting and may cost more.</value>
+  </data>
   <data name="ImageGenerationRequest_NumberGenerated" xml:space="preserve">
-  <value>Number of Images</value>
-</data>
-
+    <value>Number of Images</value>
+  </data>
   <data name="ImageGenerationRequest_NumberGenerated_Help" xml:space="preserve">
-  <value>Enter the number of image candidates to generate.</value>
-</data>
-
+    <value>Enter the number of image candidates to generate.</value>
+  </data>
   <data name="ImageGenerationRequest_ImagePurpose" xml:space="preserve">
-  <value>Image Purpose</value>
-</data>
-
+    <value>Image Purpose</value>
+  </data>
   <data name="ImageGenerationRequest_ImagePurpose_Help" xml:space="preserve">
-  <value>Describe the business role, intended use, and outcome expected from this image.</value>
-</data>
-
+    <value>Describe the business role, intended use, and outcome expected from this image.</value>
+  </data>
   <data name="ImageGenerationRequest_ImageGenerationStyleGuidance" xml:space="preserve">
-  <value>Style Guidance</value>
-</data>
-
+    <value>Style Guidance</value>
+  </data>
   <data name="ImageGenerationRequest_ImageGenerationStyleGuidance_Help" xml:space="preserve">
-  <value>Describe the visual direction, photographic or illustrative character, lighting, mood, composition, and treatments to avoid.</value>
-</data>
-
+    <value>Describe the visual direction, photographic or illustrative character, lighting, mood, composition, and treatments to avoid.</value>
+  </data>
   <data name="ImageGenerationRequest_UserPrompt" xml:space="preserve">
-  <value>Generation Instructions</value>
-</data>
-
+    <value>Generation Instructions</value>
+  </data>
   <data name="ImageGenerationRequest_UserPrompt_Help" xml:space="preserve">
-  <value>Describe the image to create or the changes to make to the current image.</value>
-</data>
-
+    <value>Describe the image to create or the changes to make to the current image.</value>
+  </data>
   <data name="ImageGenerationRequest_IsPublic" xml:space="preserve">
-  <value>Public Image</value>
-</data>
-
+    <value>Public Image</value>
+  </data>
   <data name="ImageGenerationRequest_IsPublic_Help" xml:space="preserve">
-  <value>Indicates whether the generated media resource may be accessed publicly.</value>
-</data>
-
-
+    <value>Indicates whether the generated media resource may be accessed publicly.</value>
+  </data>
   <data name="VideoAvatar_Title" xml:space="preserve">
-  <value>Video Avatar</value>
-</data>
+    <value>Video Avatar</value>
+  </data>
   <data name="VideoAvatar_Help" xml:space="preserve">
-  <value>Reusable video avatar profile used to generate avatar-based videos.</value>
-</data>
+    <value>Reusable video avatar profile used to generate avatar-based videos.</value>
+  </data>
   <data name="VideoAvatar_Description" xml:space="preserve">
-  <value>Defines a reusable video avatar, source image, provider identity, voice, language, and readiness state.</value>
-</data>
+    <value>Defines a reusable video avatar, source image, provider identity, voice, language, and readiness state.</value>
+  </data>
   <data name="VideoAvatar_SubjectEntity" xml:space="preserve">
-  <value>Subject Entity</value>
-</data>
+    <value>Subject Entity</value>
+  </data>
   <data name="VideoAvatar_SourceImage" xml:space="preserve">
-  <value>Source Image</value>
-</data>
+    <value>Source Image</value>
+  </data>
   <data name="VideoAvatar_EditorialImage" xml:space="preserve">
-  <value>Editorial Image</value>
-</data>
+    <value>Editorial Image</value>
+  </data>
   <data name="VideoAvatar_Provider" xml:space="preserve">
-  <value>Provider</value>
-</data>
+    <value>Provider</value>
+  </data>
   <data name="VideoAvatar_Role" xml:space="preserve">
-  <value>Role</value>
-</data>
+    <value>Role</value>
+  </data>
   <data name="VideoAvatar_Status" xml:space="preserve">
-  <value>Status</value>
-</data>
+    <value>Status</value>
+  </data>
   <data name="VideoAvatar_ProviderAssetId" xml:space="preserve">
-  <value>Provider Asset ID</value>
-</data>
+    <value>Provider Asset ID</value>
+  </data>
   <data name="VideoAvatar_ProviderAvatarId" xml:space="preserve">
-  <value>Provider Avatar ID</value>
-</data>
+    <value>Provider Avatar ID</value>
+  </data>
   <data name="VideoAvatar_ProviderAvatarStatus" xml:space="preserve">
-  <value>Provider Avatar Status</value>
-</data>
+    <value>Provider Avatar Status</value>
+  </data>
   <data name="VideoAvatar_VoiceId" xml:space="preserve">
-  <value>Voice ID</value>
-</data>
+    <value>Voice ID</value>
+  </data>
   <data name="VideoAvatar_VoiceName" xml:space="preserve">
-  <value>Voice Name</value>
-</data>
+    <value>Voice Name</value>
+  </data>
   <data name="VideoAvatar_LanguageCode" xml:space="preserve">
-  <value>Language Code</value>
-</data>
+    <value>Language Code</value>
+  </data>
   <data name="VideoAvatar_Locale" xml:space="preserve">
-  <value>Locale</value>
-</data>
+    <value>Locale</value>
+  </data>
   <data name="VideoAvatar_IsDefault" xml:space="preserve">
-  <value>Default Avatar</value>
-</data>
+    <value>Default Avatar</value>
+  </data>
   <data name="VideoAvatar_LastStatusCheckUtc" xml:space="preserve">
-  <value>Last Status Check UTC</value>
-</data>
+    <value>Last Status Check UTC</value>
+  </data>
   <data name="VideoAvatar_LastUsedUtc" xml:space="preserve">
-  <value>Last Used UTC</value>
-</data>
+    <value>Last Used UTC</value>
+  </data>
   <data name="VideoAvatar_ErrorMessage" xml:space="preserve">
-  <value>Error Message</value>
-</data>
-
+    <value>Error Message</value>
+  </data>
   <data name="VideoAvatarProvider_HeyGen" xml:space="preserve">
-  <value>HeyGen</value>
-</data>
+    <value>HeyGen</value>
+  </data>
   <data name="VideoAvatarRole_Primary" xml:space="preserve">
-  <value>Primary</value>
-</data>
+    <value>Primary</value>
+  </data>
   <data name="VideoAvatarRole_Editorial" xml:space="preserve">
-  <value>Editorial</value>
-</data>
+    <value>Editorial</value>
+  </data>
   <data name="VideoAvatarRole_Campaign" xml:space="preserve">
-  <value>Campaign</value>
-</data>
+    <value>Campaign</value>
+  </data>
   <data name="VideoAvatarRole_Experimental" xml:space="preserve">
-  <value>Experimental</value>
-</data>
+    <value>Experimental</value>
+  </data>
   <data name="VideoAvatarStatus_Draft" xml:space="preserve">
-  <value>Draft</value>
-</data>
+    <value>Draft</value>
+  </data>
   <data name="VideoAvatarStatus_Preparing" xml:space="preserve">
-  <value>Preparing</value>
-</data>
+    <value>Preparing</value>
+  </data>
   <data name="VideoAvatarStatus_WaitingForProvider" xml:space="preserve">
-  <value>Waiting for Provider</value>
-</data>
+    <value>Waiting for Provider</value>
+  </data>
   <data name="VideoAvatarStatus_Ready" xml:space="preserve">
-  <value>Ready</value>
-</data>
+    <value>Ready</value>
+  </data>
   <data name="VideoAvatarStatus_Failed" xml:space="preserve">
-  <value>Failed</value>
-</data>
+    <value>Failed</value>
+  </data>
   <data name="VideoAvatarStatus_Archived" xml:space="preserve">
-  <value>Archived</value>
-</data>
-
+    <value>Archived</value>
+  </data>
   <data name="VideoProduction_Title" xml:space="preserve">
-  <value>Video Production</value>
-</data>
+    <value>Video Production</value>
+  </data>
   <data name="VideoProduction_Help" xml:space="preserve">
-  <value>Durable video composition, generation job, cost record, and output reference.</value>
-</data>
+    <value>Durable video composition, generation job, cost record, and output reference.</value>
+  </data>
   <data name="VideoProduction_Description" xml:space="preserve">
-  <value>Defines the script, avatar, voice, background, target entity, generation status, provider identifiers, output media, and cost information for a video production.</value>
-</data>
+    <value>Defines the script, avatar, voice, background, target entity, generation status, provider identifiers, output media, and cost information for a video production.</value>
+  </data>
   <data name="VideoProduction_VideoAvatar" xml:space="preserve">
-  <value>Video Avatar</value>
-</data>
+    <value>Video Avatar</value>
+  </data>
   <data name="VideoProduction_BackgroundMediaResource" xml:space="preserve">
-  <value>Background Media Resource</value>
-</data>
+    <value>Background Media Resource</value>
+  </data>
   <data name="VideoProduction_PreviewAudioMediaResource" xml:space="preserve">
-  <value>Preview Audio Media Resource</value>
-</data>
+    <value>Preview Audio Media Resource</value>
+  </data>
   <data name="VideoProduction_FinalVideoMediaResource" xml:space="preserve">
-  <value>Final Video Media Resource</value>
-</data>
+    <value>Final Video Media Resource</value>
+  </data>
   <data name="VideoProduction_Script" xml:space="preserve">
-  <value>Script</value>
-</data>
+    <value>Script</value>
+  </data>
   <data name="VideoProduction_VideoName" xml:space="preserve">
-  <value>Video Name</value>
-</data>
+    <value>Video Name</value>
+  </data>
   <data name="VideoProduction_VoiceId" xml:space="preserve">
-  <value>Voice ID</value>
-</data>
+    <value>Voice ID</value>
+  </data>
   <data name="VideoProduction_VoiceName" xml:space="preserve">
-  <value>Voice Name</value>
-</data>
+    <value>Voice Name</value>
+  </data>
   <data name="VideoProduction_LanguageCode" xml:space="preserve">
-  <value>Language Code</value>
-</data>
+    <value>Language Code</value>
+  </data>
   <data name="VideoProduction_Locale" xml:space="preserve">
-  <value>Locale</value>
-</data>
+    <value>Locale</value>
+  </data>
   <data name="VideoProduction_TargetEntityType" xml:space="preserve">
-  <value>Target Entity Type</value>
-</data>
+    <value>Target Entity Type</value>
+  </data>
   <data name="VideoProduction_TargetEntityId" xml:space="preserve">
-  <value>Target Entity ID</value>
-</data>
+    <value>Target Entity ID</value>
+  </data>
   <data name="VideoProduction_TargetEntityName" xml:space="preserve">
-  <value>Target Entity Name</value>
-</data>
+    <value>Target Entity Name</value>
+  </data>
   <data name="VideoProduction_TargetEntityProperty" xml:space="preserve">
-  <value>Target Entity Property</value>
-</data>
+    <value>Target Entity Property</value>
+  </data>
   <data name="VideoProduction_Provider" xml:space="preserve">
-  <value>Provider</value>
-</data>
+    <value>Provider</value>
+  </data>
   <data name="VideoProduction_Status" xml:space="preserve">
-  <value>Status</value>
-</data>
+    <value>Status</value>
+  </data>
   <data name="VideoProduction_ErrorMessage" xml:space="preserve">
-  <value>Error Message</value>
-</data>
-
+    <value>Error Message</value>
+  </data>
   <data name="VideoProductionProvider_HeyGen" xml:space="preserve">
-  <value>HeyGen</value>
-</data>
+    <value>HeyGen</value>
+  </data>
   <data name="VideoProductionStatus_Draft" xml:space="preserve">
-  <value>Draft</value>
-</data>
+    <value>Draft</value>
+  </data>
   <data name="VideoProductionStatus_PreparingAvatar" xml:space="preserve">
-  <value>Preparing Avatar</value>
-</data>
+    <value>Preparing Avatar</value>
+  </data>
   <data name="VideoProductionStatus_WaitingForAvatar" xml:space="preserve">
-  <value>Waiting for Avatar</value>
-</data>
+    <value>Waiting for Avatar</value>
+  </data>
   <data name="VideoProductionStatus_GeneratingPreviewAudio" xml:space="preserve">
-  <value>Generating Preview Audio</value>
-</data>
+    <value>Generating Preview Audio</value>
+  </data>
   <data name="VideoProductionStatus_PreviewAudioReady" xml:space="preserve">
-  <value>Preview Audio Ready</value>
-</data>
+    <value>Preview Audio Ready</value>
+  </data>
   <data name="VideoProductionStatus_UploadingBackground" xml:space="preserve">
-  <value>Uploading Background</value>
-</data>
+    <value>Uploading Background</value>
+  </data>
   <data name="VideoProductionStatus_Submitting" xml:space="preserve">
-  <value>Submitting</value>
-</data>
+    <value>Submitting</value>
+  </data>
   <data name="VideoProductionStatus_Submitted" xml:space="preserve">
-  <value>Submitted</value>
-</data>
+    <value>Submitted</value>
+  </data>
   <data name="VideoProductionStatus_Rendering" xml:space="preserve">
-  <value>Rendering</value>
-</data>
+    <value>Rendering</value>
+  </data>
   <data name="VideoProductionStatus_ProviderCompleted" xml:space="preserve">
-  <value>Provider Completed</value>
-</data>
+    <value>Provider Completed</value>
+  </data>
   <data name="VideoProductionStatus_ImportingToVimeo" xml:space="preserve">
-  <value>Importing to Vimeo</value>
-</data>
+    <value>Importing to Vimeo</value>
+  </data>
   <data name="VideoProductionStatus_ProcessingAtVimeo" xml:space="preserve">
-  <value>Processing at Vimeo</value>
-</data>
+    <value>Processing at Vimeo</value>
+  </data>
   <data name="VideoProductionStatus_UpdatingEntity" xml:space="preserve">
-  <value>Updating Entity</value>
-</data>
+    <value>Updating Entity</value>
+  </data>
   <data name="VideoProductionStatus_Completed" xml:space="preserve">
-  <value>Completed</value>
-</data>
+    <value>Completed</value>
+  </data>
   <data name="VideoProductionStatus_Failed" xml:space="preserve">
-  <value>Failed</value>
-</data>
+    <value>Failed</value>
+  </data>
   <data name="VideoProductionStatus_Cancelled" xml:space="preserve">
-  <value>Cancelled</value>
-</data>
+    <value>Cancelled</value>
+  </data>
   <data name="VideoComposition_Title" xml:space="preserve">
     <value>Video Composition</value>
   </data>
@@ -837,15 +801,12 @@
   <data name="MediaResourceType_RawVideo" xml:space="preserve">
     <value>Raw Video</value>
   </data>
-
-
   <data name="VideoProductionProvider_QualityStandard" xml:space="preserve">
     <value>Standard</value>
   </data>
   <data name="VideoProductionProvider_QualityPremium" xml:space="preserve">
     <value>Premium</value>
   </data>
-
   <data name="VideoProductionEngine_AvatarIII" xml:space="preserve">
     <value>Avatar III</value>
   </data>
@@ -855,7 +816,6 @@
   <data name="VideoProductionEngine_AvatarV" xml:space="preserve">
     <value>Avatar V</value>
   </data>
-
   <data name="VideoProductionResolution_HD720" xml:space="preserve">
     <value>720p</value>
   </data>
@@ -865,7 +825,6 @@
   <data name="VideoProductionResolution_UHD4K" xml:space="preserve">
     <value>4K</value>
   </data>
-
   <data name="VideoProductionAspectRatio_Landscape16x9" xml:space="preserve">
     <value>16:9 Landscape</value>
   </data>
@@ -884,7 +843,6 @@
   <data name="VideoProductionAspectRatio_Auto" xml:space="preserve">
     <value>Automatic</value>
   </data>
-
   <data name="VideoProductionFit_Automatic" xml:space="preserve">
     <value>Automatic</value>
   </data>
@@ -894,7 +852,6 @@
   <data name="VideoProductionFit_Cover" xml:space="preserve">
     <value>Cover</value>
   </data>
-
   <data name="VideoProductionExpressiveness_Low" xml:space="preserve">
     <value>Low</value>
   </data>
@@ -904,9 +861,6 @@
   <data name="VideoProductionExpressiveness_High" xml:space="preserve">
     <value>High</value>
   </data>
-
-
-
   <data name="MediaResource_ThumbnailUrl" xml:space="preserve">
     <value>Thumbnail Url</value>
   </data>
@@ -927,5 +881,8 @@
   </data>
   <data name="VideoCompositionBlock_PresenterPositionY" xml:space="preserve">
     <value>Presenter Vertical Position</value>
+  </data>
+  <data name="Common_IsActive" xml:space="preserve">
+    <value>Is Active</value>
   </data>
 </root>

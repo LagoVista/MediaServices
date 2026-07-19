@@ -1,4 +1,4 @@
-﻿/*7/19/2026 3:52:51 PM*/
+﻿/*7/19/2026 7:10:19 PM*/
 using System.Globalization;
 using System.Reflection;
 
@@ -66,6 +66,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:Common_Icon
 
 		public static string Common_Icon { get { return GetResourceString("Common_Icon"); } }
+//Resources:MediaServicesResources:Common_IsActive
+
+		public static string Common_IsActive { get { return GetResourceString("Common_IsActive"); } }
 //Resources:MediaServicesResources:Common_IsPublic
 
 		public static string Common_IsPublic { get { return GetResourceString("Common_IsPublic"); } }
@@ -826,6 +829,7 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string Common_CreationDate = "Common_CreationDate";
 			public const string Common_Description = "Common_Description";
 			public const string Common_Icon = "Common_Icon";
+			public const string Common_IsActive = "Common_IsActive";
 			public const string Common_IsPublic = "Common_IsPublic";
 			public const string Common_IsRequired = "Common_IsRequired";
 			public const string Common_IsValid = "Common_IsValid";
