@@ -303,6 +303,8 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.VideoProduction_FinalVideoMediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: false)]
         public EntityHeader FinalVideoMediaResource { get; set; }
 
+        public EntityHeader OutputMediaLibrary { get; set; }
+
         [FormField(LabelResource: MediaServicesResources.Names.VideoProduction_Script, FieldType: FieldTypes.MultiLineText, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
         public string Script { get; set; }
 
@@ -545,6 +547,7 @@ namespace LagoVista.MediaServices.Models
                 nameof(VideoName),
                 nameof(VideoAvatar),
                 nameof(BackgroundMediaResource),
+                nameof(OutputMediaLibrary),
                 nameof(Script),
                 nameof(TargetEntityType),
                 nameof(TargetEntityId),

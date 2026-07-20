@@ -21,22 +21,28 @@ namespace LagoVista.MediaServices.Rest.Controllers
         private readonly IVideoProductionManager _manager;
         private readonly IMediaServicesManager _mediaServicesManager;
         private readonly IVideoProcessorStorageUrlService _videoProcessorStorageUrlService;
+        private readonly IMediaLibraryRepo _mediaLibraryRepo;
 
-        public VideoProductionController(IVideoProductionManager manager, IMediaServicesManager mediaServicesManager, IVideoProcessorStorageUrlService videoProcessorStorageUrlService, UserManager<AppUser> userManager, IAdminLogger logger) : base(userManager, logger)
+        public VideoProductionController(IVideoProductionManager manager, IMediaServicesManager mediaServicesManager, IVideoProcessorStorageUrlService videoProcessorStorageUrlService, IMediaLibraryRepo mediaLibraryRepo, UserManager<AppUser> userManager, IAdminLogger logger) : base(userManager, logger)
         {
             _manager = manager ?? throw new ArgumentNullException(nameof(manager));
             _mediaServicesManager = mediaServicesManager ?? throw new ArgumentNullException(nameof(mediaServicesManager));
             _videoProcessorStorageUrlService = videoProcessorStorageUrlService ?? throw new ArgumentNullException(nameof(videoProcessorStorageUrlService));
+            _mediaLibraryRepo = mediaLibraryRepo ?? throw new ArgumentNullException(nameof(mediaLibraryRepo));
         }
 
         [HttpGet("/api/media/videoproduction/factory")]
-        public DetailResponse<VideoProduction> CreateVideoProduction()
+        public async Task<DetailResponse<VideoProduction>> CreateVideoProductionAsync()
         {
             var form = DetailResponse<VideoProduction>.Create();
             form.Model.Name = $"Video Production {DateTime.Now}";
             form.Model.Key = "v" + Guid.NewGuid().ToId().ToString();
             SetAuditProperties(form.Model);
             SetOwnedProperties(form.Model);
+
+            var defaultLibrary = await _mediaLibraryRepo.GetMediaLibraryByKeyAsync(OrgEntityHeader.Id, "publishedvideo");
+            form.Model.OutputMediaLibrary = defaultLibrary?.ToEntityHeader();
+
             return form;
         }
 

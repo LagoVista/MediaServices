@@ -127,7 +127,11 @@ namespace LagoVista.MediaServices.Managers
                 return await ApplyPreparationFailureAsync(composition, "Could not create the output media resource.");
             }
 
-            if (outputMediaResource.MediaLibrary == null)
+            if (composition.OutputMediaLibrary != null && !String.IsNullOrWhiteSpace(composition.OutputMediaLibrary.Id))
+            {
+                outputMediaResource.MediaLibrary = composition.OutputMediaLibrary;
+            }
+            else if (outputMediaResource.MediaLibrary == null)
             {
                 var createLibraryResult = await GetOrCreateRawVideoLibraryAsync("publishedvideo", org, user);
                 if (!createLibraryResult.Successful)
@@ -136,6 +140,7 @@ namespace LagoVista.MediaServices.Managers
                 }
 
                 outputMediaResource.MediaLibrary = createLibraryResult.Result.ToEntityHeader();
+                composition.OutputMediaLibrary = outputMediaResource.MediaLibrary;
             }
 
             var pendingRevision = PreparePendingRevision(outputMediaResource, user);

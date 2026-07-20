@@ -92,11 +92,32 @@ namespace LagoVista.MediaServices.Managers
             await AuthorizeAsync(production, AuthorizeResult.AuthorizeActions.Update, user, org);
 
             var existing = await _repo.GetVideoProductionAsync(production.Id);
-            if(production.FinalVideoMediaResource != null && existing.Name != production.Name)
+            if (production.FinalVideoMediaResource != null && !String.IsNullOrWhiteSpace(production.FinalVideoMediaResource.Id))
             {
                 var mediaResource = await _mediaRepo.GetMediaResourceRecordAsync(production.FinalVideoMediaResource.Id);
-                mediaResource.Name = production.Name;
-                await _mediaRepo.UpdateMediaResourceRecordAsync(mediaResource);
+                if (mediaResource != null)
+                {
+                    var mediaResourceChanged = false;
+
+                    if (existing.Name != production.Name)
+                    {
+                        mediaResource.Name = production.Name;
+                        mediaResourceChanged = true;
+                    }
+
+                    if (production.OutputMediaLibrary != null && !String.IsNullOrWhiteSpace(production.OutputMediaLibrary.Id) && !String.Equals(mediaResource.MediaLibrary?.Id, production.OutputMediaLibrary.Id, StringComparison.OrdinalIgnoreCase))
+                    {
+                        mediaResource.MediaLibrary = production.OutputMediaLibrary;
+                        mediaResourceChanged = true;
+                    }
+
+                    if (mediaResourceChanged)
+                    {
+                        mediaResource.LastUpdatedBy = user;
+                        mediaResource.LastUpdatedDate = UtcTimestamp.Now;
+                        await _mediaRepo.UpdateMediaResourceRecordAsync(mediaResource);
+                    }
+                }
             }
 
             await _repo.UpdateVideoProductionAsync(production);

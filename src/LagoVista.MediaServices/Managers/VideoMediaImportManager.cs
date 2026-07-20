@@ -190,13 +190,23 @@ namespace LagoVista.MediaServices.Managers
             else
             {
                 mediaResource = CreateOutputMediaResource(production, org, user);
-                var libraryResult = await GetOrCreateRawVideoLibraryAsync(org, user);
-                if(!libraryResult.Successful)
+
+                if (production.OutputMediaLibrary != null && !String.IsNullOrWhiteSpace(production.OutputMediaLibrary.Id))
                 {
-                    return libraryResult.ToInvokeResult<VideoMediaImportPreparationResult>();
+                    mediaResource.MediaLibrary = production.OutputMediaLibrary;
+                }
+                else
+                {
+                    var libraryResult = await GetOrCreateRawVideoLibraryAsync(org, user);
+                    if (!libraryResult.Successful)
+                    {
+                        return libraryResult.ToInvokeResult<VideoMediaImportPreparationResult>();
+                    }
+
+                    mediaResource.MediaLibrary = libraryResult.Result.ToEntityHeader();
+                    production.OutputMediaLibrary = mediaResource.MediaLibrary;
                 }
 
-                mediaResource.MediaLibrary = libraryResult.Result.ToEntityHeader();
                 isNewMediaResource = true;
                 _adminLogger.Trace($"{this.Tag()} [CREATED MEDIA RESOURCE MODEL] ProductionId={production.Id}, MediaResourceId={mediaResource.Id}");
             }

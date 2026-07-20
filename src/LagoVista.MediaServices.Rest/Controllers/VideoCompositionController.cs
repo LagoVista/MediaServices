@@ -23,21 +23,27 @@ namespace LagoVista.MediaServices.Rest.Controllers
     {
         private readonly IVideoCompositionManager _manager;
         private readonly IVideoAssemblyRequestManager _videoAssemblyRequestManager;
+        private readonly IMediaLibraryRepo _mediaLibraryRepo;
 
-        public VideoCompositionController(IVideoCompositionManager manager, IVideoAssemblyRequestManager videoAssemblyRequestManager, UserManager<AppUser> userManager, IAdminLogger logger) : base(userManager, logger)
+        public VideoCompositionController(IVideoCompositionManager manager, IVideoAssemblyRequestManager videoAssemblyRequestManager, IMediaLibraryRepo mediaLibraryRepo, UserManager<AppUser> userManager, IAdminLogger logger) : base(userManager, logger)
         {
             _manager = manager ?? throw new ArgumentNullException(nameof(manager));
             _videoAssemblyRequestManager = videoAssemblyRequestManager ?? throw new ArgumentNullException(nameof(videoAssemblyRequestManager));
+            _mediaLibraryRepo = mediaLibraryRepo ?? throw new ArgumentNullException(nameof(mediaLibraryRepo));
         }
 
         [HttpGet("/api/media/videocomposition/factory")]
-        public DetailResponse<VideoComposition> CreateVideoComposition()
+        public async Task<DetailResponse<VideoComposition>> CreateVideoCompositionAsync()
         {
             var form = DetailResponse<VideoComposition>.Create();
             form.Model.Name = $"Video Composition {DateTime.Now}";
             form.Model.Key = "vc" + Guid.NewGuid().ToId().Value.ToLower();
             SetAuditProperties(form.Model);
             SetOwnedProperties(form.Model);
+
+            var defaultLibrary = await _mediaLibraryRepo.GetMediaLibraryByKeyAsync(OrgEntityHeader.Id, "publishedvideo");
+            form.Model.OutputMediaLibrary = defaultLibrary?.ToEntityHeader();
+
             return form;
         }
 

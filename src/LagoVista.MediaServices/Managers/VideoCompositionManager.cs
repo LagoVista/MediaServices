@@ -17,11 +17,13 @@ namespace LagoVista.MediaServices.Managers
     public class VideoCompositionManager : ManagerBase, IVideoCompositionManager
     {
         private readonly IVideoCompositionRepo _repo;
+        private readonly IMediaServicesRepo _mediaRepo;
         private readonly INotificationPublisher _notificationPublisher;
 
-        public VideoCompositionManager(IVideoCompositionRepo repo, ICoreAppServices coreAppServices) : base(coreAppServices)
+        public VideoCompositionManager(IVideoCompositionRepo repo, IMediaServicesRepo mediaRepo, ICoreAppServices coreAppServices) : base(coreAppServices)
         {
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
+            _mediaRepo = mediaRepo ?? throw new ArgumentNullException(nameof(mediaRepo));
             _notificationPublisher = coreAppServices?.NotificationPublisher ?? throw new ArgumentNullException(nameof(coreAppServices.NotificationPublisher));
         }
 
@@ -46,6 +48,18 @@ namespace LagoVista.MediaServices.Managers
 
             ValidationCheck(composition, Actions.Update);
             await AuthorizeAsync(composition, AuthorizeResult.AuthorizeActions.Update, user, org);
+
+            if (composition.OutputMediaResource != null && !String.IsNullOrWhiteSpace(composition.OutputMediaResource.Id) && composition.OutputMediaLibrary != null && !String.IsNullOrWhiteSpace(composition.OutputMediaLibrary.Id))
+            {
+                var mediaResource = await _mediaRepo.GetMediaResourceRecordAsync(composition.OutputMediaResource.Id);
+                if (mediaResource != null && !String.Equals(mediaResource.MediaLibrary?.Id, composition.OutputMediaLibrary.Id, StringComparison.OrdinalIgnoreCase))
+                {
+                    mediaResource.MediaLibrary = composition.OutputMediaLibrary;
+                    mediaResource.LastUpdatedBy = user;
+                    mediaResource.LastUpdatedDate = UtcTimestamp.Now;
+                    await _mediaRepo.UpdateMediaResourceRecordAsync(mediaResource);
+                }
+            }
 
             await _repo.UpdateVideoCompositionAsync(composition);
             await PublishVideoCompositionUpdatedAsync(composition);

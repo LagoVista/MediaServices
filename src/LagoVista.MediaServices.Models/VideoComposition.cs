@@ -185,6 +185,8 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.VideoComposition_OutputMediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: false)]
         public EntityHeader OutputMediaResource { get; set; }
 
+        public EntityHeader OutputMediaLibrary { get; set; }
+
         public EntityHeader PublishedVideoMediaResource { get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoComposition_Blocks, FieldType: FieldTypes.ChildListInline, ChildListDisplayMembers: "key,mediaResourceFileName,type,durationSeconds", ChildListDisplayMember: nameof(VideoCompositionBlock.Key), IsReferenceField: false, FactoryUrl: "/api/media/videocomposition/block/factory", ResourceType: typeof(MediaServicesResources), IsUserEditable: true)]
@@ -310,6 +312,7 @@ namespace LagoVista.MediaServices.Models
                 nameof(Icon),
                 nameof(Description),
                 nameof(BackgroundMediaResource),
+                nameof(OutputMediaLibrary),
                 nameof(Blocks)
             };
         }
