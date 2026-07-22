@@ -1,4 +1,4 @@
-﻿/*7/19/2026 7:10:19 PM*/
+﻿/*7/22/2026 2:47:20 PM*/
 using System.Globalization;
 using System.Reflection;
 
@@ -750,6 +750,12 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:VideoProductionFit_Cover
 
 		public static string VideoProductionFit_Cover { get { return GetResourceString("VideoProductionFit_Cover"); } }
+//Resources:MediaServicesResources:VideoProductionOutputMode_CompositedBackground
+
+		public static string VideoProductionOutputMode_CompositedBackground { get { return GetResourceString("VideoProductionOutputMode_CompositedBackground"); } }
+//Resources:MediaServicesResources:VideoProductionOutputMode_TransparentPresenter
+
+		public static string VideoProductionOutputMode_TransparentPresenter { get { return GetResourceString("VideoProductionOutputMode_TransparentPresenter"); } }
 //Resources:MediaServicesResources:VideoProductionProvider_HeyGen
 
 		public static string VideoProductionProvider_HeyGen { get { return GetResourceString("VideoProductionProvider_HeyGen"); } }
@@ -1057,6 +1063,8 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string VideoProductionFit_Automatic = "VideoProductionFit_Automatic";
 			public const string VideoProductionFit_Contain = "VideoProductionFit_Contain";
 			public const string VideoProductionFit_Cover = "VideoProductionFit_Cover";
+			public const string VideoProductionOutputMode_CompositedBackground = "VideoProductionOutputMode_CompositedBackground";
+			public const string VideoProductionOutputMode_TransparentPresenter = "VideoProductionOutputMode_TransparentPresenter";
 			public const string VideoProductionProvider_HeyGen = "VideoProductionProvider_HeyGen";
 			public const string VideoProductionProvider_QualityPremium = "VideoProductionProvider_QualityPremium";
 			public const string VideoProductionProvider_QualityStandard = "VideoProductionProvider_QualityStandard";

@@ -152,6 +152,15 @@ namespace LagoVista.MediaServices.Models
         High
     }
 
+    public enum VideoProductionOutputMode
+    {
+        [EnumLabel(VideoProduction.OutputMode_TransparentPresenter, MediaServicesResources.Names.VideoProductionOutputMode_TransparentPresenter, typeof(MediaServicesResources))]
+        TransparentPresenter,
+
+        [EnumLabel(VideoProduction.OutputMode_CompositedBackground, MediaServicesResources.Names.VideoProductionOutputMode_CompositedBackground, typeof(MediaServicesResources))]
+        CompositedBackground
+    }
+
     public sealed class VideoProductionRun
     {
         public VideoProductionRun()
@@ -181,6 +190,7 @@ namespace LagoVista.MediaServices.Models
     {
         public VideoProductionSettings()
         {
+            OutputMode = EntityHeader<VideoProductionOutputMode>.Create(VideoProductionOutputMode.TransparentPresenter);
             Resolution = EntityHeader<VideoProductionResolution>.Create(VideoProductionResolution.FullHD1080);
             AspectRatio = EntityHeader<VideoProductionAspectRatio>.Create(VideoProductionAspectRatio.Landscape16x9);
             Fit = EntityHeader<VideoProductionFit>.Create(VideoProductionFit.Automatic);
@@ -189,6 +199,8 @@ namespace LagoVista.MediaServices.Models
             GenerateTransparentPresenter = true;
             CaptionStyle = "default";
         }
+
+        public EntityHeader<VideoProductionOutputMode> OutputMode { get; set; }
 
         public string SpecialInstructions { get; set; }
 
@@ -252,6 +264,9 @@ namespace LagoVista.MediaServices.Models
         public const string Expressiveness_Low = "low";
         public const string Expressiveness_Medium = "medium";
         public const string Expressiveness_High = "high";
+
+        public const string OutputMode_TransparentPresenter = "transparent-presenter";
+        public const string OutputMode_CompositedBackground = "composited-background";
 
         public const string Status_Draft = "draft";
         public const string Status_PreparingAvatar = "preparing-avatar";
@@ -441,7 +456,7 @@ namespace LagoVista.MediaServices.Models
         {
             var content = String.Join("\n", new[]
             {
-        $"version=3",
+        $"version=4",
         $"defaultLocale={NormalizeHashValue(DefaultLocale)}",
         $"locale={NormalizeHashValue(Locale)}",
         $"languageCode={NormalizeHashValue(LanguageCode)}",
@@ -463,6 +478,7 @@ namespace LagoVista.MediaServices.Models
         $"resolution={NormalizeHashValue(Settings?.Resolution?.Id)}",
         $"aspectRatio={NormalizeHashValue(Settings?.AspectRatio?.Id)}",
         $"fit={NormalizeHashValue(Settings?.Fit?.Id)}",
+        $"outputMode={NormalizeHashValue(Settings?.OutputMode?.Id)}",
         $"removeBackground={Settings?.RemoveBackground ?? false}",
         $"generateTransparentPresenter={Settings?.GenerateTransparentPresenter ?? false}",
         $"burnInCaptions={Settings?.BurnInCaptions ?? false}",
@@ -613,6 +629,11 @@ namespace LagoVista.MediaServices.Models
             }
             else
             {
+                if (Settings.OutputMode == null)
+                {
+                    result.AddUserError("Video production output mode is required.");
+                }
+
                 if (Settings.Resolution == null)
                 {
                     result.AddUserError("Video resolution is required.");
@@ -646,6 +667,37 @@ namespace LagoVista.MediaServices.Models
                 if (Settings.Expressiveness != null && Engine?.Value != VideoProductionEngine.AvatarIV)
                 {
                     result.AddUserError("Expressiveness is only supported by the Avatar IV engine.");
+                }
+
+                if (!Settings.RemoveBackground)
+                {
+                    result.AddUserError("Avatar background removal is required for supported video production output modes.");
+                }
+
+                if (Settings.OutputMode?.Value == VideoProductionOutputMode.TransparentPresenter)
+                {
+                    if (!Settings.GenerateTransparentPresenter)
+                    {
+                        result.AddUserError("Transparent presenter output must generate a transparent presenter video.");
+                    }
+
+                    if (BackgroundMediaResource != null && !String.IsNullOrWhiteSpace(BackgroundMediaResource.Id))
+                    {
+                        result.AddUserError("Transparent presenter output cannot include a background Media Resource.");
+                    }
+                }
+
+                if (Settings.OutputMode?.Value == VideoProductionOutputMode.CompositedBackground)
+                {
+                    if (Settings.GenerateTransparentPresenter)
+                    {
+                        result.AddUserError("Video-with-background output cannot generate a transparent presenter video.");
+                    }
+
+                    if (BackgroundMediaResource == null || String.IsNullOrWhiteSpace(BackgroundMediaResource.Id))
+                    {
+                        result.AddUserError("A background Media Resource is required for video-with-background output.");
+                    }
                 }
 
                 if (!String.IsNullOrWhiteSpace(Settings.SpecialInstructions) && Settings.SpecialInstructions.Length > 1000)
