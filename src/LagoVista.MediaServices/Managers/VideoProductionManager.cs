@@ -39,6 +39,7 @@ namespace LagoVista.MediaServices.Managers
         private readonly ISecureStorage _secureStorage;
         private readonly IMediaServicesRepo _mediaRepo;
         private readonly IMediaServicesManager _mediaServicesManager;
+        private readonly IVideoMediaImportManager _videoMediaImportManager;
         private readonly IBillingEventRecorder _billingEventRecorder;
 
         private static readonly HttpClient PreviewAudioHttpClient = new HttpClient();
@@ -50,7 +51,7 @@ namespace LagoVista.MediaServices.Managers
         private readonly ILogger _logger;
 
 
-        public VideoProductionManager(IVideoProductionRepo repo, IVideoAvatarManager videoAvatarManager, IHeyGenVideoService heyGenVideoService, IVimeoVideoService vimeoVideoService, IMediaServicesRepo mediaRepo, IMediaServicesManager mediaServicesManager, IOrganizationLoaderRepo organizationLoaderRepo, ISecureStorage secureStorage, ICacheProvider cacheProvider, ICoreAppServices coreAppServices, IBillingEventRecorder billingEventRecorder) : base(coreAppServices)
+        public VideoProductionManager(IVideoProductionRepo repo, IVideoAvatarManager videoAvatarManager, IHeyGenVideoService heyGenVideoService, IVimeoVideoService vimeoVideoService, IMediaServicesRepo mediaRepo, IMediaServicesManager mediaServicesManager, IVideoMediaImportManager videoMediaImportManager, IOrganizationLoaderRepo organizationLoaderRepo, ISecureStorage secureStorage, ICacheProvider cacheProvider, ICoreAppServices coreAppServices, IBillingEventRecorder billingEventRecorder) : base(coreAppServices)
         {
             _repo = repo ?? throw new NullReferenceException(nameof(repo));
             _videoAvatarManager = videoAvatarManager ?? throw new NullReferenceException(nameof(videoAvatarManager));
@@ -64,6 +65,7 @@ namespace LagoVista.MediaServices.Managers
             _cacheProvider = cacheProvider ?? throw new ArgumentNullException(nameof(cacheProvider));
             _mediaRepo = mediaRepo ?? throw new ArgumentNullException(nameof(mediaRepo));
             _mediaServicesManager = mediaServicesManager ?? throw new ArgumentNullException(nameof(mediaServicesManager));
+            _videoMediaImportManager = videoMediaImportManager ?? throw new ArgumentNullException(nameof(videoMediaImportManager));
 
             _logger = coreAppServices.Logger ?? throw new ArgumentNullException(nameof(coreAppServices.Logger));
             var siteUrl = coreAppServices.AppConfig.Environment == Environments.LocalDevelopment || coreAppServices.AppConfig.Environment == Environments.Development ? "https://dev.nuviot.com" : coreAppServices.AppConfig.WebAddress;
@@ -976,19 +978,62 @@ namespace LagoVista.MediaServices.Managers
                 }
 
                 await PublishVideoProductionUpdatedAsync(currentProduction);
+                await _cacheProvider.AddAsync(receiptKey, webhookEvent.EventType, WebhookReceiptDuration);
 
                 if (isSuccess)
                 {
+                    QueueProviderVideoImport(currentProduction.Id, currentProduction.OwnerOrganization, currentProduction.LastUpdatedBy);
                     QueueProviderVideoStatusRefresh(currentProduction.Id, currentProduction.OwnerOrganization, currentProduction.LastUpdatedBy);
                 }
-
-                await _cacheProvider.AddAsync(receiptKey, webhookEvent.EventType, WebhookReceiptDuration);
 
                 return InvokeResult<VideoProduction>.Create(currentProduction);
             }
             finally
             {
                 await _cacheProvider.ReleaseLockAsync(lockKey, lockToken);
+            }
+        }
+
+        private void QueueProviderVideoImport(string productionId, EntityHeader org, EntityHeader user)
+        {
+            if (String.IsNullOrWhiteSpace(productionId) || org == null || user == null)
+            {
+                return;
+            }
+
+            var importOrg = EntityHeader.Create(org.Id, org.Text);
+            var importUser = EntityHeader.Create(user.Id, user.Text);
+            var queue = BackgroundServiceTaskQueueProvider.Instance;
+
+            if (queue == null)
+            {
+                _logger.AddCustomEvent(LogLevel.Warning, this.Tag(), $"Background task queue is unavailable. Provider video import was not queued for production '{productionId}'.");
+                return;
+            }
+
+            var queued = queue.TryQueueBackgroundWorkItem(async cancellationToken =>
+            {
+                try
+                {
+                    var importResult = await _videoMediaImportManager.EnsureProviderVideoImportAsync(productionId, 3, importOrg, importUser, cancellationToken);
+                    if (!importResult.Successful)
+                    {
+                        var errorMessage = importResult.Errors?.FirstOrDefault()?.Message ?? "Provider video import could not be started.";
+                        _logger.AddCustomEvent(LogLevel.Warning, this.Tag(), $"Automatic provider video import failed for production '{productionId}'. {errorMessage}");
+                    }
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                }
+                catch (Exception ex)
+                {
+                    _logger.AddException(this.Tag(), ex, new KeyValuePair<string, string>("ProductionId", productionId));
+                }
+            });
+
+            if (!queued)
+            {
+                _logger.AddCustomEvent(LogLevel.Warning, this.Tag(), $"Automatic provider video import could not be queued for production '{productionId}'.");
             }
         }
 

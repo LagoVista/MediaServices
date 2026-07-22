@@ -32,6 +32,7 @@ namespace LagoVista.MediaServices.Managers
         private readonly IAppConfig _appConfig;
         private readonly ICacheProvider _cacheProvider;
         private readonly IMediaServicesRepo _mediaResourcesRepo;
+        private static readonly TimeSpan ProviderVideoImportLeaseDuration = TimeSpan.FromHours(2);
 
         public VideoMediaImportManager(IVideoProductionRepo videoProductionRepo, IMediaServicesManager mediaServicesManager, IMediaServicesRepo mediaResourcesRepo, IHeyGenVideoService heyGenVideoService, IVideoProcessorStorageUrlService videoProcessorStorageUrlService, ICacheProvider cacheProvider,
             IVideoProcessorRequestStore videoProcessorRequestStore, IMediaLibraryRepo mediaLibraryRepo, IVideoProcessorCallbackRegistrationStore videoProcessorCallbackRegistrationStore, IVideoProcessorLauncher videoProcessorLauncher, ICoreAppServices coreAppServices)
@@ -71,9 +72,13 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<VideoMediaImportPreparationResult>.FromError("The video production does not belong to the active organization.");
             }
 
-            if (production.Status?.Value == VideoProductionStatus.ProviderVideoReady && production.FinalVideoMediaResource != null && !String.IsNullOrWhiteSpace(production.FinalVideoMediaResource.Id))
+            if (production.Status?.Value == VideoProductionStatus.ProviderVideoReady &&
+                production.FinalVideoMediaResource != null &&
+                !String.IsNullOrWhiteSpace(production.FinalVideoMediaResource.Id) &&
+                !String.IsNullOrWhiteSpace(production.ProviderVideoId) &&
+                String.Equals(production.ProviderVideoImportCompletedProviderVideoId, production.ProviderVideoId, StringComparison.OrdinalIgnoreCase))
             {
-                _adminLogger.Trace($"{this.Tag()} [IMPORT ALREADY COMPLETE] ProductionId={production.Id}, MediaResourceId={production.FinalVideoMediaResource.Id}");
+                _adminLogger.Trace($"{this.Tag()} [IMPORT ALREADY COMPLETE] ProductionId={production.Id}, ProviderVideoId={production.ProviderVideoId}, MediaResourceId={production.FinalVideoMediaResource.Id}");
 
                 var completedMediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(production.FinalVideoMediaResource.Id, org, user);
                 if (completedMediaResource == null)
@@ -145,6 +150,49 @@ namespace LagoVista.MediaServices.Managers
             }
 
             _adminLogger.Trace($"{this.Tag()} [IMPORT STATUS ACCEPTED] ProductionId={production.Id}, CurrentStatus={production.Status?.Value}. Provider readiness will determine whether the import can proceed.");
+
+            var providerVideoId = production.ProviderVideoId;
+            var isNewProviderRender = !String.Equals(production.ProviderVideoImportProviderVideoId, providerVideoId, StringComparison.OrdinalIgnoreCase);
+            var importLeaseKey = CreateProviderVideoImportLeaseKey(production.Id, providerVideoId);
+            var importLeaseToken = Guid.NewGuid().ToId().Value;
+            var importLeaseAcquired = await _cacheProvider.AttemptAcquireLockAsync(importLeaseKey, importLeaseToken, ProviderVideoImportLeaseDuration);
+
+            if (!importLeaseAcquired)
+            {
+                _adminLogger.Trace($"{this.Tag()} [IMPORT ALREADY ACTIVE] ProductionId={production.Id}, ProviderVideoId={providerVideoId}, LeaseKey={importLeaseKey}");
+
+                MediaResource activeMediaResource = null;
+                if (production.FinalVideoMediaResource != null && !String.IsNullOrWhiteSpace(production.FinalVideoMediaResource.Id))
+                {
+                    activeMediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(production.FinalVideoMediaResource.Id, org, user);
+                }
+
+                return InvokeResult<VideoMediaImportPreparationResult>.Create(new VideoMediaImportPreparationResult
+                {
+                    Production = production,
+                    MediaResource = activeMediaResource,
+                    Request = null
+                });
+            }
+
+            production.ProviderVideoImportProviderVideoId = providerVideoId;
+            production.ProviderVideoImportLeaseKey = importLeaseKey;
+            production.ProviderVideoImportLeaseToken = importLeaseToken;
+
+            if (isNewProviderRender)
+            {
+                production.ProviderVideoImportRequestId = null;
+                production.ProviderVideoImportAttemptId = null;
+                production.ProviderVideoImportRequestStorageReferenceName = null;
+                production.ProviderVideoImportRequestBlobUrl = null;
+                production.ProviderVideoImportRequestUrl = null;
+                production.ProviderVideoImportLaunchProvider = null;
+                production.ProviderVideoImportLaunchId = null;
+                production.ProviderVideoImportLaunchNamespace = null;
+                production.ProviderVideoImportLaunchJobName = null;
+                production.ProviderVideoImportLaunchedUtc = null;
+                production.ProviderVideoImportCompletedUtc = null;
+            }
 
             production.SetStatus(VideoProductionStatus.ImportingProviderVideo);
             production.ProviderVideoImportStartedUtc = production.ProviderVideoImportStartedUtc ?? UtcTimestamp.Now;
@@ -291,6 +339,9 @@ namespace LagoVista.MediaServices.Managers
                 AttemptId = attemptId,
                 ProductionId = production.Id,
                 MediaResourceId = mediaResource.Id,
+                ProviderVideoId = production.ProviderVideoId,
+                ImportLeaseKey = production.ProviderVideoImportLeaseKey,
+                ImportLeaseToken = production.ProviderVideoImportLeaseToken,
                 AccessTokenSha256 = ComputeSha256(callbackAccessToken),
                 CreatedUtc = DateTime.UtcNow.ToString("o"),
                 ExpiresUtc = DateTime.UtcNow.AddMinutes(90).ToString("o"),
@@ -623,6 +674,11 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<VideoProduction>.FromError("Video processor callback media resource ID does not match the registered media resource.");
             }
 
+            if (!String.IsNullOrWhiteSpace(registration.ProviderVideoId) && !String.Equals(registration.ProviderVideoId, production.ProviderVideoId, StringComparison.OrdinalIgnoreCase))
+            {
+                return InvokeResult<VideoProduction>.FromError("Video processor callback belongs to an older provider video render.");
+            }
+
             if (callback.Sequence <= registration.LastSequence)
             {
                 return InvokeResult<VideoProduction>.FromError($"Video processor callback sequence '{callback.Sequence}' is not newer than the last accepted sequence '{registration.LastSequence}'.");
@@ -663,6 +719,7 @@ namespace LagoVista.MediaServices.Managers
                     _adminLogger.Trace($"{this.Tag()} [PROCESSOR COMPLETED] ProductionId={production.Id}, MediaResourceId={callback.MediaResourceId}, RequestId={callback.RequestId}, AttemptId={callback.AttemptId}, Sequence={callback.Sequence}");
          
                     production.OutputInputSha256 = production.ExecutionInputSha256;
+                    production.ProviderVideoImportCompletedProviderVideoId = registration.ProviderVideoId ?? production.ProviderVideoId;
                     production.IsReady = true;
                     production.CompletedUtc = UtcTimestamp.Now;
                     production.ErrorMessage = null;
@@ -700,6 +757,11 @@ namespace LagoVista.MediaServices.Managers
             }
 
             await _videoProcessorCallbackRegistrationStore.UpdateAsync(registration, cancellationToken);
+
+            if (callback.Type == VideoAssemblyCallbackType.Completed || callback.Type == VideoAssemblyCallbackType.Failed)
+            {
+                await ReleaseProviderVideoImportLeaseAsync(production, registration.ImportLeaseKey, registration.ImportLeaseToken);
+            }
 
             _adminLogger.Trace($"{this.Tag()} [CALLBACK APPLIED] ProductionId={production.Id}, RequestId={callback.RequestId}, AttemptId={callback.AttemptId}, Sequence={callback.Sequence}, Status={production.Status?.Value}, RegistrationCompleted={registration.IsCompleted}");
 
@@ -866,6 +928,32 @@ namespace LagoVista.MediaServices.Managers
             return name.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase) ? name : $"{name}.mp4";
         }
 
+        private static string CreateProviderVideoImportLeaseKey(string productionId, string providerVideoId)
+        {
+            return $"media-services:video-import:{productionId}:{providerVideoId}".ToLowerInvariant();
+        }
+
+        private async Task ReleaseProviderVideoImportLeaseAsync(VideoProduction production, string leaseKey, string leaseToken)
+        {
+            if (String.IsNullOrWhiteSpace(leaseKey) || String.IsNullOrWhiteSpace(leaseToken))
+            {
+                return;
+            }
+
+            await _cacheProvider.ReleaseLockAsync(leaseKey, leaseToken);
+
+            if (production != null &&
+                String.Equals(production.ProviderVideoImportLeaseKey, leaseKey, StringComparison.OrdinalIgnoreCase) &&
+                String.Equals(production.ProviderVideoImportLeaseToken, leaseToken, StringComparison.Ordinal))
+            {
+                production.ProviderVideoImportLeaseKey = null;
+                production.ProviderVideoImportLeaseToken = null;
+                await _videoProductionRepo.UpdateVideoProductionAsync(production);
+            }
+
+            _adminLogger.Trace($"{this.Tag()} [IMPORT LEASE RELEASED] ProductionId={production?.Id}, ProviderVideoId={production?.ProviderVideoId}, LeaseKey={leaseKey}");
+        }
+
         private async Task ApplyPreparationFailureAsync(VideoProduction production, string message)
         {
             _adminLogger.Trace($"{this.Tag()} [IMPORT FAILED] ProductionId={production?.Id}, RequestId={production?.ProviderVideoImportRequestId}, AttemptId={production?.ProviderVideoImportAttemptId}, Message={message}");
@@ -877,6 +965,7 @@ namespace LagoVista.MediaServices.Managers
 
             await _videoProductionRepo.UpdateVideoProductionAsync(production);
             await PublishVideoProductionUpdatedAsync(production);
+            await ReleaseProviderVideoImportLeaseAsync(production, production.ProviderVideoImportLeaseKey, production.ProviderVideoImportLeaseToken);
         }
 
         private async Task PublishVideoProductionUpdatedAsync(VideoProduction production)

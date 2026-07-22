@@ -430,6 +430,10 @@ namespace LagoVista.MediaServices.Models
         public string CompletedUtc { get; set; }
         public string LastStatusCheckUtc { get; set; }
         public string StatusChangedUtc { get; set; }
+        public string ProviderVideoImportProviderVideoId { get; set; }
+        public string ProviderVideoImportCompletedProviderVideoId { get; set; }
+        public string ProviderVideoImportLeaseKey { get; set; }
+        public string ProviderVideoImportLeaseToken { get; set; }
         public string ProviderVideoImportRequestId { get; set; }
         public string ProviderVideoImportAttemptId { get; set; }
         public string ProviderVideoImportRequestStorageReferenceName { get; set; }
