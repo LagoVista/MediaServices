@@ -111,6 +111,76 @@ namespace LagoVista.MediaServices.Managers
             return InvokeResult.Success;
         }
 
+        public async Task<InvokeResult<VideoAvatar>> DeleteFailedVideoAvatarLookAsync(string id, string lookId, EntityHeader org, EntityHeader user)
+        {
+            if (String.IsNullOrWhiteSpace(id))
+            {
+                return InvokeResult<VideoAvatar>.FromError("Video avatar ID is required.");
+            }
+
+            if (String.IsNullOrWhiteSpace(lookId))
+            {
+                return InvokeResult<VideoAvatar>.FromError("Video avatar look ID is required.");
+            }
+
+            var avatar = await _repo.GetVideoAvatarAsync(id);
+            if (avatar == null)
+            {
+                return InvokeResult<VideoAvatar>.FromError($"Could not find video avatar '{id}'.");
+            }
+
+            await AuthorizeAsync(avatar, AuthorizeResult.AuthorizeActions.Update, user, org);
+
+            NormalizeVideoAvatar(avatar);
+
+            var look = avatar.Looks?.FirstOrDefault(candidate => candidate != null && String.Equals(candidate.Id, lookId, StringComparison.OrdinalIgnoreCase));
+            if (look == null)
+            {
+                return InvokeResult<VideoAvatar>.FromError($"Could not find video avatar look '{lookId}'.");
+            }
+
+            if (!IsLookStatus(look, VideoAvatarStatus.Failed))
+            {
+                return InvokeResult<VideoAvatar>.FromError("Only failed video avatar looks can be permanently removed.");
+            }
+
+            var sourceMediaResourceId = look.SourceMediaResource?.Id;
+
+            if (look.IsPrimary || (!String.IsNullOrWhiteSpace(sourceMediaResourceId) && String.Equals(avatar.PrimaryLookResource?.Id, sourceMediaResourceId, StringComparison.OrdinalIgnoreCase)))
+            {
+                avatar.PrimaryLookResource = null;
+            }
+
+            if (avatar.AlternateLookResources != null && !String.IsNullOrWhiteSpace(sourceMediaResourceId))
+            {
+                avatar.AlternateLookResources.RemoveAll(resource => resource != null && String.Equals(resource.Id, sourceMediaResourceId, StringComparison.OrdinalIgnoreCase));
+            }
+
+            avatar.Looks.RemoveAll(candidate => candidate != null && String.Equals(candidate.Id, lookId, StringComparison.OrdinalIgnoreCase));
+
+            if (!String.IsNullOrWhiteSpace(look.ProviderAssetId) && String.Equals(avatar.ProviderAssetId, look.ProviderAssetId, StringComparison.OrdinalIgnoreCase))
+            {
+                avatar.ProviderAssetId = null;
+            }
+
+            if (!String.IsNullOrWhiteSpace(look.ProviderAvatarId) && String.Equals(avatar.ProviderAvatarId, look.ProviderAvatarId, StringComparison.OrdinalIgnoreCase))
+            {
+                avatar.ProviderAvatarId = null;
+                avatar.ProviderAvatarStatus = null;
+            }
+
+            UpdateAggregateStatus(avatar);
+            avatar.LastUpdatedBy = user;
+            avatar.LastUpdatedDate = UtcTimestamp.Now;
+
+            var updatedAvatar = await _repo.UpdateVideoAvatarProviderLifecycleAsync(avatar);
+            await PublishAvatarUpdatedAsync(updatedAvatar);
+
+            _adminLogger.Trace($"{this.Tag()} [FAILED LOOK REMOVED] AvatarId={updatedAvatar.Id}, LookId={lookId}, SourceMediaResourceId={sourceMediaResourceId}, ProviderAvatarId={look.ProviderAvatarId}, ProviderAvatarGroupId={updatedAvatar.ProviderAvatarGroupId}");
+
+            return InvokeResult<VideoAvatar>.Create(updatedAvatar);
+        }
+
         public async Task<VideoAvatar> GetVideoAvatarAsync(string id, EntityHeader org, EntityHeader user)
         {
             var avatar = await _repo.GetVideoAvatarAsync(id);

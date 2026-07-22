@@ -12,6 +12,7 @@ namespace LagoVista.MediaServices.Interfaces
         Task<InvokeResult<VideoAvatar>> AddVideoAvatarAsync(VideoAvatar avatar, EntityHeader org, EntityHeader user);
         Task<InvokeResult<VideoAvatar>> UpdateVideoAvatarAsync(VideoAvatar avatar, EntityHeader org, EntityHeader user);
         Task<InvokeResult> DeleteVideoAvatarAsync(string id, EntityHeader org, EntityHeader user);
+        Task<InvokeResult<VideoAvatar>> DeleteFailedVideoAvatarLookAsync(string id, string lookId, EntityHeader org, EntityHeader user);
         Task<VideoAvatar> GetVideoAvatarAsync(string id, EntityHeader org, EntityHeader user);
         Task<ListResponse<VideoAvatarSummary>> GetVideoAvatarsForOrgAsync(EntityHeader org, EntityHeader user, ListRequest listRequest);
         Task<InvokeResult<VideoAvatar>> EnsureProviderAvatarAsync(string id, EntityHeader org, EntityHeader user);

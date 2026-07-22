@@ -708,35 +708,80 @@ namespace LagoVista.MediaServices.Managers
 
         private async Task UpdateCompletedMediaResourceAsync(VideoProduction production, VideoProcessorJobCallback callback)
         {
-            if (production.FinalVideoMediaResource == null || String.IsNullOrWhiteSpace(production.FinalVideoMediaResource.Id))
+            var mediaResourceId = production.FinalVideoMediaResource?.Id;
+            if (String.IsNullOrWhiteSpace(mediaResourceId))
             {
-                _adminLogger.Trace($"{this.Tag()} [MEDIA RESOURCE UPDATE SKIPPED] ProductionId={production.Id}, Reason=No final media resource assigned.");
+                mediaResourceId = callback.MediaResourceId;
+            }
+
+            if (String.IsNullOrWhiteSpace(mediaResourceId))
+            {
+                _adminLogger.Trace($"{this.Tag()} [MEDIA RESOURCE UPDATE SKIPPED] ProductionId={production.Id}, Reason=No final media resource assigned and callback did not contain a media resource ID.");
                 return;
             }
 
-            var mediaResource = await _mediaResourcesRepo.GetMediaResourceRecordAsync(production.FinalVideoMediaResource.Id);
+            var mediaResource = await _mediaResourcesRepo.GetMediaResourceRecordAsync(mediaResourceId);
             if (mediaResource == null)
             {
-                _adminLogger.Trace($"{this.Tag()} [MEDIA RESOURCE UPDATE SKIPPED] ProductionId={production.Id}, MediaResourceId={production.FinalVideoMediaResource.Id}, Reason=Media resource not found.");
+                _adminLogger.Trace($"{this.Tag()} [MEDIA RESOURCE UPDATE SKIPPED] ProductionId={production.Id}, MediaResourceId={mediaResourceId}, Reason=Media resource not found.");
                 return;
             }
+
+            production.FinalVideoMediaResource = mediaResource.ToEntityHeader();
 
             _adminLogger.Trace($"{this.Tag()} [UPDATING COMPLETED MEDIA RESOURCE] ProductionId={production.Id}, MediaResourceId={mediaResource.Id}, OutputCount={callback.Outputs?.Count ?? 0}");
 
             var videoOutput = callback.Outputs?.FirstOrDefault(output => output.Type == VideoProcessorOutputArtifactType.Video);
             var thumbnailOutput = callback.Outputs?.FirstOrDefault(output => output.Type == VideoProcessorOutputArtifactType.Thumbnail);
+            var pendingRevision = mediaResource.GetPendingRevision();
 
             if (videoOutput != null)
             {
+                if (!String.IsNullOrWhiteSpace(videoOutput.StorageReferenceName))
+                {
+                    mediaResource.StorageReferenceName = videoOutput.StorageReferenceName;
+                }
+
+                if (!String.IsNullOrWhiteSpace(videoOutput.ExternalUri))
+                {
+                    mediaResource.ExternalUrl = videoOutput.ExternalUri;
+                }
+
                 mediaResource.ContentSize = videoOutput.SizeBytes ?? mediaResource.ContentSize;
                 mediaResource.DurationSeconds = videoOutput.DurationSeconds ?? mediaResource.DurationSeconds;
                 mediaResource.Width = videoOutput.Width ?? mediaResource.Width;
                 mediaResource.Height = videoOutput.Height ?? mediaResource.Height;
+                mediaResource.ContentSha256 = String.IsNullOrWhiteSpace(videoOutput.Sha256) ? mediaResource.ContentSha256 : videoOutput.Sha256;
+
+                if (pendingRevision != null)
+                {
+                    pendingRevision.StorageReferenceName = String.IsNullOrWhiteSpace(videoOutput.StorageReferenceName) ? pendingRevision.StorageReferenceName : videoOutput.StorageReferenceName;
+                }
             }
 
-            if (thumbnailOutput != null && !String.IsNullOrWhiteSpace(thumbnailOutput.ExternalUri))
+            if (thumbnailOutput != null)
             {
-                mediaResource.ThumbnailUrl = thumbnailOutput.ExternalUri;
+                if (!String.IsNullOrWhiteSpace(thumbnailOutput.StorageReferenceName))
+                {
+                    mediaResource.ThumbnailStorageReferenceName = thumbnailOutput.StorageReferenceName;
+                }
+
+                if (!String.IsNullOrWhiteSpace(thumbnailOutput.ExternalUri))
+                {
+                    mediaResource.ThumbnailUrl = thumbnailOutput.ExternalUri;
+                }
+
+                if (pendingRevision != null)
+                {
+                    pendingRevision.ThumbnailStorageReferenceName = String.IsNullOrWhiteSpace(thumbnailOutput.StorageReferenceName) ? pendingRevision.ThumbnailStorageReferenceName : thumbnailOutput.StorageReferenceName;
+                }
+            }
+
+            if (pendingRevision != null)
+            {
+                pendingRevision.Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Ready);
+                mediaResource.CurrentRevision = pendingRevision.Id;
+                mediaResource.PendingRevision = null;
             }
 
             mediaResource.Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Ready);
@@ -744,7 +789,8 @@ namespace LagoVista.MediaServices.Managers
             mediaResource.LastUpdatedBy = production.LastUpdatedBy ?? production.CreatedBy;
 
             await _mediaResourcesRepo.UpdateMediaResourceRecordAsync(mediaResource);
-            _adminLogger.Trace($"{this.Tag()} [MEDIA RESOURCE READY] ProductionId={production.Id}, MediaResourceId={mediaResource.Id}, ContentSize={mediaResource.ContentSize}, DurationSeconds={mediaResource.DurationSeconds}, Width={mediaResource.Width}, Height={mediaResource.Height}");
+
+            _adminLogger.Trace($"{this.Tag()} [MEDIA RESOURCE READY] ProductionId={production.Id}, MediaResourceId={mediaResource.Id}, StorageReferenceName={mediaResource.StorageReferenceName}, ThumbnailStorageReferenceName={mediaResource.ThumbnailStorageReferenceName}, CurrentRevision={mediaResource.CurrentRevision}, ContentSize={mediaResource.ContentSize}, DurationSeconds={mediaResource.DurationSeconds}, Width={mediaResource.Width}, Height={mediaResource.Height}, Sha256={mediaResource.ContentSha256}");
         }
 
         private static bool IsCallbackAccessTokenValid(string accessToken, string expectedSha256)
