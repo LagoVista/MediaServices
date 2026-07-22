@@ -674,6 +674,7 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<VideoProduction>.FromError("Video processor callback media resource ID does not match the registered media resource.");
             }
 
+            var production = await _videoProductionRepo.GetVideoProductionAsync(callback.ProductionId);
             if (!String.IsNullOrWhiteSpace(registration.ProviderVideoId) && !String.Equals(registration.ProviderVideoId, production.ProviderVideoId, StringComparison.OrdinalIgnoreCase))
             {
                 return InvokeResult<VideoProduction>.FromError("Video processor callback belongs to an older provider video render.");
@@ -689,7 +690,6 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<VideoProduction>.FromError($"Video processor job type '{callback.JobType}' is not supported by this callback handler.");
             }
 
-            var production = await _videoProductionRepo.GetVideoProductionAsync(callback.ProductionId);
             if (production == null)
             {
                 return InvokeResult<VideoProduction>.FromError($"Could not find video production '{callback.ProductionId}'.");
