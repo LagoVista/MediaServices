@@ -759,6 +759,14 @@ namespace LagoVista.MediaServices.Managers
         {
             var production = await GetVideoProductionAsync(id, org, user);
 
+            NormalizeVideoProduction(production);
+
+            var outputModeValidation = ValidateOutputMode(production);
+            if (!outputModeValidation.Successful)
+            {
+                return outputModeValidation.ToInvokeResult<VideoProduction>();
+            }
+
             if (production.VideoAvatar == null || String.IsNullOrWhiteSpace(production.VideoAvatar.Id))
             {
                 return InvokeResult<VideoProduction>.FromError("Video avatar is required.");
@@ -807,7 +815,7 @@ namespace LagoVista.MediaServices.Managers
 
             ApplyAvatarToProduction(production, avatarStatusResult.Result, selectedLook);
 
-            if (production.Settings?.GenerateTransparentPresenter == true)
+            if (production.Settings.OutputMode.Value == VideoProductionOutputMode.TransparentPresenter)
             {
                 production.ProviderBackgroundAssetId = null;
             }
@@ -1466,6 +1474,7 @@ namespace LagoVista.MediaServices.Managers
         private static HeyGenVideoRequest BuildHeyGenRequest(VideoProduction production)
         {
             var settings = production.Settings ?? new VideoProductionSettings();
+            var generateTransparentPresenter = settings.OutputMode?.Value == VideoProductionOutputMode.TransparentPresenter;
 
             return new HeyGenVideoRequest
             {
@@ -1478,9 +1487,9 @@ namespace LagoVista.MediaServices.Managers
                 Resolution = ResolveHeyGenResolution(settings.Resolution),
                 AspectRatio = ResolveHeyGenAspectRatio(settings.AspectRatio),
                 Fit = ResolveHeyGenFit(settings.Fit),
-                RemoveBackground = settings.GenerateTransparentPresenter || settings.RemoveBackground ? true : (bool?)null,
-                OutputFormat = settings.GenerateTransparentPresenter ? "webm" : "mp4",
-                Background = settings.GenerateTransparentPresenter || String.IsNullOrWhiteSpace(production.ProviderBackgroundAssetId) ? null : new HeyGenBackground { Type = "image", AssetId = production.ProviderBackgroundAssetId },
+                RemoveBackground = true,
+                OutputFormat = generateTransparentPresenter ? "webm" : "mp4",
+                Background = generateTransparentPresenter ? null : new HeyGenBackground { Type = "image", AssetId = production.ProviderBackgroundAssetId },
                 Caption = settings.BurnInCaptions ? new HeyGenCaptionSettings { FileFormat = "srt", Style = String.IsNullOrWhiteSpace(settings.CaptionStyle) ? "default" : settings.CaptionStyle } : null,
                 MotionPrompt = settings.MotionPrompt,
                 Expressiveness = production.Engine?.Value == VideoProductionEngine.AvatarIV ? ResolveHeyGenExpressiveness(settings.Expressiveness) : null,
@@ -1656,6 +1665,29 @@ namespace LagoVista.MediaServices.Managers
                 production.Settings = new VideoProductionSettings();
             }
 
+            if (production.Settings.OutputMode == null)
+            {
+                var hasBackground = production.BackgroundMediaResource != null && !String.IsNullOrWhiteSpace(production.BackgroundMediaResource.Id);
+                var outputMode = production.Settings.GenerateTransparentPresenter || !hasBackground
+                    ? VideoProductionOutputMode.TransparentPresenter
+                    : VideoProductionOutputMode.CompositedBackground;
+
+                production.Settings.OutputMode = EntityHeader<VideoProductionOutputMode>.Create(outputMode);
+            }
+
+            production.Settings.RemoveBackground = true;
+
+            if (production.Settings.OutputMode.Value == VideoProductionOutputMode.TransparentPresenter)
+            {
+                production.Settings.GenerateTransparentPresenter = true;
+                production.BackgroundMediaResource = null;
+                production.ProviderBackgroundAssetId = null;
+            }
+            else
+            {
+                production.Settings.GenerateTransparentPresenter = false;
+            }
+
             if (production.Settings.Resolution == null)
             {
                 production.Settings.Resolution = EntityHeader<VideoProductionResolution>.Create(VideoProductionResolution.FullHD1080);
@@ -1699,6 +1731,58 @@ namespace LagoVista.MediaServices.Managers
             {
                 production.DefaultLocale = VideoProduction.DefaultLocaleCode;
             }
+        }
+
+        private static InvokeResult ValidateOutputMode(VideoProduction production)
+        {
+            if (production?.Settings == null)
+            {
+                return InvokeResult.FromError("Video production settings are required.");
+            }
+
+            if (production.Settings.OutputMode == null)
+            {
+                return InvokeResult.FromError("Video production output mode is required.");
+            }
+
+            if (!production.Settings.RemoveBackground)
+            {
+                return InvokeResult.FromError("Avatar background removal is required for supported video production output modes.");
+            }
+
+            switch (production.Settings.OutputMode.Value)
+            {
+                case VideoProductionOutputMode.TransparentPresenter:
+                    if (!production.Settings.GenerateTransparentPresenter)
+                    {
+                        return InvokeResult.FromError("Transparent presenter output must generate a transparent presenter video.");
+                    }
+
+                    if (production.BackgroundMediaResource != null && !String.IsNullOrWhiteSpace(production.BackgroundMediaResource.Id))
+                    {
+                        return InvokeResult.FromError("Transparent presenter output cannot include a background Media Resource.");
+                    }
+
+                    break;
+
+                case VideoProductionOutputMode.CompositedBackground:
+                    if (production.Settings.GenerateTransparentPresenter)
+                    {
+                        return InvokeResult.FromError("Video-with-background output cannot generate a transparent presenter video.");
+                    }
+
+                    if (production.BackgroundMediaResource == null || String.IsNullOrWhiteSpace(production.BackgroundMediaResource.Id))
+                    {
+                        return InvokeResult.FromError("A background Media Resource is required for video-with-background output.");
+                    }
+
+                    break;
+
+                default:
+                    return InvokeResult.FromError($"Video production output mode '{production.Settings.OutputMode.Id}' is not supported.");
+            }
+
+            return InvokeResult.Success;
         }
 
         private async Task PublishVideoProductionUpdatedAsync(VideoProduction production)

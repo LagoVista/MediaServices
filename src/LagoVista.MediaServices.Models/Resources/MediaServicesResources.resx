@@ -397,10 +397,10 @@
     <value>Subject Entity</value>
   </data>
   <data name="VideoAvatar_SourceImage" xml:space="preserve">
-    <value>Source Image</value>
+    <value>Primary Look Image</value>
   </data>
   <data name="VideoAvatar_EditorialImage" xml:space="preserve">
-    <value>Editorial Image</value>
+    <value>Alternate Look Images</value>
   </data>
   <data name="VideoAvatar_Provider" xml:space="preserve">
     <value>Provider</value>
@@ -884,5 +884,11 @@
   </data>
   <data name="Common_IsActive" xml:space="preserve">
     <value>Is Active</value>
+  </data>
+  <data name="VideoProductionOutputMode_TransparentPresenter" xml:space="preserve">
+    <value>Transparent Presenter</value>
+  </data>
+  <data name="VideoProductionOutputMode_CompositedBackground" xml:space="preserve">
+    <value>Video with Background</value>
   </data>
 </root>
