@@ -65,6 +65,12 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return _manager.DeleteVideoAvatarAsync(id, OrgEntityHeader, UserEntityHeader);
         }
 
+        [HttpDelete("/api/media/videoavatar/{id}/look/{lookId}")]
+        public Task<InvokeResult<VideoAvatar>> DeleteFailedVideoAvatarLookAsync(string id, string lookId)
+        {
+            return _manager.DeleteFailedVideoAvatarLookAsync(id, lookId, OrgEntityHeader, UserEntityHeader);
+        }
+
         [HttpPost("/api/media/videoavatar/{id}/provider/ensure")]
         public Task<InvokeResult<VideoAvatar>> EnsureProviderAvatarAsync(string id)
         {

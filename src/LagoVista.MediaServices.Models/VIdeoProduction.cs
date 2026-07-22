@@ -185,6 +185,8 @@ namespace LagoVista.MediaServices.Models
             AspectRatio = EntityHeader<VideoProductionAspectRatio>.Create(VideoProductionAspectRatio.Landscape16x9);
             Fit = EntityHeader<VideoProductionFit>.Create(VideoProductionFit.Automatic);
             Expressiveness = EntityHeader<VideoProductionExpressiveness>.Create(VideoProductionExpressiveness.Low);
+            RemoveBackground = true;
+            GenerateTransparentPresenter = true;
             CaptionStyle = "default";
         }
 
