@@ -382,7 +382,8 @@ namespace LagoVista.VideoAssembly
         {
             var filters = new List<string>();
             filters.Add("[1:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,setsar=1,fps=30[background]");
-            filters.Add($"[0:v]format=rgba,scale=iw*{FormatSeconds(layout.Scale)}:ih*{FormatSeconds(layout.Scale)}[presenter]");
+            var presenterWidth = Math.Max(2, (int)Math.Round(1920 * layout.Scale / 2) * 2);
+            filters.Add($"[0:v]format=rgba,scale={presenterWidth}:-2[presenter]");
             filters.Add($"[background][presenter]overlay=x='(W-w)*{FormatSeconds(layout.PositionX)}':y='(H-h)*{FormatSeconds(layout.PositionY)}':format=auto[composite]");
 
             var outputFilters = new List<string> { "[composite]format=yuv420p" };
