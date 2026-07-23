@@ -20,6 +20,7 @@ namespace LagoVista.VideoAssembly
     {
         private readonly HttpClient _httpClient;
         private readonly FfprobeMediaInspectionService _inspectionService;
+        private readonly TransparentVideoCropper _transparentVideoCropper;
         private readonly VideoThumbnailExtractor _thumbnailExtractor;
         private readonly AzureBlobSasUploader _azureUploader;
         private readonly VideoProcessorCallbackClient _callbackClient;
@@ -29,10 +30,11 @@ namespace LagoVista.VideoAssembly
         private Task _pendingUploadNotification = Task.CompletedTask;
         private long _sequence;
 
-        public VideoMediaImportService(HttpClient httpClient, FfprobeMediaInspectionService inspectionService, VideoThumbnailExtractor thumbnailExtractor, AzureBlobSasUploader azureUploader, VideoProcessorCallbackClient callbackClient, VideoProcessorNotificationPublisher notificationPublisher, VideoAssemblyOptions options)
+        public VideoMediaImportService(HttpClient httpClient, FfprobeMediaInspectionService inspectionService, TransparentVideoCropper transparentVideoCropper, VideoThumbnailExtractor thumbnailExtractor, AzureBlobSasUploader azureUploader, VideoProcessorCallbackClient callbackClient, VideoProcessorNotificationPublisher notificationPublisher, VideoAssemblyOptions options)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _inspectionService = inspectionService ?? throw new ArgumentNullException(nameof(inspectionService));
+            _transparentVideoCropper = transparentVideoCropper ?? throw new ArgumentNullException(nameof(transparentVideoCropper));
             _thumbnailExtractor = thumbnailExtractor ?? throw new ArgumentNullException(nameof(thumbnailExtractor));
             _azureUploader = azureUploader ?? throw new ArgumentNullException(nameof(azureUploader));
             _callbackClient = callbackClient ?? throw new ArgumentNullException(nameof(callbackClient));
@@ -48,6 +50,7 @@ namespace LagoVista.VideoAssembly
             var workspaceRoot = String.IsNullOrWhiteSpace(_options.WorkspaceRoot) ? Path.Combine(Path.GetTempPath(), "lago-video-assembly") : _options.WorkspaceRoot;
             var workspacePath = Path.Combine(workspaceRoot, Sanitize(request.RequestId), Sanitize(request.AttemptId), "media-import");
             var sourcePath = Path.Combine(workspacePath, String.IsNullOrWhiteSpace(request.Source.FileName) ? "source.mp4" : Sanitize(request.Source.FileName));
+            var normalizedPath = Path.Combine(workspacePath, $"normalized{Path.GetExtension(sourcePath)}");
             var thumbnailPath = Path.Combine(workspacePath, String.IsNullOrWhiteSpace(request.Thumbnail?.Destination?.FileName) ? "thumbnail.jpg" : Sanitize(request.Thumbnail.Destination.FileName));
             Directory.CreateDirectory(workspacePath);
 
@@ -60,16 +63,20 @@ namespace LagoVista.VideoAssembly
 
                 currentStage = VideoMediaImportStage.DownloadingSource;
                 await SendCallbackSafelyAsync(request, VideoAssemblyCallbackType.Progress, currentStage, "Downloading source video.", outputs, null, timeout.Token);
-                var sourceSize = await DownloadAsync(request.Source.Url, sourcePath, request.Limits.MaxSourceFileBytes, timeout.Token);
+                await DownloadAsync(request.Source.Url, sourcePath, request.Limits.MaxSourceFileBytes, timeout.Token);
 
                 currentStage = VideoMediaImportStage.InspectingSource;
-                await SendCallbackSafelyAsync(request, VideoAssemblyCallbackType.Progress, currentStage, "Inspecting source video.", outputs, null, timeout.Token);
-                var inspection = await _inspectionService.InspectAsync(sourcePath, timeout.Token);
-                var videoSha256 = await CalculateSha256Async(sourcePath, timeout.Token);
+                await SendCallbackSafelyAsync(request, VideoAssemblyCallbackType.Progress, currentStage, "Inspecting and normalizing source video.", outputs, null, timeout.Token);
+                var sourceInspection = await _inspectionService.InspectAsync(sourcePath, timeout.Token);
+                var cropResult = await _transparentVideoCropper.CropAsync(sourcePath, normalizedPath, sourceInspection, timeout.Token);
+                var importedVideoPath = cropResult.OutputPath;
+                var inspection = cropResult.WasCropped ? await _inspectionService.InspectAsync(importedVideoPath, timeout.Token) : sourceInspection;
+                var sourceSize = new FileInfo(importedVideoPath).Length;
+                var videoSha256 = await CalculateSha256Async(importedVideoPath, timeout.Token);
 
                 currentStage = VideoMediaImportStage.UploadingVideo;
-                await SendCallbackSafelyAsync(request, VideoAssemblyCallbackType.Progress, currentStage, "Uploading source video to Azure.", outputs, null, timeout.Token);
-                await _azureUploader.UploadAsync(sourcePath, request.VideoDestination, timeout.Token, CreateUploadProgress(request, currentStage, "Uploading source video to Azure."));
+                await SendCallbackSafelyAsync(request, VideoAssemblyCallbackType.Progress, currentStage, cropResult.WasCropped ? "Uploading cropped transparent source video to Azure." : "Uploading source video to Azure.", outputs, null, timeout.Token);
+                await _azureUploader.UploadAsync(importedVideoPath, request.VideoDestination, timeout.Token, CreateUploadProgress(request, currentStage, "Uploading source video to Azure."));
                 await FlushUploadNotificationsAsync();
 
                 outputs.Add(new VideoProcessorOutputArtifact
@@ -92,7 +99,7 @@ namespace LagoVista.VideoAssembly
                     currentStage = VideoMediaImportStage.GeneratingThumbnail;
                     await SendCallbackSafelyAsync(request, VideoAssemblyCallbackType.Progress, currentStage, "Generating video thumbnail.", outputs, null, timeout.Token);
                     var thumbnailTime = request.Thumbnail.TimeSeconds ?? 1.0;
-                    await _thumbnailExtractor.ExtractAsync(sourcePath, thumbnailPath, thumbnailTime, inspection.DurationSeconds, timeout.Token);
+                    await _thumbnailExtractor.ExtractAsync(importedVideoPath, thumbnailPath, thumbnailTime, inspection.DurationSeconds, timeout.Token);
                     var thumbnailInspection = await _inspectionService.InspectAsync(thumbnailPath, timeout.Token);
                     var thumbnailSha256 = await CalculateSha256Async(thumbnailPath, timeout.Token);
 

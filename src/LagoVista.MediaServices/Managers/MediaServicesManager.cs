@@ -231,22 +231,71 @@ namespace LagoVista.MediaServices.Managers
         }
 
         public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false, 
-            string license = "", string url = "", string responseId = "", string originalPrompt = "", string revisedPrompt = "", string entityTypeName = "", string entityFieldName = "", string size = "", string resourceName = "", ImageGenerationRequest imageGenerationRequest = null)
+            string license = "", string url = "", string responseId = "", string originalPrompt = "", string revisedPrompt = "", string entityTypeName = "", string entityFieldName = "", string size = "", string resourceName = "", ImageGenerationRequest imageGenerationRequest = null, string mediaLibraryId = "")
         {
             var timeStamp = UtcTimestamp.Now;
 
-            var mediaResource = new MediaResource();
-            mediaResource.Id = id;
-            mediaResource.CreationDate = timeStamp;
-            mediaResource.LastUpdatedDate = mediaResource.CreationDate;
-            mediaResource.CreatedBy = user;
-            mediaResource.IsPublic = isPublic;
-            mediaResource.LastUpdatedBy = user;
-            mediaResource.OwnerOrganization = org;
+            MediaResource mediaResource = null;
+
             if (saveResourceRecord)
             {
-                mediaResource.Name = string.IsNullOrEmpty(fileName) ? (String.IsNullOrEmpty(resourceName) ? $"Auto Inserted {DateTime.UtcNow.ToString()}" : resourceName) : fileName;
-                mediaResource.Key = $"autoinserted{DateTime.UtcNow.Ticks}";
+                mediaResource = await _mediaRepo.TryGetMediaResourceRecordAsync(id);
+            }
+
+            if (mediaResource == null)
+            {
+                mediaResource = new MediaResource
+                {
+                    Id = id,
+                    CreationDate = timeStamp,
+                    LastUpdatedDate = timeStamp,
+                    CreatedBy = user,
+                    IsPublic = isPublic,
+                    LastUpdatedBy = user,
+                    OwnerOrganization = org
+                };
+            }
+            else
+            {
+                await AuthorizeAsync(mediaResource, AuthorizeActions.Update, user, org);
+                mediaResource.LastUpdatedDate = timeStamp;
+                mediaResource.LastUpdatedBy = user;
+                mediaResource.IsPublic = isPublic;
+            }
+
+            if (saveResourceRecord)
+            {
+                if (!String.IsNullOrWhiteSpace(resourceName))
+                {
+                    mediaResource.Name = resourceName.Trim();
+                }
+                else if (String.IsNullOrWhiteSpace(mediaResource.Name))
+                {
+                    mediaResource.Name = !String.IsNullOrWhiteSpace(fileName)
+                        ? Path.GetFileNameWithoutExtension(fileName)
+                        : $"Auto Inserted {DateTime.UtcNow}";
+                }
+
+                if (String.IsNullOrWhiteSpace(mediaResource.Key))
+                {
+                    mediaResource.Key = $"autoinserted{DateTime.UtcNow.Ticks}";
+                }
+
+                if (!String.IsNullOrWhiteSpace(mediaLibraryId))
+                {
+                    var mediaLibrary = await _libraryRepo.GetMediaLibraryAsync(mediaLibraryId);
+                    if (mediaLibrary == null)
+                    {
+                        return InvokeResult<MediaResource>.FromError($"Could not find Media Library '{mediaLibraryId}'.");
+                    }
+
+                    if (mediaLibrary.OwnerOrganization == null || !String.Equals(mediaLibrary.OwnerOrganization.Id, org.Id, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return InvokeResult<MediaResource>.FromError("The selected Media Library does not belong to the active organization.");
+                    }
+
+                    mediaResource.MediaLibrary = mediaLibrary.ToEntityHeader();
+                }
             }
 
             if (!String.IsNullOrEmpty(entityTypeName) && !String.IsNullOrEmpty(entityFieldName))

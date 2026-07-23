@@ -42,6 +42,7 @@ namespace LagoVista.VideoAssembly.Worker
             builder.Services.AddSingleton<ProcessRunner>();
             builder.Services.AddSingleton<AssSubtitleDocumentBuilder>();
             builder.Services.AddSingleton<FfprobeMediaInspectionService>();
+            builder.Services.AddSingleton<TransparentVideoCropper>();
             builder.Services.AddSingleton<VideoThumbnailExtractor>();
             builder.Services.AddHttpClient<VideoProcessorRequestLoader>(client => client.Timeout = TimeSpan.FromMinutes(options.HttpTimeoutMinutes));
             builder.Services.AddHttpClient<VideoAssemblySourceDownloader>(client => client.Timeout = TimeSpan.FromMinutes(options.HttpTimeoutMinutes));

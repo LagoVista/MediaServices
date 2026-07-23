@@ -240,6 +240,43 @@ namespace LagoVista.MediaServices.CloudRepos
             return this.UpsertDocumentAsync(updated);
         }
 
+        public async Task<MediaResource> TryGetMediaResourceRecordAsync(string id)
+        {
+            var record = await this.GetDocumentAsync(id, false);
+            if (record == null)
+                return null;
+
+            if (string.IsNullOrEmpty(record.CurrentRevision) && record.IsFileUpload)
+            {
+                var timeStamp = UtcTimestamp.Now;
+                if (record.History.Count > 0)
+                {
+                    record.CurrentRevision = record.History[0].Id;
+                }
+                else
+                {
+                    var history = new MediaResourceHistory()
+                    {
+                        CreatedBy = record.CreatedBy,
+                        CreationDate = timeStamp,
+                        ContentSize = record.ContentSize,
+                        Height = record.Height,
+                        Name = $"Revision 1",
+                        Width = record.Width,
+                        Id = Guid.NewGuid().ToId(),
+                        StorageReferenceName = record.StorageReferenceName
+                    };
+
+                    record.CurrentRevision = history.Id;
+                    record.History.Add(history);
+                }
+                record.LastUpdatedDate = timeStamp;
+                await UpsertDocumentAsync(record);
+            }
+
+            return record;
+        }
+
         public async Task<MediaResource> GetMediaResourceRecordAsync(string id)
         {
             var record = await this.GetDocumentAsync(id);

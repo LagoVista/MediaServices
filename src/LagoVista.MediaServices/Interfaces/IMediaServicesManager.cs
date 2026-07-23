@@ -16,7 +16,7 @@ namespace LagoVista.MediaServices.Interfaces
     public interface IMediaServicesManager
     {
         Task<InvokeResult<MediaResource>> AddResourceMediaAsync(string id, Stream media, string name, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false, string license = "", string url = "", string responseId = "",
-            string originalPrompt = "", string revisedPrompt = "", string entityTypeName = "", string entityTypeFieldName = "", string size = "", string resourceName = "", ImageGenerationRequest imageGenerationRequest = null);
+            string originalPrompt = "", string revisedPrompt = "", string entityTypeName = "", string entityTypeFieldName = "", string size = "", string resourceName = "", ImageGenerationRequest imageGenerationRequest = null, string mediaLibraryId = "");
         Task<InvokeResult<MediaResource>> AddResourceMediaRevisionAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false, string license = "", string Url = "", string responseId = "",
             string originalPrompt = "", string revisedPrompt = "", string size = "", ImageGenerationRequest imageGenerationRequest = null);
        

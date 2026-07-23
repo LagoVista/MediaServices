@@ -211,11 +211,16 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// <param name="file">file to be uploaded.</param>
         /// <returns></returns>
         [HttpPost("/api/media/resources/{id}")]
-        public async Task<InvokeResult<MediaResource>> UploadMediaAsync(string id, IFormFile file, bool saveresource = false)
+        public async Task<InvokeResult<MediaResource>> UploadMediaAsync(string id, IFormFile file, [FromForm] string name = null, [FromForm] string mediaLibraryId = null, bool saveresource = false)
         {
+            if (file == null || file.Length == 0)
+            {
+                return InvokeResult<MediaResource>.FromError("A media file is required.");
+            }
+
             using (var strm = file.OpenReadStream())
             {
-                return await _mediaServicesManager.AddResourceMediaAsync(id, strm, file.FileName, file.ContentType, OrgEntityHeader, UserEntityHeader, saveresource);
+                return await _mediaServicesManager.AddResourceMediaAsync(id, strm, file.FileName, file.ContentType, OrgEntityHeader, UserEntityHeader, saveresource, resourceName: name, mediaLibraryId: mediaLibraryId);
             }
         }
 
