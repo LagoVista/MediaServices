@@ -232,6 +232,38 @@ namespace LagoVista.MediaServices.Managers
                 foreach (var sourceLook in activeLooks)
                 {
                     var look = sourceLook;
+                    var sourceMediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(look.SourceMediaResource.Id, org, user);
+
+                    if (sourceMediaResource == null)
+                    {
+                        look.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Failed);
+                        look.ErrorMessage = $"Could not find the source Media Resource for avatar look '{look.Name ?? look.Id}'.";
+                        look.LastStatusCheck = UtcTimestamp.Now;
+                        continue;
+                    }
+
+                    var currentContentSha256 = sourceMediaResource.ContentSha256;
+                    var sourceRevisionChanged = !String.IsNullOrWhiteSpace(look.SourceContentSha256) &&
+                                                !String.Equals(look.SourceContentSha256, currentContentSha256, StringComparison.OrdinalIgnoreCase);
+                    var failedLegacyLookRequiresRetry = IsLookStatus(look, VideoAvatarStatus.Failed) &&
+                                                        String.IsNullOrWhiteSpace(look.SourceContentSha256);
+
+                    if (sourceRevisionChanged || failedLegacyLookRequiresRetry)
+                    {
+                        _adminLogger.Trace($"{this.Tag()} [LOOK SOURCE CHANGED] AvatarId={avatar.Id}, LookId={look.Id}, PreviousContentSha256={look.SourceContentSha256}, CurrentContentSha256={currentContentSha256}, PreviousProviderAssetId={look.ProviderAssetId}, PreviousProviderAvatarId={look.ProviderAvatarId}");
+
+                        look.ProviderAssetId = null;
+                        look.ProviderAvatarId = null;
+                        look.ProviderAvatarStatus = null;
+                        look.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Draft);
+                        look.ErrorMessage = null;
+                        look.LastStatusCheck = UtcTimestamp.Now;
+                    }
+                    else if (String.IsNullOrWhiteSpace(look.SourceContentSha256) && !String.IsNullOrWhiteSpace(look.ProviderAvatarId))
+                    {
+                        // Adopt the current revision for legacy successful looks without rebuilding them.
+                        look.SourceContentSha256 = currentContentSha256;
+                    }
 
                     if (!String.IsNullOrWhiteSpace(look.ProviderAvatarId))
                     {
@@ -247,12 +279,13 @@ namespace LagoVista.MediaServices.Managers
                     if (!assetResult.Successful)
                     {
                         look.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Failed);
-                        look.ErrorMessage = assetResult.Errors[0].Message;
+                        look.ErrorMessage = $"Could not upload avatar look '{look.Name ?? look.SourceMediaResource?.Text ?? look.Id}' to HeyGen. {assetResult.Errors.FirstOrDefault()?.Message ?? "The provider did not return an error message."}";
                         look.LastStatusCheck = UtcTimestamp.Now;
                         continue;
                     }
 
                     look.ProviderAssetId = assetResult.Result;
+                    look.SourceContentSha256 = currentContentSha256;
                     look.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Preparing);
                     look.ErrorMessage = null;
                     look.LastStatusCheck = UtcTimestamp.Now;
@@ -288,7 +321,7 @@ namespace LagoVista.MediaServices.Managers
                     if (!createResult.Successful)
                     {
                         look.Status = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Failed);
-                        look.ErrorMessage = createResult.Errors[0].Message;
+                        look.ErrorMessage = $"HeyGen uploaded avatar look '{look.Name ?? look.SourceMediaResource?.Text ?? look.Id}', but could not convert it into a photo-avatar look. {createResult.Errors.FirstOrDefault()?.Message ?? "The provider did not return an error message."}";
                         look.LastStatusCheck = UtcTimestamp.Now;
                         continue;
                     }
@@ -684,12 +717,25 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<string>.FromError($"Media resource '{mediaResourceId}' does not contain image content.");
             }
 
+            var fileName = String.IsNullOrWhiteSpace(content.FileName) ? mediaResource.Name ?? mediaResource.Id : content.FileName;
+            var contentType = content.ContentType?.Trim().ToLowerInvariant();
+            var extension = Path.GetExtension(fileName)?.ToLowerInvariant();
+            var supportedContentType = contentType == "image/jpeg" || contentType == "image/jpg" || contentType == "image/png";
+            var supportedExtension = extension == ".jpg" || extension == ".jpeg" || extension == ".png";
+
+            if (!supportedContentType && !supportedExtension)
+            {
+                var detectedFormat = !String.IsNullOrWhiteSpace(contentType) ? contentType : extension ?? "unknown format";
+                return InvokeResult<string>.FromError($"HeyGen photo-avatar looks require a PNG or JPEG image. '{fileName}' is '{detectedFormat}'. Convert the image to .png, .jpg, or .jpeg and upload it as a new Media Resource revision.");
+            }
+
             using var stream = new MemoryStream(content.ImageBytes, writable: false);
 
-            var uploadResult = await _heyGenVideoService.UploadAssetAsync(stream, content.FileName, content.ContentType, mediaResource.Id);
+            var uploadResult = await _heyGenVideoService.UploadAssetAsync(stream, fileName, content.ContentType, mediaResource.Id);
             if (!uploadResult.Successful)
             {
-                return uploadResult.ToInvokeResult<string>();
+                var providerError = uploadResult.Errors.FirstOrDefault()?.Message ?? "The provider did not return an error message.";
+                return InvokeResult<string>.FromError($"HeyGen could not accept avatar look image '{fileName}'. {providerError}");
             }
 
             if (mediaResource.ExternalAssets == null)

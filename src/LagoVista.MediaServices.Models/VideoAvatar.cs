@@ -232,6 +232,8 @@ namespace LagoVista.MediaServices.Models
 
         public ImageEntityHeader SourceMediaResource { get; set; }
 
+        public string SourceContentSha256 { get; set; }
+
         public EntityHeader<VideoAvatarStatus> Status { get; set; } = EntityHeader<VideoAvatarStatus>.Create(VideoAvatarStatus.Draft);
 
         public string ProviderAssetId { get; set; }
