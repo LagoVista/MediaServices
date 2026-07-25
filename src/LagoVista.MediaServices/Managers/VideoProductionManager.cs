@@ -19,6 +19,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -43,6 +44,7 @@ namespace LagoVista.MediaServices.Managers
         private readonly IBillingEventRecorder _billingEventRecorder;
 
         private static readonly HttpClient PreviewAudioHttpClient = new HttpClient();
+        private static readonly Regex HeyGenPauseMarkerRegex = new Regex(@"\[pause\s*=\s*(?<seconds>\d+(?:\.\d+)?)\s*\]", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
         private static readonly TimeSpan VimeoStatusPollingInterval = TimeSpan.FromSeconds(20);
         private static readonly TimeSpan VimeoStatusPollingTimeout = TimeSpan.FromMinutes(30);
 
@@ -538,12 +540,16 @@ namespace LagoVista.MediaServices.Managers
             await _repo.UpdateVideoProductionAsync(production);
             await PublishVideoProductionUpdatedAsync(production);
 
+            var script = BuildHeyGenScript(production.Script);
+            _logger.Trace($"{this.Tag()} - Preview Script: {script}");
+
             var previewResult = await _heyGenVideoService.GenerateSpeechPreviewAsync(new HeyGenSpeechPreviewRequest
             {
                 VoiceId = production.VoiceId,
-                Text = production.Script,
+                Text = script,
                 Locale = String.IsNullOrWhiteSpace(production.Locale) ? production.DefaultLocale : production.Locale
             });
+
 
             if (!previewResult.Successful)
             {
@@ -1525,7 +1531,7 @@ namespace LagoVista.MediaServices.Managers
             {
                 Type = "avatar",
                 AvatarId = production.ProviderAvatarId,
-                Script = production.Script,
+                Script = BuildHeyGenScript(production.Script),
                 VoiceId = production.VoiceId,
                 Title = production.VideoName,
                 CallbackId = production.Id,
@@ -1547,6 +1553,47 @@ namespace LagoVista.MediaServices.Managers
                     Locale = production.Locale
                 }
             };
+        }
+
+        private static string BuildHeyGenScript(string script)
+        {
+            if (String.IsNullOrWhiteSpace(script)) return script;
+
+            var matches = HeyGenPauseMarkerRegex.Matches(script);
+            if (matches.Count == 0) return script;
+
+            var result = new StringBuilder("");
+            var sourceIndex = 0;
+            var pauseCount = 0;
+
+            foreach (Match match in matches)
+            {
+                if (!Decimal.TryParse(match.Groups["seconds"].Value, System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out var seconds) || seconds <= 0 || seconds > 10)
+                {
+                    continue;
+                }
+
+                result.Append(EscapeSsmlText(script.Substring(sourceIndex, match.Index - sourceIndex)));
+                result.Append($"<break time=\"{seconds.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)}s\"/>");
+                sourceIndex = match.Index + match.Length;
+                pauseCount++;
+            }
+
+            if (pauseCount == 0) return script;
+
+            result.Append(EscapeSsmlText(script.Substring(sourceIndex)));
+            //result.Append("</speak>");
+            return result.ToString();
+        }
+
+        private static string EscapeSsmlText(string value)
+        {
+            return (value ?? String.Empty)
+                .Replace("&", "&amp;")
+                .Replace("<", "&lt;")
+                .Replace(">", "&gt;")
+                .Replace("\"", "&quot;")
+                .Replace("'", "&apos;");
         }
 
         private static string ResolveHeyGenEngine(EntityHeader<VideoProductionEngine> engine)
