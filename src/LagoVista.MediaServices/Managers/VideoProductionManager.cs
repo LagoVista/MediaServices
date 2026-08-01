@@ -1582,7 +1582,7 @@ namespace LagoVista.MediaServices.Managers
             if (pauseCount == 0) return script;
 
             result.Append(EscapeSsmlText(script.Substring(sourceIndex)));
-            //result.Append("</speak>");
+      
             return result.ToString();
         }
 
