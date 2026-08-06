@@ -794,7 +794,7 @@ namespace LagoVista.MediaServices.Managers
                     DurationSeconds = block.DurationSeconds,
                     FadeInSeconds = block.FadeInSeconds,
                     FadeOutSeconds = block.FadeOutSeconds,
-                    Labels = (block.CompositionLabels ?? new List<VideoCompositionTextLabel>()).Select(CreateAssemblyLabel).ToList()
+                    Labels = (block.CompositionLabels ?? new List<VideoCompositionTextLabel>()).Select(label => CreateAssemblyLabel(composition, label)).ToList()
                 });
             }
 
@@ -903,11 +903,11 @@ namespace LagoVista.MediaServices.Managers
             return pendingRevision;
         }
 
-        private static VideoAssemblyTextLabel CreateAssemblyLabel(VideoCompositionTextLabel label)
+        private static VideoAssemblyTextLabel CreateAssemblyLabel(VideoComposition composition, VideoCompositionTextLabel label)
         {
             return new VideoAssemblyTextLabel
             {
-                Text = label.Text,
+                Text = ResolveCompositionLabelText(composition, label),
                 X = label.X,
                 Y = label.Y,
                 FontSize = label.FontSize,
@@ -920,6 +920,39 @@ namespace LagoVista.MediaServices.Managers
                 FadeInSeconds = label.FadeInSeconds,
                 FadeOutSeconds = label.FadeOutSeconds
             };
+        }
+
+        private static string ResolveCompositionLabelText(VideoComposition composition, VideoCompositionTextLabel label)
+        {
+            if (label == null)
+            {
+                return String.Empty;
+            }
+
+            string boundValue;
+
+            switch (label.Binding)
+            {
+                case VideoCompositionLabelBinding.Title:
+                    boundValue = composition?.Title;
+                    break;
+
+                case VideoCompositionLabelBinding.Subtitle:
+                    boundValue = composition?.Subtitle;
+                    break;
+
+                case VideoCompositionLabelBinding.CallToAction:
+                    boundValue = composition?.CallToAction;
+                    break;
+
+                default:
+                    boundValue = null;
+                    break;
+            }
+
+            return String.IsNullOrWhiteSpace(boundValue)
+                ? label.Text ?? String.Empty
+                : boundValue.Trim();
         }
 
         private static string CreateVideoFileName(VideoComposition composition)

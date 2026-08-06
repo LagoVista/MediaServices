@@ -163,6 +163,12 @@ namespace LagoVista.MediaServices.Models
 
         public string DefaultLocale { get; set; }
 
+        public string Title { get; set; }
+
+        public string Subtitle { get; set; }
+
+        public string CallToAction { get; set; }
+
         public bool IsReady { get; set; }
 
         public string CurrentInputSha256 { get; set; }
@@ -231,8 +237,11 @@ namespace LagoVista.MediaServices.Models
         {
             var content = new StringBuilder();
 
-            content.AppendLine("version=2");
+            content.AppendLine("version=3");
             content.AppendLine($"defaultLocale={NormalizeHashValue(DefaultLocale)}");
+            content.AppendLine($"title={NormalizeHashValue(Title)}");
+            content.AppendLine($"subtitle={NormalizeHashValue(Subtitle)}");
+            content.AppendLine($"callToAction={NormalizeHashValue(CallToAction)}");
             content.AppendLine($"backgroundMediaResourceId={NormalizeHashValue(BackgroundMediaResource?.Id)}");
 
             foreach (var block in (Blocks ?? new List<VideoCompositionBlock>()).OrderBy(block => block.SortOrder).ThenBy(block => block.Id, StringComparer.OrdinalIgnoreCase))
@@ -281,6 +290,7 @@ namespace LagoVista.MediaServices.Models
                     content.AppendLine($"label[{labelIndex}]");
                     content.AppendLine($"id={NormalizeHashValue(label.Id)}");
                     content.AppendLine($"text={NormalizeHashValue(label.Text)}");
+                    content.AppendLine($"binding={label.Binding}");
                     content.AppendLine($"x={label.X.ToString(CultureInfo.InvariantCulture)}");
                     content.AppendLine($"y={label.Y.ToString(CultureInfo.InvariantCulture)}");
                     content.AppendLine($"fontSize={label.FontSize.ToString(CultureInfo.InvariantCulture)}");
@@ -334,6 +344,9 @@ namespace LagoVista.MediaServices.Models
                 nameof(Key),
                 nameof(Icon),
                 nameof(Description),
+                nameof(Title),
+                nameof(Subtitle),
+                nameof(CallToAction),
                 nameof(BackgroundMediaResource),
                 nameof(OutputMediaLibrary),
                 nameof(Blocks)
@@ -662,6 +675,8 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTextLabel_Text, FieldType: FieldTypes.MultiLineText, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
         public string Text { get; set; }
 
+        public VideoCompositionLabelBinding Binding { get; set; }
+
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTextLabel_X, FieldType: FieldTypes.Integer, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
         public int X { get; set; }
 
@@ -700,6 +715,7 @@ namespace LagoVista.MediaServices.Models
             return new List<string>()
             {
                 nameof(Text),
+                nameof(Binding),
                 nameof(X),
                 nameof(Y),
                 nameof(FontSize),
