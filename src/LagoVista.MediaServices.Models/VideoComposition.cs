@@ -65,6 +65,14 @@ namespace LagoVista.MediaServices.Models
         Right
     }
 
+    public enum VideoCompositionLabelBinding
+    {
+        None,
+        Title,
+        Subtitle,
+        CallToAction
+    }
+
     public enum VideoCompositionAssemblyStage
     {
         [EnumLabel(VideoComposition.AssemblyStage_None, MediaServicesResources.Names.VideoCompositionAssemblyStage_None, typeof(MediaServicesResources))]
@@ -188,6 +196,16 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.VideoComposition_BackgroundMediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
         public EntityHeader BackgroundMediaResource { get; set; }
 
+        public EntityHeader BackgroundAudioMediaResource { get; set; }
+
+        public double BackgroundAudioVolume { get; set; } = 0.20;
+
+        public double BackgroundAudioFadeInSeconds { get; set; }
+
+        public double BackgroundAudioFadeOutSeconds { get; set; }
+
+        public bool LoopBackgroundAudio { get; set; } = true;
+
         [FormField(LabelResource: MediaServicesResources.Names.VideoComposition_OutputMediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: false)]
         public EntityHeader OutputMediaResource { get; set; }
 
@@ -237,12 +255,17 @@ namespace LagoVista.MediaServices.Models
         {
             var content = new StringBuilder();
 
-            content.AppendLine("version=3");
+            content.AppendLine("version=4");
             content.AppendLine($"defaultLocale={NormalizeHashValue(DefaultLocale)}");
             content.AppendLine($"title={NormalizeHashValue(Title)}");
             content.AppendLine($"subtitle={NormalizeHashValue(Subtitle)}");
             content.AppendLine($"callToAction={NormalizeHashValue(CallToAction)}");
             content.AppendLine($"backgroundMediaResourceId={NormalizeHashValue(BackgroundMediaResource?.Id)}");
+            content.AppendLine($"backgroundAudioMediaResourceId={NormalizeHashValue(BackgroundAudioMediaResource?.Id)}");
+            content.AppendLine($"backgroundAudioVolume={NormalizeHashValue(BackgroundAudioVolume)}");
+            content.AppendLine($"backgroundAudioFadeInSeconds={NormalizeHashValue(BackgroundAudioFadeInSeconds)}");
+            content.AppendLine($"backgroundAudioFadeOutSeconds={NormalizeHashValue(BackgroundAudioFadeOutSeconds)}");
+            content.AppendLine($"loopBackgroundAudio={LoopBackgroundAudio}");
 
             foreach (var block in (Blocks ?? new List<VideoCompositionBlock>()).OrderBy(block => block.SortOrder).ThenBy(block => block.Id, StringComparer.OrdinalIgnoreCase))
             {
@@ -348,6 +371,11 @@ namespace LagoVista.MediaServices.Models
                 nameof(Subtitle),
                 nameof(CallToAction),
                 nameof(BackgroundMediaResource),
+                nameof(BackgroundAudioMediaResource),
+                nameof(BackgroundAudioVolume),
+                nameof(BackgroundAudioFadeInSeconds),
+                nameof(BackgroundAudioFadeOutSeconds),
+                nameof(LoopBackgroundAudio),
                 nameof(OutputMediaLibrary),
                 nameof(Blocks)
             };
@@ -368,6 +396,16 @@ namespace LagoVista.MediaServices.Models
             if (Status == null)
             {
                 result.AddUserError("Video composition status is required.");
+            }
+
+            if (BackgroundAudioVolume < 0 || BackgroundAudioVolume > 1)
+            {
+                result.AddUserError("Video composition background audio volume must be between zero and one.");
+            }
+
+            if (BackgroundAudioFadeInSeconds < 0 || BackgroundAudioFadeOutSeconds < 0)
+            {
+                result.AddUserError("Video composition background audio fade durations cannot be negative.");
             }
 
             if (Status?.Value != VideoCompositionStatus.Draft && (Blocks == null || Blocks.Count == 0))
