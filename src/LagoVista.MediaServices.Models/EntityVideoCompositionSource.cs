@@ -73,4 +73,20 @@ namespace LagoVista.MediaServices.Models
             return Source.GetVideoCompositionContent();
         }
     }
+
+    public sealed class CreateEntityVideoCompositionRequest
+    {
+        public string EntityType { get; set; }
+
+        public string EntityId { get; set; }
+
+        public string CompositionTemplateId { get; set; }
+
+        public string VideoAvatarId { get; set; }
+    }
+
+    public sealed class PatchEntityVideoCompositionInfoRequest
+    {
+        public EntityVideoCompositionInfo VideoCompositionInfo { get; set; }
+    }
 }

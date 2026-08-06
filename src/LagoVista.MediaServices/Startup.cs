@@ -22,6 +22,7 @@ namespace LagoVista.MediaServices
             services.AddTransient<IVideoProductionManager, VideoProductionManager>();
             services.AddTransient<IVideoCompositionManager, VideoCompositionManager>();
             services.AddTransient<IVideoCompositionTemplateManager, VideoCompositionTemplateManager>();
+            services.AddTransient<IEntityVideoCompositionManager, EntityVideoCompositionManager>();
             services.AddTransient<IVideoCompositionBlockTemplateManager, VideoCompositionBlockTemplateManager>();
             services.AddTransient<IVideoAssemblyMediaSourceResolver, VideoAssemblyMediaSourceResolver>();
             services.AddTransient<IVideoAssemblyRequestManager, VideoAssemblyRequestManager>();

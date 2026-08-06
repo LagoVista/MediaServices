@@ -177,6 +177,20 @@ namespace LagoVista.MediaServices.Models
 
         public string CallToAction { get; set; }
 
+        public EntityHeader SourceEntity { get; set; }
+
+        public string SourceEntityType { get; set; }
+
+        public EntityHeader SourceCompositionTemplate { get; set; }
+
+        public int SourceCompositionTemplateVersion { get; set; }
+
+        public EntityHeader SourceVideoAvatar { get; set; }
+
+        public string SourceScript { get; set; }
+
+        public string SourceContentSha256 { get; set; }
+
         public bool IsReady { get; set; }
 
         public string CurrentInputSha256 { get; set; }

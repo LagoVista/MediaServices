@@ -3,12 +3,9 @@ using LagoVista.CloudStorage.Interfaces;
 using LagoVista.Core.Interfaces;
 using LagoVista.Core.Models;
 using LagoVista.Core.Models.UIMetaData;
-using LagoVista.Core.Validation;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
-using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -110,32 +107,6 @@ ORDER BY c.Name";
             source.VideoCompositionInfo = source.VideoCompositionInfo ?? new EntityVideoCompositionInfo();
 
             return new EntityVideoCompositionSource(entity, source);
-        }
-
-        public Task<InvokeResult> PatchVideoCompositionInfoAsync(string entityId, EntityVideoCompositionInfo videoCompositionInfo, EntityHeader user, CancellationToken cancellationToken = default)
-        {
-            if (String.IsNullOrWhiteSpace(entityId))
-            {
-                throw new ArgumentException("Entity id is required.", nameof(entityId));
-            }
-
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
-
-            var fields = new Dictionary<string, JToken>
-            {
-                [nameof(IVideoCompositionSource.VideoCompositionInfo)] = videoCompositionInfo == null
-                    ? JValue.CreateNull()
-                    : JObject.FromObject(videoCompositionInfo)
-            };
-
-            return _entityUtilsRepository.PatchEntityFieldsAsync(
-                entityId.Trim(),
-                fields,
-                user,
-                cancellationToken);
         }
 
         private Type ValidateSourceType(string entityType)
