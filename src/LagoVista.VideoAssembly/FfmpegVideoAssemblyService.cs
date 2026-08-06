@@ -65,8 +65,27 @@ namespace LagoVista.VideoAssembly
                     segments.Add(segment);
                 }
 
+                string compositionBackgroundAudioPath = null;
+
+                if (request.BackgroundAudio?.Source != null)
+                {
+                    if (request.BackgroundAudio.Volume < 0 || request.BackgroundAudio.Volume > 1) throw new InvalidOperationException("Composition background audio volume must be between zero and one.");
+                    if (request.BackgroundAudio.FadeInSeconds < 0 || request.BackgroundAudio.FadeOutSeconds < 0) throw new InvalidOperationException("Composition background audio fades cannot be negative.");
+
+                    compositionBackgroundAudioPath = workspace.CompositionBackgroundAudioPath;
+                    var downloadedAudio = await _sourceDownloader.DownloadAsync(request.BackgroundAudio.Source, compositionBackgroundAudioPath, request.Limits.MaxSourceFileBytes, VideoAssemblyStage.DownloadingMedia, progress, executionTimeout.Token);
+                    totalInputBytes += downloadedAudio.SizeBytes;
+
+                    if (totalInputBytes > request.Limits.MaxTotalInputBytes) throw new InvalidOperationException($"Total input size of {totalInputBytes} bytes exceeds the limit of {request.Limits.MaxTotalInputBytes} bytes.");
+                }
+
                 foreach (var segment in segments) await NormalizeAsync(request.OrganizationId, segment, progress, executionTimeout.Token);
                 await ConcatenateAsync(request.OrganizationId, segments, workspace, progress, executionTimeout.Token);
+
+                if (!String.IsNullOrWhiteSpace(compositionBackgroundAudioPath))
+                {
+                    await MixCompositionBackgroundAudioAsync(request.OrganizationId, request.BackgroundAudio, compositionBackgroundAudioPath, totalDurationSeconds, workspace, progress, executionTimeout.Token);
+                }
 
                 progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.InspectingMedia, Message = "Inspecting assembled output." });
                 var outputInspection = await _inspectionService.InspectAsync(workspace.OutputPath, executionTimeout.Token);
@@ -376,6 +395,50 @@ namespace LagoVista.VideoAssembly
             var processResult = await _processRunner.RunAsync(_options.FfmpegPath, arguments, cancellationToken: cancellationToken);
             if (processResult.ExitCode != 0) throw new InvalidOperationException($"FFmpeg failed while concatenating normalized blocks. {processResult.StandardError}");
             if (!File.Exists(workspace.OutputPath)) throw new InvalidOperationException("FFmpeg did not create the assembled output file.");
+        }
+
+        private async Task MixCompositionBackgroundAudioAsync(string organizationId, VideoAssemblyAudio audio, string audioPath, double durationSeconds, VideoAssemblyWorkspace workspace, IProgress<VideoAssemblyProgress> progress, CancellationToken cancellationToken)
+        {
+            progress?.Report(new VideoAssemblyProgress
+            {
+                OrganizationId = organizationId,
+                Stage = VideoAssemblyStage.Encoding,
+                Message = "Mixing composition background audio across the complete video.",
+                TotalDurationSeconds = (int)Math.Ceiling(durationSeconds)
+            });
+
+            var inputs = audio.Loop
+                ? $"-i {ProcessRunner.Quote(workspace.OutputPath)} -stream_loop -1 -i {ProcessRunner.Quote(audioPath)}"
+                : $"-i {ProcessRunner.Quote(workspace.OutputPath)} -i {ProcessRunner.Quote(audioPath)}";
+
+            var backgroundFilters = new List<string>
+            {
+                "aresample=48000",
+                $"volume={FormatSeconds(audio.Volume)}",
+                $"atrim=0:{FormatSeconds(durationSeconds)}",
+                "asetpts=N/SR/TB"
+            };
+
+            if (audio.FadeInSeconds > 0)
+            {
+                backgroundFilters.Add($"afade=t=in:st=0:d={FormatSeconds(Math.Min(audio.FadeInSeconds, durationSeconds))}");
+            }
+
+            if (audio.FadeOutSeconds > 0)
+            {
+                var fadeDuration = Math.Min(audio.FadeOutSeconds, durationSeconds);
+                backgroundFilters.Add($"afade=t=out:st={FormatSeconds(Math.Max(0, durationSeconds - fadeDuration))}:d={FormatSeconds(fadeDuration)}");
+            }
+
+            var filter = $"[0:a]aresample=48000[primarya];[1:a]{String.Join(",", backgroundFilters)}[backgrounda];[primarya][backgrounda]amix=inputs=2:duration=first:dropout_transition=0[aout]";
+            var arguments = $"-y {inputs} -filter_complex \"{filter}\" -map 0:v:0 -map \"[aout]\" -c:v copy -c:a aac -ar 48000 -ac 2 -t {FormatSeconds(durationSeconds)} -movflags +faststart -progress pipe:1 -nostats {ProcessRunner.Quote(workspace.MixedOutputPath)}";
+
+            var processResult = await _processRunner.RunAsync(_options.FfmpegPath, arguments, cancellationToken: cancellationToken);
+            if (processResult.ExitCode != 0) throw new InvalidOperationException($"FFmpeg failed while mixing composition background audio. {processResult.StandardError}");
+            if (!File.Exists(workspace.MixedOutputPath)) throw new InvalidOperationException("FFmpeg did not create the composition background audio mix.");
+
+            File.Delete(workspace.OutputPath);
+            File.Move(workspace.MixedOutputPath, workspace.OutputPath);
         }
 
         private string BuildNormalizeArguments(VideoAssemblySegment segment)
