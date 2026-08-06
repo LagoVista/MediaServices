@@ -1,4 +1,4 @@
-﻿/*7/22/2026 2:47:20 PM*/
+﻿/*8/6/2026 3:35:17 PM*/
 using System.Globalization;
 using System.Reflection;
 
@@ -591,6 +591,54 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:VideoCompositionStatus_Uploading
 
 		public static string VideoCompositionStatus_Uploading { get { return GetResourceString("VideoCompositionStatus_Uploading"); } }
+//Resources:MediaServicesResources:VideoCompositionTemplate_BackgroundAudioFadeInSeconds
+
+		public static string VideoCompositionTemplate_BackgroundAudioFadeInSeconds { get { return GetResourceString("VideoCompositionTemplate_BackgroundAudioFadeInSeconds"); } }
+//Resources:MediaServicesResources:VideoCompositionTemplate_BackgroundAudioFadeOutSeconds
+
+		public static string VideoCompositionTemplate_BackgroundAudioFadeOutSeconds { get { return GetResourceString("VideoCompositionTemplate_BackgroundAudioFadeOutSeconds"); } }
+//Resources:MediaServicesResources:VideoCompositionTemplate_BackgroundAudioMediaResource
+
+		public static string VideoCompositionTemplate_BackgroundAudioMediaResource { get { return GetResourceString("VideoCompositionTemplate_BackgroundAudioMediaResource"); } }
+//Resources:MediaServicesResources:VideoCompositionTemplate_BackgroundAudioVolume
+
+		public static string VideoCompositionTemplate_BackgroundAudioVolume { get { return GetResourceString("VideoCompositionTemplate_BackgroundAudioVolume"); } }
+//Resources:MediaServicesResources:VideoCompositionTemplate_BackgroundMediaResource
+
+		public static string VideoCompositionTemplate_BackgroundMediaResource { get { return GetResourceString("VideoCompositionTemplate_BackgroundMediaResource"); } }
+//Resources:MediaServicesResources:VideoCompositionTemplate_Blocks
+
+		public static string VideoCompositionTemplate_Blocks { get { return GetResourceString("VideoCompositionTemplate_Blocks"); } }
+//Resources:MediaServicesResources:VideoCompositionTemplate_Category
+
+		public static string VideoCompositionTemplate_Category { get { return GetResourceString("VideoCompositionTemplate_Category"); } }
+//Resources:MediaServicesResources:VideoCompositionTemplate_DefaultLocale
+
+		public static string VideoCompositionTemplate_DefaultLocale { get { return GetResourceString("VideoCompositionTemplate_DefaultLocale"); } }
+//Resources:MediaServicesResources:VideoCompositionTemplate_Description
+
+		public static string VideoCompositionTemplate_Description { get { return GetResourceString("VideoCompositionTemplate_Description"); } }
+//Resources:MediaServicesResources:VideoCompositionTemplate_Help
+
+		public static string VideoCompositionTemplate_Help { get { return GetResourceString("VideoCompositionTemplate_Help"); } }
+//Resources:MediaServicesResources:VideoCompositionTemplate_IsActive
+
+		public static string VideoCompositionTemplate_IsActive { get { return GetResourceString("VideoCompositionTemplate_IsActive"); } }
+//Resources:MediaServicesResources:VideoCompositionTemplate_LoopBackgroundAudio
+
+		public static string VideoCompositionTemplate_LoopBackgroundAudio { get { return GetResourceString("VideoCompositionTemplate_LoopBackgroundAudio"); } }
+//Resources:MediaServicesResources:VideoCompositionTemplate_OutputMediaLibrary
+
+		public static string VideoCompositionTemplate_OutputMediaLibrary { get { return GetResourceString("VideoCompositionTemplate_OutputMediaLibrary"); } }
+//Resources:MediaServicesResources:VideoCompositionTemplate_Title
+
+		public static string VideoCompositionTemplate_Title { get { return GetResourceString("VideoCompositionTemplate_Title"); } }
+//Resources:MediaServicesResources:VideoCompositionTemplate_Version
+
+		public static string VideoCompositionTemplate_Version { get { return GetResourceString("VideoCompositionTemplate_Version"); } }
+//Resources:MediaServicesResources:VideoCompositionTemplates_Title
+
+		public static string VideoCompositionTemplates_Title { get { return GetResourceString("VideoCompositionTemplates_Title"); } }
 //Resources:MediaServicesResources:VideoCompositionTextAlignment_Center
 
 		public static string VideoCompositionTextAlignment_Center { get { return GetResourceString("VideoCompositionTextAlignment_Center"); } }
@@ -1010,6 +1058,22 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string VideoCompositionStatus_ProcessingAtVimeo = "VideoCompositionStatus_ProcessingAtVimeo";
 			public const string VideoCompositionStatus_Queued = "VideoCompositionStatus_Queued";
 			public const string VideoCompositionStatus_Uploading = "VideoCompositionStatus_Uploading";
+			public const string VideoCompositionTemplate_BackgroundAudioFadeInSeconds = "VideoCompositionTemplate_BackgroundAudioFadeInSeconds";
+			public const string VideoCompositionTemplate_BackgroundAudioFadeOutSeconds = "VideoCompositionTemplate_BackgroundAudioFadeOutSeconds";
+			public const string VideoCompositionTemplate_BackgroundAudioMediaResource = "VideoCompositionTemplate_BackgroundAudioMediaResource";
+			public const string VideoCompositionTemplate_BackgroundAudioVolume = "VideoCompositionTemplate_BackgroundAudioVolume";
+			public const string VideoCompositionTemplate_BackgroundMediaResource = "VideoCompositionTemplate_BackgroundMediaResource";
+			public const string VideoCompositionTemplate_Blocks = "VideoCompositionTemplate_Blocks";
+			public const string VideoCompositionTemplate_Category = "VideoCompositionTemplate_Category";
+			public const string VideoCompositionTemplate_DefaultLocale = "VideoCompositionTemplate_DefaultLocale";
+			public const string VideoCompositionTemplate_Description = "VideoCompositionTemplate_Description";
+			public const string VideoCompositionTemplate_Help = "VideoCompositionTemplate_Help";
+			public const string VideoCompositionTemplate_IsActive = "VideoCompositionTemplate_IsActive";
+			public const string VideoCompositionTemplate_LoopBackgroundAudio = "VideoCompositionTemplate_LoopBackgroundAudio";
+			public const string VideoCompositionTemplate_OutputMediaLibrary = "VideoCompositionTemplate_OutputMediaLibrary";
+			public const string VideoCompositionTemplate_Title = "VideoCompositionTemplate_Title";
+			public const string VideoCompositionTemplate_Version = "VideoCompositionTemplate_Version";
+			public const string VideoCompositionTemplates_Title = "VideoCompositionTemplates_Title";
 			public const string VideoCompositionTextAlignment_Center = "VideoCompositionTextAlignment_Center";
 			public const string VideoCompositionTextAlignment_Left = "VideoCompositionTextAlignment_Left";
 			public const string VideoCompositionTextAlignment_Right = "VideoCompositionTextAlignment_Right";

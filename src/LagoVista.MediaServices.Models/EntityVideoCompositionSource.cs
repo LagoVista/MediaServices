@@ -1,0 +1,76 @@
+using LagoVista.Core;
+using LagoVista.Core.Models;
+using System;
+
+namespace LagoVista.MediaServices.Models
+{
+    public interface IVideoCompositionSource
+    {
+        EntityVideoCompositionInfo VideoCompositionInfo { get; set; }
+
+        VideoCompositionContent GetVideoCompositionContent();
+    }
+
+    public sealed class EntityVideoCompositionInfo
+    {
+        public EntityHeader Composition { get; set; }
+
+        public EntityHeader CompositionTemplate { get; set; }
+
+        public EntityHeader VideoAvatar { get; set; }
+
+        public int? TemplateVersion { get; set; }
+
+        public UtcTimestamp? LastGeneratedUtc { get; set; }
+
+        public UtcTimestamp? LastPublishedUtc { get; set; }
+
+        public string SourceContentSha256 { get; set; }
+    }
+
+    public sealed class VideoCompositionContent
+    {
+        public string Title { get; set; }
+
+        public string Subtitle { get; set; }
+
+        public string Script { get; set; }
+
+        public string CallToAction { get; set; }
+    }
+
+    public sealed class EntityVideoCompositionSummary
+    {
+        public string Id { get; set; }
+
+        public string Name { get; set; }
+
+        public string Key { get; set; }
+
+        public string EntityType { get; set; }
+
+        public EntityVideoCompositionInfo VideoCompositionInfo { get; set; }
+
+        public bool HasComposition =>
+            VideoCompositionInfo?.Composition != null &&
+            !String.IsNullOrWhiteSpace(VideoCompositionInfo.Composition.Id);
+    }
+
+    public sealed class EntityVideoCompositionSource
+    {
+        public EntityVideoCompositionSource(EntityBase entity, IVideoCompositionSource source)
+        {
+            Entity = entity ?? throw new ArgumentNullException(nameof(entity));
+            Source = source ?? throw new ArgumentNullException(nameof(source));
+        }
+
+        public EntityBase Entity { get; }
+
+        public IVideoCompositionSource Source { get; }
+
+        public VideoCompositionContent GetContent()
+        {
+            return Source.GetVideoCompositionContent();
+        }
+    }
+}
