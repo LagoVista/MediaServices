@@ -737,6 +737,35 @@ namespace LagoVista.MediaServices.Managers
                     _adminLogger.Trace($"{this.Tag()} [ASSEMBLY BACKGROUND RESOLVED] CompositionId={composition.Id}, BlockKey={block.Key}, MediaResourceId={backgroundMediaResource.Id}, FileName={backgroundSource.FileName}, ContentType={backgroundSource.ContentType}");
                 }
 
+                var backgroundAudioResult = await ResolveOptionalAssemblySourceAsync(block.BackgroundAudioMediaResource, $"background audio for block '{block.Key}'", org, user, cancellationToken);
+                if (!backgroundAudioResult.Successful)
+                {
+                    return backgroundAudioResult.ToInvokeResult<List<VideoAssemblyBlock>>();
+                }
+
+                var images = new List<VideoAssemblyImageOverlay>();
+                foreach (var image in block.OverlayImages ?? new List<VideoCompositionBlockImage>())
+                {
+                    var imageResult = await ResolveOptionalAssemblySourceAsync(image.MediaResource, $"overlay image for block '{block.Key}'", org, user, cancellationToken);
+                    if (!imageResult.Successful)
+                    {
+                        return imageResult.ToInvokeResult<List<VideoAssemblyBlock>>();
+                    }
+
+                    images.Add(new VideoAssemblyImageOverlay
+                    {
+                        Source = imageResult.Result,
+                        Scale = image.Scale,
+                        PositionX = image.PositionX,
+                        PositionY = image.PositionY,
+                        Opacity = image.Opacity,
+                        DelaySeconds = image.DelaySeconds,
+                        VisibleDurationSeconds = image.VisibleDurationSeconds,
+                        FadeInSeconds = image.FadeInSeconds,
+                        FadeOutSeconds = image.FadeOutSeconds
+                    });
+                }
+
                 assemblyBlocks.Add(new VideoAssemblyBlock
                 {
                     Key = block.Key,
@@ -751,6 +780,17 @@ namespace LagoVista.MediaServices.Managers
                             PositionX = block.PresenterPositionX,
                             PositionY = block.PresenterPositionY
                         },
+                    BackgroundAudio = backgroundAudioResult.Result == null
+                        ? null
+                        : new VideoAssemblyAudio
+                        {
+                            Source = backgroundAudioResult.Result,
+                            Volume = block.BackgroundAudioVolume,
+                            FadeInSeconds = block.BackgroundAudioFadeInSeconds,
+                            FadeOutSeconds = block.BackgroundAudioFadeOutSeconds,
+                            Loop = block.LoopBackgroundAudio
+                        },
+                    Images = images,
                     DurationSeconds = block.DurationSeconds,
                     FadeInSeconds = block.FadeInSeconds,
                     FadeOutSeconds = block.FadeOutSeconds,
@@ -759,6 +799,27 @@ namespace LagoVista.MediaServices.Managers
             }
 
             return InvokeResult<List<VideoAssemblyBlock>>.Create(assemblyBlocks);
+        }
+
+        private async Task<InvokeResult<VideoAssemblySource>> ResolveOptionalAssemblySourceAsync(EntityHeader mediaResourceHeader, string description, EntityHeader org, EntityHeader user, CancellationToken cancellationToken)
+        {
+            if (mediaResourceHeader == null || String.IsNullOrWhiteSpace(mediaResourceHeader.Id))
+            {
+                return InvokeResult<VideoAssemblySource>.Create(null);
+            }
+
+            var mediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(mediaResourceHeader.Id, org, user);
+            if (mediaResource == null)
+            {
+                return InvokeResult<VideoAssemblySource>.FromError($"Could not find {description} media resource '{mediaResourceHeader.Id}'.");
+            }
+
+            if (mediaResource.Status?.Value != MediaResourceStatus.Ready)
+            {
+                return InvokeResult<VideoAssemblySource>.FromError($"The {description} media resource '{mediaResource.Name}' is not ready.");
+            }
+
+            return await _mediaSourceResolver.ResolveAsync(mediaResource, org.Id, cancellationToken);
         }
 
         private async Task<MediaResource> GetOrCreateOutputMediaResourceAsync(VideoComposition composition, EntityHeader org, EntityHeader user)

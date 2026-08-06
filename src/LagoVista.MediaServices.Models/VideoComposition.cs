@@ -244,12 +244,35 @@ namespace LagoVista.MediaServices.Models
                 content.AppendLine($"type={block.Type}");
                 content.AppendLine($"mediaResourceId={NormalizeHashValue(block.MediaResource?.Id)}");
                 content.AppendLine($"backgroundMediaResourceId={NormalizeHashValue(block.BackgroundMediaResource?.Id)}");
+                content.AppendLine($"backgroundAudioMediaResourceId={NormalizeHashValue(block.BackgroundAudioMediaResource?.Id)}");
+                content.AppendLine($"backgroundAudioVolume={NormalizeHashValue(block.BackgroundAudioVolume)}");
+                content.AppendLine($"backgroundAudioFadeInSeconds={NormalizeHashValue(block.BackgroundAudioFadeInSeconds)}");
+                content.AppendLine($"backgroundAudioFadeOutSeconds={NormalizeHashValue(block.BackgroundAudioFadeOutSeconds)}");
+                content.AppendLine($"loopBackgroundAudio={block.LoopBackgroundAudio}");
                 content.AppendLine($"presenterScale={NormalizeHashValue(block.PresenterScale)}");
                 content.AppendLine($"presenterPositionX={NormalizeHashValue(block.PresenterPositionX)}");
                 content.AppendLine($"presenterPositionY={NormalizeHashValue(block.PresenterPositionY)}");
                 content.AppendLine($"durationSeconds={NormalizeHashValue(block.DurationSeconds)}");
                 content.AppendLine($"fadeInSeconds={NormalizeHashValue(block.FadeInSeconds)}");
                 content.AppendLine($"fadeOutSeconds={NormalizeHashValue(block.FadeOutSeconds)}");
+
+                var imageIndex = 0;
+
+                foreach (var image in block.OverlayImages ?? new List<VideoCompositionBlockImage>())
+                {
+                    content.AppendLine($"image[{imageIndex}]");
+                    content.AppendLine($"id={NormalizeHashValue(image.Id)}");
+                    content.AppendLine($"mediaResourceId={NormalizeHashValue(image.MediaResource?.Id)}");
+                    content.AppendLine($"scale={NormalizeHashValue(image.Scale)}");
+                    content.AppendLine($"positionX={NormalizeHashValue(image.PositionX)}");
+                    content.AppendLine($"positionY={NormalizeHashValue(image.PositionY)}");
+                    content.AppendLine($"opacity={NormalizeHashValue(image.Opacity)}");
+                    content.AppendLine($"delaySeconds={NormalizeHashValue(image.DelaySeconds)}");
+                    content.AppendLine($"visibleDurationSeconds={NormalizeHashValue(image.VisibleDurationSeconds)}");
+                    content.AppendLine($"fadeInSeconds={NormalizeHashValue(image.FadeInSeconds)}");
+                    content.AppendLine($"fadeOutSeconds={NormalizeHashValue(image.FadeOutSeconds)}");
+                    imageIndex++;
+                }
 
                 var labelIndex = 0;
 
@@ -442,6 +465,18 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_BackgroundMediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
         public EntityHeader BackgroundMediaResource { get; set; }
 
+        public EntityHeader BackgroundAudioMediaResource { get; set; }
+
+        public double BackgroundAudioVolume { get; set; } = 0.20;
+
+        public double BackgroundAudioFadeInSeconds { get; set; }
+
+        public double BackgroundAudioFadeOutSeconds { get; set; }
+
+        public bool LoopBackgroundAudio { get; set; } = true;
+
+        public List<VideoCompositionBlockImage> OverlayImages { get; set; } = new List<VideoCompositionBlockImage>();
+
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_PresenterScale, FieldType: FieldTypes.Decimal, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
         public double PresenterScale { get; set; }
 
@@ -476,6 +511,12 @@ namespace LagoVista.MediaServices.Models
                 nameof(MediaResourceFileName),
                 nameof(MediaResourceMimeType),
                 nameof(BackgroundMediaResource),
+                nameof(BackgroundAudioMediaResource),
+                nameof(BackgroundAudioVolume),
+                nameof(BackgroundAudioFadeInSeconds),
+                nameof(BackgroundAudioFadeOutSeconds),
+                nameof(LoopBackgroundAudio),
+                nameof(OverlayImages),
                 nameof(PresenterScale),
                 nameof(PresenterPositionX),
                 nameof(PresenterPositionY),
@@ -508,6 +549,21 @@ namespace LagoVista.MediaServices.Models
                 result.AddUserError($"Video composition block '{Key}' cannot have negative fade durations.");
             }
 
+            if (BackgroundAudioVolume < 0 || BackgroundAudioVolume > 1)
+            {
+                result.AddUserError($"Video composition block '{Key}' background audio volume must be between zero and one.");
+            }
+
+            if (BackgroundAudioFadeInSeconds < 0 || BackgroundAudioFadeOutSeconds < 0)
+            {
+                result.AddUserError($"Video composition block '{Key}' cannot have negative background audio fade durations.");
+            }
+
+            foreach (var image in OverlayImages ?? new List<VideoCompositionBlockImage>())
+            {
+                image.Validate(result, Key);
+            }
+
             if (PresenterScale <= 0)
             {
                 result.AddUserError($"Video composition block '{Key}' presenter scale must be greater than zero.");
@@ -536,6 +592,58 @@ namespace LagoVista.MediaServices.Models
             foreach (var label in CompositionLabels ?? new List<VideoCompositionTextLabel>())
             {
                 label.Validate(result, Key);
+            }
+        }
+    }
+
+    public sealed class VideoCompositionBlockImage
+    {
+        public VideoCompositionBlockImage()
+        {
+            Id = Guid.NewGuid().ToId();
+        }
+
+        public string Id { get; set; }
+        public EntityHeader MediaResource { get; set; }
+        public double Scale { get; set; } = 0.25;
+        public double PositionX { get; set; } = 0.5;
+        public double PositionY { get; set; } = 0.5;
+        public double Opacity { get; set; } = 1.0;
+        public double DelaySeconds { get; set; }
+        public double? VisibleDurationSeconds { get; set; }
+        public double FadeInSeconds { get; set; }
+        public double FadeOutSeconds { get; set; }
+
+        public void Validate(ValidationResult result, string blockKey)
+        {
+            if (MediaResource == null || String.IsNullOrWhiteSpace(MediaResource.Id))
+            {
+                result.AddUserError($"An image on block '{blockKey}' must reference a media resource.");
+            }
+
+            if (Scale <= 0)
+            {
+                result.AddUserError($"An image on block '{blockKey}' must have a scale greater than zero.");
+            }
+
+            if (PositionX < 0 || PositionX > 1 || PositionY < 0 || PositionY > 1)
+            {
+                result.AddUserError($"An image on block '{blockKey}' must use positions between zero and one.");
+            }
+
+            if (Opacity < 0 || Opacity > 1)
+            {
+                result.AddUserError($"An image on block '{blockKey}' opacity must be between zero and one.");
+            }
+
+            if (DelaySeconds < 0 || FadeInSeconds < 0 || FadeOutSeconds < 0)
+            {
+                result.AddUserError($"An image on block '{blockKey}' cannot have negative timing values.");
+            }
+
+            if (VisibleDurationSeconds.HasValue && VisibleDurationSeconds.Value <= 0)
+            {
+                result.AddUserError($"An image on block '{blockKey}' must have a visible duration greater than zero.");
             }
         }
     }

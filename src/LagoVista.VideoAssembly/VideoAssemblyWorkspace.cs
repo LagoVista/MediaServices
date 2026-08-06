@@ -31,6 +31,16 @@ namespace LagoVista.VideoAssembly
             return Path.Combine(RootPath, $"block-{index:000}-background");
         }
 
+        public string GetBackgroundAudioPath(int index)
+        {
+            return Path.Combine(RootPath, $"block-{index:000}-background-audio");
+        }
+
+        public string GetOverlayImagePath(int blockIndex, int imageIndex)
+        {
+            return Path.Combine(RootPath, $"block-{blockIndex:000}-image-{imageIndex:000}");
+        }
+
         public string GetNormalizedPath(int index)
         {
             return Path.Combine(RootPath, $"block-{index:000}-normalized.mp4");
