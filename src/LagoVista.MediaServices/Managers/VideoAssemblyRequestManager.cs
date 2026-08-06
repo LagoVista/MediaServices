@@ -120,6 +120,19 @@ namespace LagoVista.MediaServices.Managers
             }
 
             _adminLogger.Trace($"{this.Tag()} [ASSEMBLY BLOCK RESOLUTION COMPLETED] CompositionId={composition.Id}, BlockCount={blocksResult.Result.Count}");
+
+            var backgroundAudioSourceResult = await ResolveOptionalAssemblySourceAsync(
+                composition.BackgroundAudioMediaResource,
+                "composition background audio",
+                org,
+                user,
+                cancellationToken);
+
+            if (!backgroundAudioSourceResult.Successful)
+            {
+                return await ApplyPreparationFailureAsync(composition, backgroundAudioSourceResult.Errors[0].Message);
+            }
+
             _adminLogger.Trace($"{this.Tag()} [ASSEMBLY OUTPUT MEDIA PREPARING] CompositionId={composition.Id}, ExistingMediaResourceId={composition.OutputMediaResource?.Id}");
             var outputMediaResource = await GetOrCreateOutputMediaResourceAsync(composition, org, user);
             if (outputMediaResource == null)
@@ -212,6 +225,16 @@ namespace LagoVista.MediaServices.Managers
                 AttemptId = attemptId,
                 ProductionId = composition.Id,
                 OrganizationId = org.Id,
+                BackgroundAudio = backgroundAudioSourceResult.Result == null
+                    ? null
+                    : new VideoAssemblyAudio
+                    {
+                        Source = backgroundAudioSourceResult.Result,
+                        Volume = composition.BackgroundAudioVolume,
+                        FadeInSeconds = composition.BackgroundAudioFadeInSeconds,
+                        FadeOutSeconds = composition.BackgroundAudioFadeOutSeconds,
+                        Loop = composition.LoopBackgroundAudio
+                    },
                 Blocks = blocksResult.Result,
                 AzureVideoDestination = new VideoMediaImportDestination
                 {
