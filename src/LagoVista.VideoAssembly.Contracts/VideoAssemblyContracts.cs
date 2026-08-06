@@ -4,7 +4,7 @@ namespace LagoVista.VideoAssembly.Contracts
 {
     public static class VideoAssemblyContractVersions
     {
-        public const string Current = "2.2";
+        public const string Current = "2.3";
     }
 
     public enum VideoAssemblyBlockType
@@ -85,6 +85,7 @@ namespace LagoVista.VideoAssembly.Contracts
         public string ProductionId { get; set; }
         public string OrganizationId { get; set; }
         public VideoAssemblySource PublishedVideoSource { get; set; }
+        public VideoAssemblyAudio BackgroundAudio { get; set; }
         public List<VideoAssemblyBlock> Blocks { get; set; } = new List<VideoAssemblyBlock>();
         public VideoMediaImportDestination AzureVideoDestination { get; set; }
         public VideoMediaImportThumbnail Thumbnail { get; set; } = new VideoMediaImportThumbnail();
