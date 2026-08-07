@@ -53,6 +53,33 @@ namespace LagoVista.MediaServices.Models
         Video
     }
 
+    public enum VideoCompositionBlockRole
+    {
+        [EnumLabel(
+            VideoComposition.BlockRole_None,
+            MediaServicesResources.Names.VideoCompositionBlockRole_None,
+            typeof(MediaServicesResources))]
+        None,
+
+        [EnumLabel(
+            VideoComposition.BlockRole_Intro,
+            MediaServicesResources.Names.VideoCompositionBlockRole_Intro,
+            typeof(MediaServicesResources))]
+        Intro,
+
+        [EnumLabel(
+            VideoComposition.BlockRole_Content,
+            MediaServicesResources.Names.VideoCompositionBlockRole_Content,
+            typeof(MediaServicesResources))]
+        Content,
+
+        [EnumLabel(
+            VideoComposition.BlockRole_CallToAction,
+            MediaServicesResources.Names.VideoCompositionBlockRole_CallToAction,
+            typeof(MediaServicesResources))]
+        CallToAction
+    }
+
     public enum VideoCompositionTextAlignment
     {
         [EnumLabel(VideoComposition.TextAlignment_Left, MediaServicesResources.Names.VideoCompositionTextAlignment_Left, typeof(MediaServicesResources))]
@@ -63,6 +90,14 @@ namespace LagoVista.MediaServices.Models
 
         [EnumLabel(VideoComposition.TextAlignment_Right, MediaServicesResources.Names.VideoCompositionTextAlignment_Right, typeof(MediaServicesResources))]
         Right
+    }
+
+    public enum VideoCompositionLabelBinding
+    {
+        None,
+        Title,
+        Subtitle,
+        CallToAction
     }
 
     public enum VideoCompositionAssemblyStage
@@ -126,6 +161,11 @@ namespace LagoVista.MediaServices.Models
         public const string Status_Failed = "failed";
         public const string Status_Cancelled = "cancelled";
 
+        public const string BlockRole_None = "none";
+        public const string BlockRole_Intro = "intro";
+        public const string BlockRole_Content = "content";
+        public const string BlockRole_CallToAction = "call-to-action";
+
         public const string BlockType_Image = "image";
         public const string BlockType_Video = "video";
 
@@ -163,6 +203,26 @@ namespace LagoVista.MediaServices.Models
 
         public string DefaultLocale { get; set; }
 
+        public string Title { get; set; }
+
+        public string Subtitle { get; set; }
+
+        public string CallToAction { get; set; }
+
+        public EntityHeader SourceEntity { get; set; }
+
+        public string SourceEntityType { get; set; }
+
+        public EntityHeader SourceCompositionTemplate { get; set; }
+
+        public int SourceCompositionTemplateVersion { get; set; }
+
+        public EntityHeader SourceVideoAvatar { get; set; }
+
+        public string SourceScript { get; set; }
+
+        public string SourceContentSha256 { get; set; }
+
         public bool IsReady { get; set; }
 
         public string CurrentInputSha256 { get; set; }
@@ -181,6 +241,16 @@ namespace LagoVista.MediaServices.Models
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoComposition_BackgroundMediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
         public EntityHeader BackgroundMediaResource { get; set; }
+
+        public EntityHeader BackgroundAudioMediaResource { get; set; }
+
+        public double BackgroundAudioVolume { get; set; } = 0.20;
+
+        public double BackgroundAudioFadeInSeconds { get; set; }
+
+        public double BackgroundAudioFadeOutSeconds { get; set; }
+
+        public bool LoopBackgroundAudio { get; set; } = true;
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoComposition_OutputMediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: false)]
         public EntityHeader OutputMediaResource { get; set; }
@@ -231,9 +301,17 @@ namespace LagoVista.MediaServices.Models
         {
             var content = new StringBuilder();
 
-            content.AppendLine("version=2");
+            content.AppendLine("version=4");
             content.AppendLine($"defaultLocale={NormalizeHashValue(DefaultLocale)}");
+            content.AppendLine($"title={NormalizeHashValue(Title)}");
+            content.AppendLine($"subtitle={NormalizeHashValue(Subtitle)}");
+            content.AppendLine($"callToAction={NormalizeHashValue(CallToAction)}");
             content.AppendLine($"backgroundMediaResourceId={NormalizeHashValue(BackgroundMediaResource?.Id)}");
+            content.AppendLine($"backgroundAudioMediaResourceId={NormalizeHashValue(BackgroundAudioMediaResource?.Id)}");
+            content.AppendLine($"backgroundAudioVolume={NormalizeHashValue(BackgroundAudioVolume)}");
+            content.AppendLine($"backgroundAudioFadeInSeconds={NormalizeHashValue(BackgroundAudioFadeInSeconds)}");
+            content.AppendLine($"backgroundAudioFadeOutSeconds={NormalizeHashValue(BackgroundAudioFadeOutSeconds)}");
+            content.AppendLine($"loopBackgroundAudio={LoopBackgroundAudio}");
 
             foreach (var block in (Blocks ?? new List<VideoCompositionBlock>()).OrderBy(block => block.SortOrder).ThenBy(block => block.Id, StringComparer.OrdinalIgnoreCase))
             {
@@ -242,14 +320,38 @@ namespace LagoVista.MediaServices.Models
                 content.AppendLine($"key={NormalizeHashValue(block.Key)}");
                 content.AppendLine($"sortOrder={block.SortOrder.ToString(CultureInfo.InvariantCulture)}");
                 content.AppendLine($"type={block.Type}");
+                content.AppendLine($"role={block.Role}");
                 content.AppendLine($"mediaResourceId={NormalizeHashValue(block.MediaResource?.Id)}");
                 content.AppendLine($"backgroundMediaResourceId={NormalizeHashValue(block.BackgroundMediaResource?.Id)}");
+                content.AppendLine($"backgroundAudioMediaResourceId={NormalizeHashValue(block.BackgroundAudioMediaResource?.Id)}");
+                content.AppendLine($"backgroundAudioVolume={NormalizeHashValue(block.BackgroundAudioVolume)}");
+                content.AppendLine($"backgroundAudioFadeInSeconds={NormalizeHashValue(block.BackgroundAudioFadeInSeconds)}");
+                content.AppendLine($"backgroundAudioFadeOutSeconds={NormalizeHashValue(block.BackgroundAudioFadeOutSeconds)}");
+                content.AppendLine($"loopBackgroundAudio={block.LoopBackgroundAudio}");
                 content.AppendLine($"presenterScale={NormalizeHashValue(block.PresenterScale)}");
                 content.AppendLine($"presenterPositionX={NormalizeHashValue(block.PresenterPositionX)}");
                 content.AppendLine($"presenterPositionY={NormalizeHashValue(block.PresenterPositionY)}");
                 content.AppendLine($"durationSeconds={NormalizeHashValue(block.DurationSeconds)}");
                 content.AppendLine($"fadeInSeconds={NormalizeHashValue(block.FadeInSeconds)}");
                 content.AppendLine($"fadeOutSeconds={NormalizeHashValue(block.FadeOutSeconds)}");
+
+                var imageIndex = 0;
+
+                foreach (var image in block.OverlayImages ?? new List<VideoCompositionBlockImage>())
+                {
+                    content.AppendLine($"image[{imageIndex}]");
+                    content.AppendLine($"id={NormalizeHashValue(image.Id)}");
+                    content.AppendLine($"mediaResourceId={NormalizeHashValue(image.MediaResource?.Id)}");
+                    content.AppendLine($"scale={NormalizeHashValue(image.Scale)}");
+                    content.AppendLine($"positionX={NormalizeHashValue(image.PositionX)}");
+                    content.AppendLine($"positionY={NormalizeHashValue(image.PositionY)}");
+                    content.AppendLine($"opacity={NormalizeHashValue(image.Opacity)}");
+                    content.AppendLine($"delaySeconds={NormalizeHashValue(image.DelaySeconds)}");
+                    content.AppendLine($"visibleDurationSeconds={NormalizeHashValue(image.VisibleDurationSeconds)}");
+                    content.AppendLine($"fadeInSeconds={NormalizeHashValue(image.FadeInSeconds)}");
+                    content.AppendLine($"fadeOutSeconds={NormalizeHashValue(image.FadeOutSeconds)}");
+                    imageIndex++;
+                }
 
                 var labelIndex = 0;
 
@@ -258,6 +360,7 @@ namespace LagoVista.MediaServices.Models
                     content.AppendLine($"label[{labelIndex}]");
                     content.AppendLine($"id={NormalizeHashValue(label.Id)}");
                     content.AppendLine($"text={NormalizeHashValue(label.Text)}");
+                    content.AppendLine($"binding={label.Binding}");
                     content.AppendLine($"x={label.X.ToString(CultureInfo.InvariantCulture)}");
                     content.AppendLine($"y={label.Y.ToString(CultureInfo.InvariantCulture)}");
                     content.AppendLine($"fontSize={label.FontSize.ToString(CultureInfo.InvariantCulture)}");
@@ -311,7 +414,15 @@ namespace LagoVista.MediaServices.Models
                 nameof(Key),
                 nameof(Icon),
                 nameof(Description),
+                nameof(Title),
+                nameof(Subtitle),
+                nameof(CallToAction),
                 nameof(BackgroundMediaResource),
+                nameof(BackgroundAudioMediaResource),
+                nameof(BackgroundAudioVolume),
+                nameof(BackgroundAudioFadeInSeconds),
+                nameof(BackgroundAudioFadeOutSeconds),
+                nameof(LoopBackgroundAudio),
                 nameof(OutputMediaLibrary),
                 nameof(Blocks)
             };
@@ -332,6 +443,16 @@ namespace LagoVista.MediaServices.Models
             if (Status == null)
             {
                 result.AddUserError("Video composition status is required.");
+            }
+
+            if (BackgroundAudioVolume < 0 || BackgroundAudioVolume > 1)
+            {
+                result.AddUserError("Video composition background audio volume must be between zero and one.");
+            }
+
+            if (BackgroundAudioFadeInSeconds < 0 || BackgroundAudioFadeOutSeconds < 0)
+            {
+                result.AddUserError("Video composition background audio fade durations cannot be negative.");
             }
 
             if (Status?.Value != VideoCompositionStatus.Draft && (Blocks == null || Blocks.Count == 0))
@@ -430,7 +551,10 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_Type, FieldType: FieldTypes.Picker, EnumType: typeof(VideoCompositionBlockType), ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
         public VideoCompositionBlockType Type { get; set; }
 
-        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_MediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_Role, FieldType: FieldTypes.Picker, EnumType: typeof(VideoCompositionBlockRole), ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
+        public VideoCompositionBlockRole Role { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_MediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
         public EntityHeader MediaResource { get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_MediaResourceFileName, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: false)]
@@ -441,6 +565,18 @@ namespace LagoVista.MediaServices.Models
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_BackgroundMediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
         public EntityHeader BackgroundMediaResource { get; set; }
+
+        public EntityHeader BackgroundAudioMediaResource { get; set; }
+
+        public double BackgroundAudioVolume { get; set; } = 0.20;
+
+        public double BackgroundAudioFadeInSeconds { get; set; }
+
+        public double BackgroundAudioFadeOutSeconds { get; set; }
+
+        public bool LoopBackgroundAudio { get; set; } = true;
+
+        public List<VideoCompositionBlockImage> OverlayImages { get; set; } = new List<VideoCompositionBlockImage>();
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_PresenterScale, FieldType: FieldTypes.Decimal, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
         public double PresenterScale { get; set; }
@@ -472,10 +608,17 @@ namespace LagoVista.MediaServices.Models
                 nameof(Key),
                 nameof(SortOrder),
                 nameof(Type),
+                nameof(Role),
                 nameof(MediaResource),
                 nameof(MediaResourceFileName),
                 nameof(MediaResourceMimeType),
                 nameof(BackgroundMediaResource),
+                nameof(BackgroundAudioMediaResource),
+                nameof(BackgroundAudioVolume),
+                nameof(BackgroundAudioFadeInSeconds),
+                nameof(BackgroundAudioFadeOutSeconds),
+                nameof(LoopBackgroundAudio),
+                nameof(OverlayImages),
                 nameof(PresenterScale),
                 nameof(PresenterPositionX),
                 nameof(PresenterPositionY),
@@ -498,14 +641,34 @@ namespace LagoVista.MediaServices.Models
                 result.AddUserError("Every video composition block must have a key.");
             }
 
-            if (MediaResource == null || String.IsNullOrWhiteSpace(MediaResource.Id))
+            if (Role != VideoCompositionBlockRole.Content && (MediaResource == null || String.IsNullOrWhiteSpace(MediaResource.Id)))
             {
                 result.AddUserError($"Video composition block '{Key}' must reference a media resource.");
+            }
+
+            if (Role == VideoCompositionBlockRole.Content && Type != VideoCompositionBlockType.Video)
+            {
+                result.AddUserError($"Content block '{Key}' must be a video block.");
             }
 
             if (FadeInSeconds < 0 || FadeOutSeconds < 0)
             {
                 result.AddUserError($"Video composition block '{Key}' cannot have negative fade durations.");
+            }
+
+            if (BackgroundAudioVolume < 0 || BackgroundAudioVolume > 1)
+            {
+                result.AddUserError($"Video composition block '{Key}' background audio volume must be between zero and one.");
+            }
+
+            if (BackgroundAudioFadeInSeconds < 0 || BackgroundAudioFadeOutSeconds < 0)
+            {
+                result.AddUserError($"Video composition block '{Key}' cannot have negative background audio fade durations.");
+            }
+
+            foreach (var image in OverlayImages ?? new List<VideoCompositionBlockImage>())
+            {
+                image.Validate(result, Key);
             }
 
             if (PresenterScale <= 0)
@@ -540,6 +703,58 @@ namespace LagoVista.MediaServices.Models
         }
     }
 
+    public sealed class VideoCompositionBlockImage
+    {
+        public VideoCompositionBlockImage()
+        {
+            Id = Guid.NewGuid().ToId();
+        }
+
+        public string Id { get; set; }
+        public EntityHeader MediaResource { get; set; }
+        public double Scale { get; set; } = 0.25;
+        public double PositionX { get; set; } = 0.5;
+        public double PositionY { get; set; } = 0.5;
+        public double Opacity { get; set; } = 1.0;
+        public double DelaySeconds { get; set; }
+        public double? VisibleDurationSeconds { get; set; }
+        public double FadeInSeconds { get; set; }
+        public double FadeOutSeconds { get; set; }
+
+        public void Validate(ValidationResult result, string blockKey)
+        {
+            if (MediaResource == null || String.IsNullOrWhiteSpace(MediaResource.Id))
+            {
+                result.AddUserError($"An image on block '{blockKey}' must reference a media resource.");
+            }
+
+            if (Scale <= 0)
+            {
+                result.AddUserError($"An image on block '{blockKey}' must have a scale greater than zero.");
+            }
+
+            if (PositionX < 0 || PositionX > 1 || PositionY < 0 || PositionY > 1)
+            {
+                result.AddUserError($"An image on block '{blockKey}' must use positions between zero and one.");
+            }
+
+            if (Opacity < 0 || Opacity > 1)
+            {
+                result.AddUserError($"An image on block '{blockKey}' opacity must be between zero and one.");
+            }
+
+            if (DelaySeconds < 0 || FadeInSeconds < 0 || FadeOutSeconds < 0)
+            {
+                result.AddUserError($"An image on block '{blockKey}' cannot have negative timing values.");
+            }
+
+            if (VisibleDurationSeconds.HasValue && VisibleDurationSeconds.Value <= 0)
+            {
+                result.AddUserError($"An image on block '{blockKey}' must have a visible duration greater than zero.");
+            }
+        }
+    }
+
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.VideoCompositionTextLabel_Title, MediaServicesResources.Names.VideoCompositionTextLabel_Help, MediaServicesResources.Names.VideoCompositionTextLabel_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, typeof(MediaServicesResources),
         Icon: "lago-icon://system/nuvos-semantic-icon/video-production-default", FactoryUrl: "/api/media/videocomposition/label/factory")]
     public sealed class VideoCompositionTextLabel : IFormDescriptor
@@ -553,6 +768,8 @@ namespace LagoVista.MediaServices.Models
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTextLabel_Text, FieldType: FieldTypes.MultiLineText, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
         public string Text { get; set; }
+
+        public VideoCompositionLabelBinding Binding { get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTextLabel_X, FieldType: FieldTypes.Integer, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
         public int X { get; set; }
@@ -592,6 +809,7 @@ namespace LagoVista.MediaServices.Models
             return new List<string>()
             {
                 nameof(Text),
+                nameof(Binding),
                 nameof(X),
                 nameof(Y),
                 nameof(FontSize),

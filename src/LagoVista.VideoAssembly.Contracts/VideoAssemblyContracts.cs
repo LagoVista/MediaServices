@@ -4,7 +4,7 @@ namespace LagoVista.VideoAssembly.Contracts
 {
     public static class VideoAssemblyContractVersions
     {
-        public const string Current = "2.1";
+        public const string Current = "2.3";
     }
 
     public enum VideoAssemblyBlockType
@@ -85,6 +85,7 @@ namespace LagoVista.VideoAssembly.Contracts
         public string ProductionId { get; set; }
         public string OrganizationId { get; set; }
         public VideoAssemblySource PublishedVideoSource { get; set; }
+        public VideoAssemblyAudio BackgroundAudio { get; set; }
         public List<VideoAssemblyBlock> Blocks { get; set; } = new List<VideoAssemblyBlock>();
         public VideoMediaImportDestination AzureVideoDestination { get; set; }
         public VideoMediaImportThumbnail Thumbnail { get; set; } = new VideoMediaImportThumbnail();
@@ -119,6 +120,8 @@ namespace LagoVista.VideoAssembly.Contracts
         public VideoAssemblySource Source { get; set; }
         public VideoAssemblySource Background { get; set; }
         public VideoAssemblyPresenterLayout PresenterLayout { get; set; }
+        public VideoAssemblyAudio BackgroundAudio { get; set; }
+        public List<VideoAssemblyImageOverlay> Images { get; set; } = new List<VideoAssemblyImageOverlay>();
         public double? DurationSeconds { get; set; }
         public double FadeInSeconds { get; set; }
         public double FadeOutSeconds { get; set; }
@@ -137,6 +140,28 @@ namespace LagoVista.VideoAssembly.Contracts
         public double Scale { get; set; } = 1.0;
         public double PositionX { get; set; } = 0.5;
         public double PositionY { get; set; } = 0.5;
+    }
+
+    public sealed class VideoAssemblyAudio
+    {
+        public VideoAssemblySource Source { get; set; }
+        public double Volume { get; set; } = 0.20;
+        public double FadeInSeconds { get; set; }
+        public double FadeOutSeconds { get; set; }
+        public bool Loop { get; set; } = true;
+    }
+
+    public sealed class VideoAssemblyImageOverlay
+    {
+        public VideoAssemblySource Source { get; set; }
+        public double Scale { get; set; } = 0.25;
+        public double PositionX { get; set; } = 0.5;
+        public double PositionY { get; set; } = 0.5;
+        public double Opacity { get; set; } = 1.0;
+        public double DelaySeconds { get; set; }
+        public double? VisibleDurationSeconds { get; set; }
+        public double FadeInSeconds { get; set; }
+        public double FadeOutSeconds { get; set; }
     }
 
     public sealed class VideoAssemblyTextLabel

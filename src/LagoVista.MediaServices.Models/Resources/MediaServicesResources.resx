@@ -891,4 +891,69 @@
   <data name="VideoProductionOutputMode_CompositedBackground" xml:space="preserve">
     <value>Video with Background</value>
   </data>
+  <data name="VideoCompositionTemplate_Title" xml:space="preserve">
+    <value>Video Composition Template</value>
+  </data>
+  <data name="VideoCompositionTemplates_Title" xml:space="preserve">
+    <value>Video Composition Templates</value>
+  </data>
+  <data name="VideoCompositionTemplate_Description" xml:space="preserve">
+    <value>A reusable arrangement of video composition blocks and composition-wide defaults.</value>
+  </data>
+  <data name="VideoCompositionTemplate_Help" xml:space="preserve">
+    <value>Define reusable intro, content, and closing layouts that can be copied into video compositions.</value>
+  </data>
+  <data name="VideoCompositionTemplate_Version" xml:space="preserve">
+    <value>Version</value>
+  </data>
+  <data name="VideoCompositionTemplate_IsActive" xml:space="preserve">
+    <value>Active</value>
+  </data>
+  <data name="VideoCompositionTemplate_DefaultLocale" xml:space="preserve">
+    <value>Default Locale</value>
+  </data>
+  <data name="VideoCompositionTemplate_Category" xml:space="preserve">
+    <value>Category</value>
+  </data>
+  <data name="VideoCompositionTemplate_BackgroundMediaResource" xml:space="preserve">
+    <value>Default Background</value>
+  </data>
+  <data name="VideoCompositionTemplate_BackgroundAudioMediaResource" xml:space="preserve">
+    <value>Composition Soundtrack</value>
+  </data>
+  <data name="VideoCompositionTemplate_BackgroundAudioVolume" xml:space="preserve">
+    <value>Soundtrack Volume</value>
+  </data>
+  <data name="VideoCompositionTemplate_BackgroundAudioFadeInSeconds" xml:space="preserve">
+    <value>Soundtrack Fade In Seconds</value>
+  </data>
+  <data name="VideoCompositionTemplate_BackgroundAudioFadeOutSeconds" xml:space="preserve">
+    <value>Soundtrack Fade Out Seconds</value>
+  </data>
+  <data name="VideoCompositionTemplate_LoopBackgroundAudio" xml:space="preserve">
+    <value>Loop Soundtrack</value>
+  </data>
+  <data name="VideoCompositionTemplate_OutputMediaLibrary" xml:space="preserve">
+    <value>Output Media Library</value>
+  </data>
+  <data name="VideoCompositionTemplate_Blocks" xml:space="preserve">
+    <value>Template Blocks</value>
+  </data>
+  <data name="VideoCompositionBlock_Role" xml:space="preserve">
+    <value>Role</value>
+  </data>
+
+  <data name="VideoCompositionBlockRole_None" xml:space="preserve">
+  <value>None</value>
+</data>
+  <data name="VideoCompositionBlockRole_Intro" xml:space="preserve">
+  <value>Introduction</value>
+</data>
+  <data name="VideoCompositionBlockRole_Content" xml:space="preserve">
+  <value>Content</value>
+</data>
+  <data name="VideoCompositionBlockRole_CallToAction" xml:space="preserve">
+  <value>Call to Action</value>
+</data>
+
 </root>

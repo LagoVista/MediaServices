@@ -78,6 +78,8 @@ namespace LagoVista.MediaServices.Managers
             if (request == null) throw new ArgumentNullException(nameof(request));
             if (request.Block == null) throw new ArgumentException("A source block is required.", nameof(request));
 
+            var now = UtcTimestamp.Now;
+
             var template = new VideoCompositionBlockTemplate
             {
                 Name = request.Name?.Trim(),
@@ -87,7 +89,9 @@ namespace LagoVista.MediaServices.Managers
                 IsActive = true,
                 OwnerOrganization = org,
                 CreatedBy = user,
-                LastUpdatedBy = user
+                LastUpdatedBy = user,
+                CreationDate = now,
+                LastUpdatedDate = now,
             };
 
             NormalizeTemplate(template);

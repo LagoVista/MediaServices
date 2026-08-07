@@ -18,6 +18,8 @@ namespace LagoVista.VideoAssembly
         public bool Preserve { get; set; }
         public string ConcatManifestPath => Path.Combine(RootPath, "concat.txt");
         public string OutputPath => Path.Combine(RootPath, "output.mp4");
+        public string MixedOutputPath => Path.Combine(RootPath, "output-mixed.mp4");
+        public string CompositionBackgroundAudioPath => Path.Combine(RootPath, "composition-background-audio");
         public string ThumbnailPath => Path.Combine(RootPath, "thumbnail.jpg");
 
         public string GetSourcePath(int index, VideoAssemblyBlockType blockType)
@@ -29,6 +31,16 @@ namespace LagoVista.VideoAssembly
         public string GetBackgroundPath(int index)
         {
             return Path.Combine(RootPath, $"block-{index:000}-background");
+        }
+
+        public string GetBackgroundAudioPath(int index)
+        {
+            return Path.Combine(RootPath, $"block-{index:000}-background-audio");
+        }
+
+        public string GetOverlayImagePath(int blockIndex, int imageIndex)
+        {
+            return Path.Combine(RootPath, $"block-{blockIndex:000}-image-{imageIndex:000}");
         }
 
         public string GetNormalizedPath(int index)

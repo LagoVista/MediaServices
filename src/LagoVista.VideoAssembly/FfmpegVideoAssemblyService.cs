@@ -65,8 +65,27 @@ namespace LagoVista.VideoAssembly
                     segments.Add(segment);
                 }
 
+                string compositionBackgroundAudioPath = null;
+
+                if (request.BackgroundAudio?.Source != null)
+                {
+                    if (request.BackgroundAudio.Volume < 0 || request.BackgroundAudio.Volume > 1) throw new InvalidOperationException("Composition background audio volume must be between zero and one.");
+                    if (request.BackgroundAudio.FadeInSeconds < 0 || request.BackgroundAudio.FadeOutSeconds < 0) throw new InvalidOperationException("Composition background audio fades cannot be negative.");
+
+                    compositionBackgroundAudioPath = workspace.CompositionBackgroundAudioPath;
+                    var downloadedAudio = await _sourceDownloader.DownloadAsync(request.BackgroundAudio.Source, compositionBackgroundAudioPath, request.Limits.MaxSourceFileBytes, VideoAssemblyStage.DownloadingMedia, progress, executionTimeout.Token);
+                    totalInputBytes += downloadedAudio.SizeBytes;
+
+                    if (totalInputBytes > request.Limits.MaxTotalInputBytes) throw new InvalidOperationException($"Total input size of {totalInputBytes} bytes exceeds the limit of {request.Limits.MaxTotalInputBytes} bytes.");
+                }
+
                 foreach (var segment in segments) await NormalizeAsync(request.OrganizationId, segment, progress, executionTimeout.Token);
                 await ConcatenateAsync(request.OrganizationId, segments, workspace, progress, executionTimeout.Token);
+
+                if (!String.IsNullOrWhiteSpace(compositionBackgroundAudioPath))
+                {
+                    await MixCompositionBackgroundAudioAsync(request.OrganizationId, request.BackgroundAudio, compositionBackgroundAudioPath, totalDurationSeconds, workspace, progress, executionTimeout.Token);
+                }
 
                 progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.InspectingMedia, Message = "Inspecting assembled output." });
                 var outputInspection = await _inspectionService.InspectAsync(workspace.OutputPath, executionTimeout.Token);
@@ -281,10 +300,12 @@ namespace LagoVista.VideoAssembly
         {
             var sourcePath = workspace.GetSourcePath(index, block.Type);
             var backgroundPath = block.Background == null ? null : workspace.GetBackgroundPath(index);
+            var backgroundAudioPath = block.BackgroundAudio?.Source == null ? null : workspace.GetBackgroundAudioPath(index);
+            var overlayImagePaths = new List<string>();
             var normalizedPath = workspace.GetNormalizedPath(index);
             var subtitlePath = workspace.GetSubtitlePath(index);
             var downloaded = await _sourceDownloader.DownloadAsync(block.Source, sourcePath, request.Limits.MaxSourceFileBytes, VideoAssemblyStage.DownloadingMedia, progress, cancellationToken);
-            DownloadedVideoAssemblySource downloadedBackground = null;
+            long sourceSizeBytes = downloaded.SizeBytes;
 
             if (block.Background != null)
             {
@@ -294,7 +315,30 @@ namespace LagoVista.VideoAssembly
                 if (block.PresenterLayout.PositionX < 0 || block.PresenterLayout.PositionX > 1) throw new InvalidOperationException($"Video block '{block.Key}' presenter X position must be between zero and one.");
                 if (block.PresenterLayout.PositionY < 0 || block.PresenterLayout.PositionY > 1) throw new InvalidOperationException($"Video block '{block.Key}' presenter Y position must be between zero and one.");
 
-                downloadedBackground = await _sourceDownloader.DownloadAsync(block.Background, backgroundPath, request.Limits.MaxSourceFileBytes, VideoAssemblyStage.DownloadingMedia, progress, cancellationToken);
+                var downloadedBackground = await _sourceDownloader.DownloadAsync(block.Background, backgroundPath, request.Limits.MaxSourceFileBytes, VideoAssemblyStage.DownloadingMedia, progress, cancellationToken);
+                sourceSizeBytes += downloadedBackground.SizeBytes;
+            }
+
+            if (block.BackgroundAudio?.Source != null)
+            {
+                if (block.BackgroundAudio.Volume < 0 || block.BackgroundAudio.Volume > 1) throw new InvalidOperationException($"Background audio volume for block '{block.Key}' must be between zero and one.");
+                if (block.BackgroundAudio.FadeInSeconds < 0 || block.BackgroundAudio.FadeOutSeconds < 0) throw new InvalidOperationException($"Background audio fades for block '{block.Key}' cannot be negative.");
+                var downloadedAudio = await _sourceDownloader.DownloadAsync(block.BackgroundAudio.Source, backgroundAudioPath, request.Limits.MaxSourceFileBytes, VideoAssemblyStage.DownloadingMedia, progress, cancellationToken);
+                sourceSizeBytes += downloadedAudio.SizeBytes;
+            }
+
+            for (var imageIndex = 0; imageIndex < (block.Images?.Count ?? 0); imageIndex++)
+            {
+                var image = block.Images[imageIndex];
+                if (image.Source == null) throw new InvalidOperationException($"Overlay image {imageIndex + 1} on block '{block.Key}' does not have a source.");
+                if (image.Scale <= 0) throw new InvalidOperationException($"Overlay image {imageIndex + 1} on block '{block.Key}' must have a scale greater than zero.");
+                if (image.PositionX < 0 || image.PositionX > 1 || image.PositionY < 0 || image.PositionY > 1) throw new InvalidOperationException($"Overlay image {imageIndex + 1} on block '{block.Key}' must use positions between zero and one.");
+                if (image.Opacity < 0 || image.Opacity > 1) throw new InvalidOperationException($"Overlay image {imageIndex + 1} on block '{block.Key}' opacity must be between zero and one.");
+
+                var imagePath = workspace.GetOverlayImagePath(index, imageIndex);
+                var downloadedImage = await _sourceDownloader.DownloadAsync(image.Source, imagePath, request.Limits.MaxSourceFileBytes, VideoAssemblyStage.DownloadingMedia, progress, cancellationToken);
+                overlayImagePaths.Add(imagePath);
+                sourceSizeBytes += downloadedImage.SizeBytes;
             }
 
             MediaInspectionResult inspection = null;
@@ -323,10 +367,12 @@ namespace LagoVista.VideoAssembly
                 Block = block,
                 SourcePath = sourcePath,
                 BackgroundPath = backgroundPath,
+                BackgroundAudioPath = backgroundAudioPath,
+                OverlayImagePaths = overlayImagePaths,
                 BackgroundIsImage = block.Background?.ContentType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true,
                 NormalizedPath = normalizedPath,
                 SubtitlePath = subtitlePath,
-                SourceSizeBytes = downloaded.SizeBytes + (downloadedBackground?.SizeBytes ?? 0),
+                SourceSizeBytes = sourceSizeBytes,
                 DurationSeconds = durationSeconds,
                 Inspection = inspection
             };
@@ -351,9 +397,56 @@ namespace LagoVista.VideoAssembly
             if (!File.Exists(workspace.OutputPath)) throw new InvalidOperationException("FFmpeg did not create the assembled output file.");
         }
 
+        private async Task MixCompositionBackgroundAudioAsync(string organizationId, VideoAssemblyAudio audio, string audioPath, double durationSeconds, VideoAssemblyWorkspace workspace, IProgress<VideoAssemblyProgress> progress, CancellationToken cancellationToken)
+        {
+            progress?.Report(new VideoAssemblyProgress
+            {
+                OrganizationId = organizationId,
+                Stage = VideoAssemblyStage.Encoding,
+                Message = "Mixing composition background audio across the complete video.",
+                TotalDurationSeconds = (int)Math.Ceiling(durationSeconds)
+            });
+
+            var inputs = audio.Loop
+                ? $"-i {ProcessRunner.Quote(workspace.OutputPath)} -stream_loop -1 -i {ProcessRunner.Quote(audioPath)}"
+                : $"-i {ProcessRunner.Quote(workspace.OutputPath)} -i {ProcessRunner.Quote(audioPath)}";
+
+            var backgroundFilters = new List<string>
+            {
+                "aresample=48000",
+                $"volume={FormatSeconds(audio.Volume)}",
+                $"atrim=0:{FormatSeconds(durationSeconds)}",
+                "asetpts=N/SR/TB"
+            };
+
+            if (audio.FadeInSeconds > 0)
+            {
+                backgroundFilters.Add($"afade=t=in:st=0:d={FormatSeconds(Math.Min(audio.FadeInSeconds, durationSeconds))}");
+            }
+
+            if (audio.FadeOutSeconds > 0)
+            {
+                var fadeDuration = Math.Min(audio.FadeOutSeconds, durationSeconds);
+                backgroundFilters.Add($"afade=t=out:st={FormatSeconds(Math.Max(0, durationSeconds - fadeDuration))}:d={FormatSeconds(fadeDuration)}");
+            }
+
+            var filter = $"[0:a]aresample=48000[primarya];[1:a]{String.Join(",", backgroundFilters)}[backgrounda];[primarya][backgrounda]amix=inputs=2:duration=first:dropout_transition=0[aout]";
+            var arguments = $"-y {inputs} -filter_complex \"{filter}\" -map 0:v:0 -map \"[aout]\" -c:v copy -c:a aac -ar 48000 -ac 2 -t {FormatSeconds(durationSeconds)} -movflags +faststart -progress pipe:1 -nostats {ProcessRunner.Quote(workspace.MixedOutputPath)}";
+
+            var processResult = await _processRunner.RunAsync(_options.FfmpegPath, arguments, cancellationToken: cancellationToken);
+            if (processResult.ExitCode != 0) throw new InvalidOperationException($"FFmpeg failed while mixing composition background audio. {processResult.StandardError}");
+            if (!File.Exists(workspace.MixedOutputPath)) throw new InvalidOperationException("FFmpeg did not create the composition background audio mix.");
+
+            File.Delete(workspace.OutputPath);
+            File.Move(workspace.MixedOutputPath, workspace.OutputPath);
+        }
+
         private string BuildNormalizeArguments(VideoAssemblySegment segment)
         {
-            if (!String.IsNullOrWhiteSpace(segment.BackgroundPath)) return BuildPresenterCompositeArguments(segment);
+            if (!String.IsNullOrWhiteSpace(segment.BackgroundPath) || !String.IsNullOrWhiteSpace(segment.BackgroundAudioPath) || segment.OverlayImagePaths.Count > 0)
+            {
+                return BuildCompositeArguments(segment);
+            }
 
             var videoFilter = BuildVideoFilter(segment);
             var audioFilter = BuildAudioFilter(segment);
@@ -364,31 +457,90 @@ namespace LagoVista.VideoAssembly
             return $"-y -i {ProcessRunner.Quote(segment.SourcePath)} -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 -map 0:v:0 -map 1:a:0 {outputOptions} -shortest {ProcessRunner.Quote(segment.NormalizedPath)}";
         }
 
-        private string BuildPresenterCompositeArguments(VideoAssemblySegment segment)
+        private string BuildCompositeArguments(VideoAssemblySegment segment)
         {
-            var layout = segment.Block.PresenterLayout ?? new VideoAssemblyPresenterLayout();
-            var backgroundInput = segment.BackgroundIsImage
-                ? $"-loop 1 -framerate 30 -i {ProcessRunner.Quote(segment.BackgroundPath)}"
-                : $"-stream_loop -1 -i {ProcessRunner.Quote(segment.BackgroundPath)}";
-            var audioFilter = BuildAudioFilter(segment);
-            var videoFilter = BuildPresenterCompositeFilter(segment, layout);
-            var audioInput = segment.Inspection.HasAudio ? String.Empty : " -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000";
-            var audioMap = segment.Inspection.HasAudio ? "-map 0:a:0" : "-map 2:a:0";
+            var inputs = new List<string>();
+            inputs.Add(segment.Block.Type == VideoAssemblyBlockType.Image
+                ? $"-loop 1 -framerate 30 -i {ProcessRunner.Quote(segment.SourcePath)}"
+                : $"-c:v libvpx-vp9 -i {ProcessRunner.Quote(segment.SourcePath)}");
 
-            return $"-y -c:v libvpx-vp9 -i {ProcessRunner.Quote(segment.SourcePath)} {backgroundInput}{audioInput} -filter_complex \"{videoFilter}\" -map \"[vout]\" {audioMap} -af \"{audioFilter}\" -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -r 30 -c:a aac -ar 48000 -ac 2 -t {FormatSeconds(segment.DurationSeconds)} -movflags +faststart -progress pipe:1 -nostats -shortest {ProcessRunner.Quote(segment.NormalizedPath)}";
+            var nextInput = 1;
+            int? backgroundInput = null;
+            if (!String.IsNullOrWhiteSpace(segment.BackgroundPath))
+            {
+                backgroundInput = nextInput++;
+                inputs.Add(segment.BackgroundIsImage
+                    ? $"-loop 1 -framerate 30 -i {ProcessRunner.Quote(segment.BackgroundPath)}"
+                    : $"-stream_loop -1 -i {ProcessRunner.Quote(segment.BackgroundPath)}");
+            }
+
+            var imageInputs = new List<int>();
+            foreach (var imagePath in segment.OverlayImagePaths)
+            {
+                imageInputs.Add(nextInput++);
+                inputs.Add($"-loop 1 -framerate 30 -i {ProcessRunner.Quote(imagePath)}");
+            }
+
+            var primaryAudioInput = segment.Block.Type == VideoAssemblyBlockType.Video && segment.Inspection.HasAudio ? 0 : nextInput++;
+            if (primaryAudioInput != 0)
+            {
+                inputs.Add("-f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000");
+            }
+
+            int? backgroundAudioInput = null;
+            if (!String.IsNullOrWhiteSpace(segment.BackgroundAudioPath))
+            {
+                backgroundAudioInput = nextInput++;
+                inputs.Add(segment.Block.BackgroundAudio.Loop
+                    ? $"-stream_loop -1 -i {ProcessRunner.Quote(segment.BackgroundAudioPath)}"
+                    : $"-i {ProcessRunner.Quote(segment.BackgroundAudioPath)}");
+            }
+
+            var filter = BuildCompositeFilter(segment, backgroundInput, imageInputs, primaryAudioInput, backgroundAudioInput);
+            return $"-y {String.Join(" ", inputs)} -filter_complex \"{filter}\" -map \"[vout]\" -map \"[aout]\" -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -r 30 -c:a aac -ar 48000 -ac 2 -t {FormatSeconds(segment.DurationSeconds)} -movflags +faststart -progress pipe:1 -nostats -shortest {ProcessRunner.Quote(segment.NormalizedPath)}";
         }
 
-        private string BuildPresenterCompositeFilter(VideoAssemblySegment segment, VideoAssemblyPresenterLayout layout)
+        private string BuildCompositeFilter(VideoAssemblySegment segment, int? backgroundInput, IReadOnlyList<int> imageInputs, int primaryAudioInput, int? backgroundAudioInput)
         {
             var filters = new List<string>();
-            filters.Add("[1:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,setsar=1,fps=30[background]");
-            var presenterWidth = Math.Max(2, (int)Math.Round(1920 * layout.Scale / 2) * 2);
-            filters.Add($"[0:v]format=rgba,scale={presenterWidth}:-2[presenter]");
-            filters.Add($"[background][presenter]overlay=x='(W-w)*{FormatSeconds(layout.PositionX)}':y='(H-h)*{FormatSeconds(layout.PositionY)}':format=auto[composite]");
+            string currentVideo;
 
-            var outputFilters = new List<string> { "[composite]format=yuv420p" };
+            if (backgroundInput.HasValue)
+            {
+                var layout = segment.Block.PresenterLayout ?? new VideoAssemblyPresenterLayout();
+                filters.Add($"[{backgroundInput.Value}:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,setsar=1,fps=30[background]");
+                var presenterWidth = Math.Max(2, (int)Math.Round(1920 * layout.Scale / 2) * 2);
+                filters.Add($"[0:v]format=rgba,scale={presenterWidth}:-2[presenter]");
+                filters.Add($"[background][presenter]overlay=x='(W-w)*{FormatSeconds(layout.PositionX)}':y='(H-h)*{FormatSeconds(layout.PositionY)}':format=auto[video0]");
+                currentVideo = "video0";
+            }
+            else
+            {
+                filters.Add($"[0:v]{BaseVideoFilter}[video0]");
+                currentVideo = "video0";
+            }
+
+            for (var imageIndex = 0; imageIndex < imageInputs.Count; imageIndex++)
+            {
+                var image = segment.Block.Images[imageIndex];
+                var width = Math.Max(2, (int)Math.Round(1920 * image.Scale / 2) * 2);
+                var visibleDuration = Math.Min(image.VisibleDurationSeconds ?? Math.Max(0, segment.DurationSeconds - image.DelaySeconds), Math.Max(0, segment.DurationSeconds - image.DelaySeconds));
+                var imageFilters = new List<string> { $"format=rgba,scale={width}:-2", $"colorchannelmixer=aa={FormatSeconds(image.Opacity)}" };
+                if (image.FadeInSeconds > 0) imageFilters.Add($"fade=t=in:st={FormatSeconds(image.DelaySeconds)}:d={FormatSeconds(Math.Min(image.FadeInSeconds, visibleDuration))}:alpha=1");
+                if (image.FadeOutSeconds > 0)
+                {
+                    var fadeDuration = Math.Min(image.FadeOutSeconds, visibleDuration);
+                    imageFilters.Add($"fade=t=out:st={FormatSeconds(image.DelaySeconds + Math.Max(0, visibleDuration - fadeDuration))}:d={FormatSeconds(fadeDuration)}:alpha=1");
+                }
+
+                filters.Add($"[{imageInputs[imageIndex]}:v]{String.Join(",", imageFilters)}[image{imageIndex}]");
+                var nextVideo = $"video{imageIndex + 1}";
+                filters.Add($"[{currentVideo}][image{imageIndex}]overlay=x='(W-w)*{FormatSeconds(image.PositionX)}':y='(H-h)*{FormatSeconds(image.PositionY)}':enable='between(t,{FormatSeconds(image.DelaySeconds)},{FormatSeconds(image.DelaySeconds + visibleDuration)})':format=auto[{nextVideo}]");
+                currentVideo = nextVideo;
+            }
+
+            var outputFilters = new List<string> { $"[{currentVideo}]format=yuv420p" };
             if (segment.Block.FadeInSeconds > 0) outputFilters.Add($"fade=t=in:st=0:d={FormatSeconds(Math.Min(segment.Block.FadeInSeconds, segment.DurationSeconds))}");
-
             if (segment.Block.FadeOutSeconds > 0)
             {
                 var fadeDuration = Math.Min(segment.Block.FadeOutSeconds, segment.DurationSeconds);
@@ -402,6 +554,33 @@ namespace LagoVista.VideoAssembly
             }
 
             filters.Add($"{String.Join(",", outputFilters)}[vout]");
+            filters.Add($"[{primaryAudioInput}:a]{BuildAudioFilter(segment)}[primarya]");
+
+            if (backgroundAudioInput.HasValue)
+            {
+                var audio = segment.Block.BackgroundAudio;
+                var backgroundFilters = new List<string>
+                {
+                    "aresample=48000",
+                    $"volume={FormatSeconds(audio.Volume)}",
+                    $"atrim=0:{FormatSeconds(segment.DurationSeconds)}"
+                };
+
+                if (audio.FadeInSeconds > 0) backgroundFilters.Add($"afade=t=in:st=0:d={FormatSeconds(Math.Min(audio.FadeInSeconds, segment.DurationSeconds))}");
+                if (audio.FadeOutSeconds > 0)
+                {
+                    var fadeDuration = Math.Min(audio.FadeOutSeconds, segment.DurationSeconds);
+                    backgroundFilters.Add($"afade=t=out:st={FormatSeconds(Math.Max(0, segment.DurationSeconds - fadeDuration))}:d={FormatSeconds(fadeDuration)}");
+                }
+
+                filters.Add($"[{backgroundAudioInput.Value}:a]{String.Join(",", backgroundFilters)}[backgrounda]");
+                filters.Add("[primarya][backgrounda]amix=inputs=2:duration=first:dropout_transition=0[aout]");
+            }
+            else
+            {
+                filters.Add("[primarya]anull[aout]");
+            }
+
             return String.Join(";", filters);
         }
 
@@ -476,6 +655,8 @@ namespace LagoVista.VideoAssembly
             public VideoAssemblyBlock Block { get; set; }
             public string SourcePath { get; set; }
             public string BackgroundPath { get; set; }
+            public string BackgroundAudioPath { get; set; }
+            public List<string> OverlayImagePaths { get; set; } = new List<string>();
             public bool BackgroundIsImage { get; set; }
             public string NormalizedPath { get; set; }
             public string SubtitlePath { get; set; }

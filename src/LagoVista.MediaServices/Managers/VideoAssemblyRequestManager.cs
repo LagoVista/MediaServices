@@ -120,6 +120,19 @@ namespace LagoVista.MediaServices.Managers
             }
 
             _adminLogger.Trace($"{this.Tag()} [ASSEMBLY BLOCK RESOLUTION COMPLETED] CompositionId={composition.Id}, BlockCount={blocksResult.Result.Count}");
+
+            var backgroundAudioSourceResult = await ResolveOptionalAssemblySourceAsync(
+                composition.BackgroundAudioMediaResource,
+                "composition background audio",
+                org,
+                user,
+                cancellationToken);
+
+            if (!backgroundAudioSourceResult.Successful)
+            {
+                return await ApplyPreparationFailureAsync(composition, backgroundAudioSourceResult.Errors[0].Message);
+            }
+
             _adminLogger.Trace($"{this.Tag()} [ASSEMBLY OUTPUT MEDIA PREPARING] CompositionId={composition.Id}, ExistingMediaResourceId={composition.OutputMediaResource?.Id}");
             var outputMediaResource = await GetOrCreateOutputMediaResourceAsync(composition, org, user);
             if (outputMediaResource == null)
@@ -212,6 +225,16 @@ namespace LagoVista.MediaServices.Managers
                 AttemptId = attemptId,
                 ProductionId = composition.Id,
                 OrganizationId = org.Id,
+                BackgroundAudio = backgroundAudioSourceResult.Result == null
+                    ? null
+                    : new VideoAssemblyAudio
+                    {
+                        Source = backgroundAudioSourceResult.Result,
+                        Volume = composition.BackgroundAudioVolume,
+                        FadeInSeconds = composition.BackgroundAudioFadeInSeconds,
+                        FadeOutSeconds = composition.BackgroundAudioFadeOutSeconds,
+                        Loop = composition.LoopBackgroundAudio
+                    },
                 Blocks = blocksResult.Result,
                 AzureVideoDestination = new VideoMediaImportDestination
                 {
@@ -737,6 +760,35 @@ namespace LagoVista.MediaServices.Managers
                     _adminLogger.Trace($"{this.Tag()} [ASSEMBLY BACKGROUND RESOLVED] CompositionId={composition.Id}, BlockKey={block.Key}, MediaResourceId={backgroundMediaResource.Id}, FileName={backgroundSource.FileName}, ContentType={backgroundSource.ContentType}");
                 }
 
+                var backgroundAudioResult = await ResolveOptionalAssemblySourceAsync(block.BackgroundAudioMediaResource, $"background audio for block '{block.Key}'", org, user, cancellationToken);
+                if (!backgroundAudioResult.Successful)
+                {
+                    return backgroundAudioResult.ToInvokeResult<List<VideoAssemblyBlock>>();
+                }
+
+                var images = new List<VideoAssemblyImageOverlay>();
+                foreach (var image in block.OverlayImages ?? new List<VideoCompositionBlockImage>())
+                {
+                    var imageResult = await ResolveOptionalAssemblySourceAsync(image.MediaResource, $"overlay image for block '{block.Key}'", org, user, cancellationToken);
+                    if (!imageResult.Successful)
+                    {
+                        return imageResult.ToInvokeResult<List<VideoAssemblyBlock>>();
+                    }
+
+                    images.Add(new VideoAssemblyImageOverlay
+                    {
+                        Source = imageResult.Result,
+                        Scale = image.Scale,
+                        PositionX = image.PositionX,
+                        PositionY = image.PositionY,
+                        Opacity = image.Opacity,
+                        DelaySeconds = image.DelaySeconds,
+                        VisibleDurationSeconds = image.VisibleDurationSeconds,
+                        FadeInSeconds = image.FadeInSeconds,
+                        FadeOutSeconds = image.FadeOutSeconds
+                    });
+                }
+
                 assemblyBlocks.Add(new VideoAssemblyBlock
                 {
                     Key = block.Key,
@@ -751,14 +803,46 @@ namespace LagoVista.MediaServices.Managers
                             PositionX = block.PresenterPositionX,
                             PositionY = block.PresenterPositionY
                         },
+                    BackgroundAudio = backgroundAudioResult.Result == null
+                        ? null
+                        : new VideoAssemblyAudio
+                        {
+                            Source = backgroundAudioResult.Result,
+                            Volume = block.BackgroundAudioVolume,
+                            FadeInSeconds = block.BackgroundAudioFadeInSeconds,
+                            FadeOutSeconds = block.BackgroundAudioFadeOutSeconds,
+                            Loop = block.LoopBackgroundAudio
+                        },
+                    Images = images,
                     DurationSeconds = block.DurationSeconds,
                     FadeInSeconds = block.FadeInSeconds,
                     FadeOutSeconds = block.FadeOutSeconds,
-                    Labels = (block.CompositionLabels ?? new List<VideoCompositionTextLabel>()).Select(CreateAssemblyLabel).ToList()
+                    Labels = (block.CompositionLabels ?? new List<VideoCompositionTextLabel>()).Select(label => CreateAssemblyLabel(composition, label)).ToList()
                 });
             }
 
             return InvokeResult<List<VideoAssemblyBlock>>.Create(assemblyBlocks);
+        }
+
+        private async Task<InvokeResult<VideoAssemblySource>> ResolveOptionalAssemblySourceAsync(EntityHeader mediaResourceHeader, string description, EntityHeader org, EntityHeader user, CancellationToken cancellationToken)
+        {
+            if (mediaResourceHeader == null || String.IsNullOrWhiteSpace(mediaResourceHeader.Id))
+            {
+                return InvokeResult<VideoAssemblySource>.Create(null);
+            }
+
+            var mediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(mediaResourceHeader.Id, org, user);
+            if (mediaResource == null)
+            {
+                return InvokeResult<VideoAssemblySource>.FromError($"Could not find {description} media resource '{mediaResourceHeader.Id}'.");
+            }
+
+            if (mediaResource.Status?.Value != MediaResourceStatus.Ready)
+            {
+                return InvokeResult<VideoAssemblySource>.FromError($"The {description} media resource '{mediaResource.Name}' is not ready.");
+            }
+
+            return await _mediaSourceResolver.ResolveAsync(mediaResource, org.Id, cancellationToken);
         }
 
         private async Task<MediaResource> GetOrCreateOutputMediaResourceAsync(VideoComposition composition, EntityHeader org, EntityHeader user)
@@ -842,11 +926,11 @@ namespace LagoVista.MediaServices.Managers
             return pendingRevision;
         }
 
-        private static VideoAssemblyTextLabel CreateAssemblyLabel(VideoCompositionTextLabel label)
+        private static VideoAssemblyTextLabel CreateAssemblyLabel(VideoComposition composition, VideoCompositionTextLabel label)
         {
             return new VideoAssemblyTextLabel
             {
-                Text = label.Text,
+                Text = ResolveCompositionLabelText(composition, label),
                 X = label.X,
                 Y = label.Y,
                 FontSize = label.FontSize,
@@ -859,6 +943,39 @@ namespace LagoVista.MediaServices.Managers
                 FadeInSeconds = label.FadeInSeconds,
                 FadeOutSeconds = label.FadeOutSeconds
             };
+        }
+
+        private static string ResolveCompositionLabelText(VideoComposition composition, VideoCompositionTextLabel label)
+        {
+            if (label == null)
+            {
+                return String.Empty;
+            }
+
+            string boundValue;
+
+            switch (label.Binding)
+            {
+                case VideoCompositionLabelBinding.Title:
+                    boundValue = composition?.Title;
+                    break;
+
+                case VideoCompositionLabelBinding.Subtitle:
+                    boundValue = composition?.Subtitle;
+                    break;
+
+                case VideoCompositionLabelBinding.CallToAction:
+                    boundValue = composition?.CallToAction;
+                    break;
+
+                default:
+                    boundValue = null;
+                    break;
+            }
+
+            return String.IsNullOrWhiteSpace(boundValue)
+                ? label.Text ?? String.Empty
+                : boundValue.Trim();
         }
 
         private static string CreateVideoFileName(VideoComposition composition)
