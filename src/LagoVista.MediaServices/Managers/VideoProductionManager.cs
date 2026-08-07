@@ -677,6 +677,7 @@ namespace LagoVista.MediaServices.Managers
             GuidString36? billingEventId = null;
             if (previewResult.Result.DurationSeconds.HasValue && previewResult.Result.DurationSeconds.Value > 0)
             {
+                _logger.Trace($"{this.Tag()} - HeyGen preview audio for Video Production {{production.Name}}, duration: {{previewResult.Result.DurationSeconds.Value}}");
                 billingEventId = await _billingEventRecorder.RecordUsageAsync(BillingEventType.AudioGeneration, previewResult.Result.DurationSeconds.Value, $"HeyGen preview audio for Video Production {production.Name}, duration: {previewResult.Result.DurationSeconds.Value}", production.OwnerOrganization, production.LastUpdatedBy);
             }
 
