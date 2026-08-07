@@ -1,4 +1,4 @@
-﻿/*8/6/2026 3:35:17 PM*/
+﻿/*8/6/2026 5:55:14 PM*/
 using System.Globalization;
 using System.Reflection;
 
@@ -546,6 +546,9 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:VideoCompositionBlock_PresenterScale
 
 		public static string VideoCompositionBlock_PresenterScale { get { return GetResourceString("VideoCompositionBlock_PresenterScale"); } }
+//Resources:MediaServicesResources:VideoCompositionBlock_Role
+
+		public static string VideoCompositionBlock_Role { get { return GetResourceString("VideoCompositionBlock_Role"); } }
 //Resources:MediaServicesResources:VideoCompositionBlock_SortOrder
 
 		public static string VideoCompositionBlock_SortOrder { get { return GetResourceString("VideoCompositionBlock_SortOrder"); } }
@@ -555,6 +558,18 @@ namespace LagoVista.MediaServices.Models.Resources
 //Resources:MediaServicesResources:VideoCompositionBlock_Type
 
 		public static string VideoCompositionBlock_Type { get { return GetResourceString("VideoCompositionBlock_Type"); } }
+//Resources:MediaServicesResources:VideoCompositionBlockRole_CallToAction
+
+		public static string VideoCompositionBlockRole_CallToAction { get { return GetResourceString("VideoCompositionBlockRole_CallToAction"); } }
+//Resources:MediaServicesResources:VideoCompositionBlockRole_Content
+
+		public static string VideoCompositionBlockRole_Content { get { return GetResourceString("VideoCompositionBlockRole_Content"); } }
+//Resources:MediaServicesResources:VideoCompositionBlockRole_Intro
+
+		public static string VideoCompositionBlockRole_Intro { get { return GetResourceString("VideoCompositionBlockRole_Intro"); } }
+//Resources:MediaServicesResources:VideoCompositionBlockRole_None
+
+		public static string VideoCompositionBlockRole_None { get { return GetResourceString("VideoCompositionBlockRole_None"); } }
 //Resources:MediaServicesResources:VideoCompositionBlockType_Image
 
 		public static string VideoCompositionBlockType_Image { get { return GetResourceString("VideoCompositionBlockType_Image"); } }
@@ -1043,9 +1058,14 @@ namespace LagoVista.MediaServices.Models.Resources
 			public const string VideoCompositionBlock_PresenterPositionX = "VideoCompositionBlock_PresenterPositionX";
 			public const string VideoCompositionBlock_PresenterPositionY = "VideoCompositionBlock_PresenterPositionY";
 			public const string VideoCompositionBlock_PresenterScale = "VideoCompositionBlock_PresenterScale";
+			public const string VideoCompositionBlock_Role = "VideoCompositionBlock_Role";
 			public const string VideoCompositionBlock_SortOrder = "VideoCompositionBlock_SortOrder";
 			public const string VideoCompositionBlock_Title = "VideoCompositionBlock_Title";
 			public const string VideoCompositionBlock_Type = "VideoCompositionBlock_Type";
+			public const string VideoCompositionBlockRole_CallToAction = "VideoCompositionBlockRole_CallToAction";
+			public const string VideoCompositionBlockRole_Content = "VideoCompositionBlockRole_Content";
+			public const string VideoCompositionBlockRole_Intro = "VideoCompositionBlockRole_Intro";
+			public const string VideoCompositionBlockRole_None = "VideoCompositionBlockRole_None";
 			public const string VideoCompositionBlockType_Image = "VideoCompositionBlockType_Image";
 			public const string VideoCompositionBlockType_Video = "VideoCompositionBlockType_Video";
 			public const string VideoCompositions_Title = "VideoCompositions_Title";

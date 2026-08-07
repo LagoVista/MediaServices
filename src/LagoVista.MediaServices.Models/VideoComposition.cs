@@ -53,6 +53,33 @@ namespace LagoVista.MediaServices.Models
         Video
     }
 
+    public enum VideoCompositionBlockRole
+    {
+        [EnumLabel(
+            VideoComposition.BlockRole_None,
+            MediaServicesResources.Names.VideoCompositionBlockRole_None,
+            typeof(MediaServicesResources))]
+        None,
+
+        [EnumLabel(
+            VideoComposition.BlockRole_Intro,
+            MediaServicesResources.Names.VideoCompositionBlockRole_Intro,
+            typeof(MediaServicesResources))]
+        Intro,
+
+        [EnumLabel(
+            VideoComposition.BlockRole_Content,
+            MediaServicesResources.Names.VideoCompositionBlockRole_Content,
+            typeof(MediaServicesResources))]
+        Content,
+
+        [EnumLabel(
+            VideoComposition.BlockRole_CallToAction,
+            MediaServicesResources.Names.VideoCompositionBlockRole_CallToAction,
+            typeof(MediaServicesResources))]
+        CallToAction
+    }
+
     public enum VideoCompositionTextAlignment
     {
         [EnumLabel(VideoComposition.TextAlignment_Left, MediaServicesResources.Names.VideoCompositionTextAlignment_Left, typeof(MediaServicesResources))]
@@ -133,6 +160,11 @@ namespace LagoVista.MediaServices.Models
         public const string Status_Completed = "completed";
         public const string Status_Failed = "failed";
         public const string Status_Cancelled = "cancelled";
+
+        public const string BlockRole_None = "none";
+        public const string BlockRole_Intro = "intro";
+        public const string BlockRole_Content = "content";
+        public const string BlockRole_CallToAction = "call-to-action";
 
         public const string BlockType_Image = "image";
         public const string BlockType_Video = "video";
@@ -288,6 +320,7 @@ namespace LagoVista.MediaServices.Models
                 content.AppendLine($"key={NormalizeHashValue(block.Key)}");
                 content.AppendLine($"sortOrder={block.SortOrder.ToString(CultureInfo.InvariantCulture)}");
                 content.AppendLine($"type={block.Type}");
+                content.AppendLine($"role={block.Role}");
                 content.AppendLine($"mediaResourceId={NormalizeHashValue(block.MediaResource?.Id)}");
                 content.AppendLine($"backgroundMediaResourceId={NormalizeHashValue(block.BackgroundMediaResource?.Id)}");
                 content.AppendLine($"backgroundAudioMediaResourceId={NormalizeHashValue(block.BackgroundAudioMediaResource?.Id)}");
@@ -518,7 +551,10 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_Type, FieldType: FieldTypes.Picker, EnumType: typeof(VideoCompositionBlockType), ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
         public VideoCompositionBlockType Type { get; set; }
 
-        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_MediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_Role, FieldType: FieldTypes.Picker, EnumType: typeof(VideoCompositionBlockRole), ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
+        public VideoCompositionBlockRole Role { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_MediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
         public EntityHeader MediaResource { get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_MediaResourceFileName, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: false)]
@@ -572,6 +608,7 @@ namespace LagoVista.MediaServices.Models
                 nameof(Key),
                 nameof(SortOrder),
                 nameof(Type),
+                nameof(Role),
                 nameof(MediaResource),
                 nameof(MediaResourceFileName),
                 nameof(MediaResourceMimeType),
@@ -604,9 +641,14 @@ namespace LagoVista.MediaServices.Models
                 result.AddUserError("Every video composition block must have a key.");
             }
 
-            if (MediaResource == null || String.IsNullOrWhiteSpace(MediaResource.Id))
+            if (Role != VideoCompositionBlockRole.Content && (MediaResource == null || String.IsNullOrWhiteSpace(MediaResource.Id)))
             {
                 result.AddUserError($"Video composition block '{Key}' must reference a media resource.");
+            }
+
+            if (Role == VideoCompositionBlockRole.Content && Type != VideoCompositionBlockType.Video)
+            {
+                result.AddUserError($"Content block '{Key}' must be a video block.");
             }
 
             if (FadeInSeconds < 0 || FadeOutSeconds < 0)

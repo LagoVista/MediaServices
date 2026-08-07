@@ -66,6 +66,12 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return _manager.AddVideoCompositionTemplateAsync(template, OrgEntityHeader, UserEntityHeader);
         }
 
+        [HttpPost("/api/media/videocompositiontemplate/fromcomposition/{compositionId}")]
+        public Task<InvokeResult<VideoCompositionTemplate>> CreateVideoCompositionTemplateFromCompositionAsync(string compositionId, [FromBody] CreateVideoCompositionTemplateFromCompositionRequest request)
+        {
+            return _manager.CreateFromCompositionAsync(compositionId, request, OrgEntityHeader, UserEntityHeader);
+        }
+
         [HttpPut("/api/media/videocompositiontemplate")]
         public Task<InvokeResult> UpdateVideoCompositionTemplateAsync([FromBody] VideoCompositionTemplate template)
         {

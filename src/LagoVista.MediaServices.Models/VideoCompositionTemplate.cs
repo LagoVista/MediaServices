@@ -37,9 +37,6 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTemplate_DefaultLocale, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
         public string DefaultLocale { get; set; }
 
-        [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTemplate_Category, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
-        public EntityHeader Category { get; set; }
-
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTemplate_BackgroundMediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
         public EntityHeader BackgroundMediaResource { get; set; }
 
@@ -150,7 +147,6 @@ namespace LagoVista.MediaServices.Models
             {
                 Version = Version,
                 IsActive = IsActive,
-                Category = Category,
                 DefaultLocale = DefaultLocale,
                 BlockCount = Blocks?.Count ?? 0,
                 TotalDurationSeconds = CalculateKnownDurationSeconds()
@@ -180,13 +176,22 @@ namespace LagoVista.MediaServices.Models
         EntityDescriptionAttribute.EntityTypes.Summary, typeof(MediaServicesResources), Icon: "lago-icon://system/nuvos-semantic-icon/video-production-default",
         GetUrl: "/api/media/videocompositiontemplate/{id}", GetListUrl: "/api/media/videocompositiontemplates", FactoryUrl: "/api/media/videocompositiontemplate/factory", SaveUrl: "/api/media/videocompositiontemplate", DeleteUrl: "/api/media/videocompositiontemplate/{id}",
         ListUIUrl: "/contentmanagement/videocompositiontemplates", EditUIUrl: "/contentmanagement/videocompositiontemplate/{id}", CreateUIUrl: "/contentmanagement/videocompositiontemplate/add")]
+    public sealed class CreateVideoCompositionTemplateFromCompositionRequest
+    {
+        public string Name { get; set; }
+
+        public string Key { get; set; }
+
+        public string Description { get; set; }
+
+        public EntityHeader Category { get; set; }
+    }
+
     public class VideoCompositionTemplateSummary : SummaryData
     {
         public int Version { get; set; }
 
         public bool IsActive { get; set; }
-
-        public EntityHeader Category { get; set; }
 
         public string DefaultLocale { get; set; }
 

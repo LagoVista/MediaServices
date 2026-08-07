@@ -1,4 +1,3 @@
-using LagoVista.CloudStorage.Interfaces;
 using LagoVista.Core;
 using LagoVista.Core.Interfaces;
 using LagoVista.Core.Managers;
@@ -8,9 +7,9 @@ using LagoVista.Core.Validation;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -21,16 +20,14 @@ namespace LagoVista.MediaServices.Managers
     public class EntityVideoCompositionManager : ManagerBase, IEntityVideoCompositionManager
     {
         private readonly IEntityVideoCompositionRepo _repo;
-        private readonly IEntityUtilsRepository _entityUtilsRepository;
         private readonly IEntityTypeResolver _entityTypeResolver;
         private readonly IVideoCompositionTemplateManager _templateManager;
         private readonly IVideoCompositionManager _compositionManager;
         private readonly IVideoAvatarManager _videoAvatarManager;
 
-        public EntityVideoCompositionManager(IEntityVideoCompositionRepo repo, IEntityUtilsRepository entityUtilsRepository, IEntityTypeResolver entityTypeResolver, IVideoCompositionTemplateManager templateManager, IVideoCompositionManager compositionManager, IVideoAvatarManager videoAvatarManager, ICoreAppServices coreAppServices) : base(coreAppServices)
+        public EntityVideoCompositionManager(IEntityVideoCompositionRepo repo, IEntityTypeResolver entityTypeResolver, IVideoCompositionTemplateManager templateManager, IVideoCompositionManager compositionManager, IVideoAvatarManager videoAvatarManager, ICoreAppServices coreAppServices) : base(coreAppServices)
         {
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
-            _entityUtilsRepository = entityUtilsRepository ?? throw new ArgumentNullException(nameof(entityUtilsRepository));
             _entityTypeResolver = entityTypeResolver ?? throw new ArgumentNullException(nameof(entityTypeResolver));
             _templateManager = templateManager ?? throw new ArgumentNullException(nameof(templateManager));
             _compositionManager = compositionManager ?? throw new ArgumentNullException(nameof(compositionManager));
@@ -112,6 +109,21 @@ namespace LagoVista.MediaServices.Managers
 
             var content = source.GetContent() ?? new VideoCompositionContent();
             var sourceContentSha256 = CalculateSourceContentSha256(content, template, videoAvatar);
+            var blocks = CloneBlocks(template.Blocks);
+            var contentBlock = blocks.FirstOrDefault(block => block.Role == VideoCompositionBlockRole.Content)
+                ?? blocks.OrderBy(block => block.SortOrder).FirstOrDefault(block => block.Type == VideoCompositionBlockType.Video);
+
+            if (contentBlock == null)
+            {
+                return InvokeResult<VideoComposition>.FromError($"Video composition template '{template.Name}' does not contain a content video block.");
+            }
+
+            contentBlock.Role = VideoCompositionBlockRole.Content;
+
+            if (request.ContentBackgroundMediaResource != null && !String.IsNullOrWhiteSpace(request.ContentBackgroundMediaResource.Id))
+            {
+                contentBlock.BackgroundMediaResource = request.ContentBackgroundMediaResource;
+            }
 
             var composition = new VideoComposition
             {
@@ -129,13 +141,15 @@ namespace LagoVista.MediaServices.Managers
                 CallToAction = content.CallToAction,
                 SourceScript = content.Script,
                 BackgroundMediaResource = template.BackgroundMediaResource,
-                BackgroundAudioMediaResource = template.BackgroundAudioMediaResource,
+                BackgroundAudioMediaResource = request.BackgroundAudioMediaResource != null && !String.IsNullOrWhiteSpace(request.BackgroundAudioMediaResource.Id)
+                    ? request.BackgroundAudioMediaResource
+                    : template.BackgroundAudioMediaResource,
                 BackgroundAudioVolume = template.BackgroundAudioVolume,
                 BackgroundAudioFadeInSeconds = template.BackgroundAudioFadeInSeconds,
                 BackgroundAudioFadeOutSeconds = template.BackgroundAudioFadeOutSeconds,
                 LoopBackgroundAudio = template.LoopBackgroundAudio,
                 OutputMediaLibrary = template.OutputMediaLibrary,
-                Blocks = CloneBlocks(template.Blocks),
+                Blocks = blocks,
                 SourceEntity = source.Entity.ToEntityHeader(),
                 SourceEntityType = request.EntityType.Trim(),
                 SourceCompositionTemplate = template.ToEntityHeader(),
@@ -247,14 +261,7 @@ namespace LagoVista.MediaServices.Managers
 
         private Task<InvokeResult> PatchVideoCompositionInfoInternalAsync(string entityId, EntityVideoCompositionInfo videoCompositionInfo, EntityHeader user, CancellationToken cancellationToken)
         {
-            var fields = new Dictionary<string, JToken>
-            {
-                [nameof(IVideoCompositionSource.VideoCompositionInfo)] = videoCompositionInfo == null
-                    ? JValue.CreateNull()
-                    : JObject.FromObject(videoCompositionInfo)
-            };
-
-            return _entityUtilsRepository.PatchEntityFieldsAsync(entityId, fields, user, cancellationToken);
+            return _repo.PatchVideoCompositionInfoAsync(entityId, videoCompositionInfo, user, cancellationToken);
         }
 
         private Type ResolveSourceType(string entityType)

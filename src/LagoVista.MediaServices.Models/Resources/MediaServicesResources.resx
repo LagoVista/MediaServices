@@ -939,4 +939,21 @@
   <data name="VideoCompositionTemplate_Blocks" xml:space="preserve">
     <value>Template Blocks</value>
   </data>
+  <data name="VideoCompositionBlock_Role" xml:space="preserve">
+    <value>Role</value>
+  </data>
+
+  <data name="VideoCompositionBlockRole_None" xml:space="preserve">
+  <value>None</value>
+</data>
+  <data name="VideoCompositionBlockRole_Intro" xml:space="preserve">
+  <value>Introduction</value>
+</data>
+  <data name="VideoCompositionBlockRole_Content" xml:space="preserve">
+  <value>Content</value>
+</data>
+  <data name="VideoCompositionBlockRole_CallToAction" xml:space="preserve">
+  <value>Call to Action</value>
+</data>
+
 </root>

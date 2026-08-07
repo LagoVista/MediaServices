@@ -83,6 +83,10 @@ namespace LagoVista.MediaServices.Models
         public string CompositionTemplateId { get; set; }
 
         public string VideoAvatarId { get; set; }
+
+        public EntityHeader BackgroundAudioMediaResource { get; set; }
+
+        public EntityHeader ContentBackgroundMediaResource { get; set; }
     }
 
     public sealed class PatchEntityVideoCompositionInfoRequest
