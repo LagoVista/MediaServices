@@ -750,6 +750,13 @@ namespace LagoVista.MediaServices.Managers
                         return InvokeResult<List<VideoAssemblyBlock>>.FromError($"Background media resource '{backgroundMediaResource.Name}' for block '{block.Key}' is not ready.");
                     }
 
+                    var backgroundIsImage = backgroundMediaResource.MimeType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true;
+                    var backgroundIsVideo = backgroundMediaResource.MimeType?.StartsWith("video/", StringComparison.OrdinalIgnoreCase) == true;
+                    if (!backgroundIsImage && !backgroundIsVideo)
+                    {
+                        return InvokeResult<List<VideoAssemblyBlock>>.FromError($"Background media resource '{backgroundMediaResource.Name}' for block '{block.Key}' must be an image or video.");
+                    }
+
                     var backgroundResult = await _mediaSourceResolver.ResolveAsync(backgroundMediaResource, org.Id, cancellationToken);
                     if (!backgroundResult.Successful)
                     {

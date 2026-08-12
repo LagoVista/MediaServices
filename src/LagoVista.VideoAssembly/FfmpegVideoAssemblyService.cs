@@ -313,6 +313,7 @@ namespace LagoVista.VideoAssembly
                 var backgroundIsImage = block.Background.ContentType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true;
                 var backgroundIsVideo = block.Background.ContentType?.StartsWith("video/", StringComparison.OrdinalIgnoreCase) == true;
                 if (!backgroundIsImage && !backgroundIsVideo) throw new InvalidOperationException($"Background for block '{block.Key}' must be an image or video.");
+
                 if (block.PresenterLayout == null) throw new InvalidOperationException($"Video block '{block.Key}' must provide presenter layout when a background is configured.");
                 if (block.PresenterLayout.Scale <= 0) throw new InvalidOperationException($"Video block '{block.Key}' presenter scale must be greater than zero.");
                 if (block.PresenterLayout.PositionX < 0 || block.PresenterLayout.PositionX > 1) throw new InvalidOperationException($"Video block '{block.Key}' presenter X position must be between zero and one.");
