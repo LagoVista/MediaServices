@@ -310,6 +310,9 @@ namespace LagoVista.VideoAssembly
             if (block.Background != null)
             {
                 if (block.Type != VideoAssemblyBlockType.Video) throw new InvalidOperationException($"Background compositing is only supported for video block '{block.Key}'.");
+                var backgroundIsImage = block.Background.ContentType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true;
+                var backgroundIsVideo = block.Background.ContentType?.StartsWith("video/", StringComparison.OrdinalIgnoreCase) == true;
+                if (!backgroundIsImage && !backgroundIsVideo) throw new InvalidOperationException($"Background for block '{block.Key}' must be an image or video.");
                 if (block.PresenterLayout == null) throw new InvalidOperationException($"Video block '{block.Key}' must provide presenter layout when a background is configured.");
                 if (block.PresenterLayout.Scale <= 0) throw new InvalidOperationException($"Video block '{block.Key}' presenter scale must be greater than zero.");
                 if (block.PresenterLayout.PositionX < 0 || block.PresenterLayout.PositionX > 1) throw new InvalidOperationException($"Video block '{block.Key}' presenter X position must be between zero and one.");
@@ -343,16 +346,22 @@ namespace LagoVista.VideoAssembly
 
             MediaInspectionResult inspection = null;
             double durationSeconds;
+            var loopSourceVideo = false;
 
             if (block.Type == VideoAssemblyBlockType.Video)
             {
                 progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.InspectingMedia, Message = $"Inspecting block '{block.Key}'." });
                 inspection = await _inspectionService.InspectAsync(sourcePath, cancellationToken);
                 if (inspection.DurationSeconds <= 0) throw new InvalidOperationException($"Video block '{block.Key}' has no measurable duration.");
-                durationSeconds = inspection.DurationSeconds;
+
+                durationSeconds = block.DurationSeconds.HasValue && block.DurationSeconds.Value > 0
+                    ? block.DurationSeconds.Value
+                    : inspection.DurationSeconds;
+                loopSourceVideo = durationSeconds > inspection.DurationSeconds + 0.01;
             }
             else
             {
+                if (!block.DurationSeconds.HasValue || block.DurationSeconds.Value <= 0) throw new InvalidOperationException($"Image block '{block.Key}' must provide a positive duration.");
                 durationSeconds = block.DurationSeconds.Value;
             }
 
@@ -370,6 +379,7 @@ namespace LagoVista.VideoAssembly
                 BackgroundAudioPath = backgroundAudioPath,
                 OverlayImagePaths = overlayImagePaths,
                 BackgroundIsImage = block.Background?.ContentType?.StartsWith("image/", StringComparison.OrdinalIgnoreCase) == true,
+                LoopSourceVideo = loopSourceVideo,
                 NormalizedPath = normalizedPath,
                 SubtitlePath = subtitlePath,
                 SourceSizeBytes = sourceSizeBytes,
@@ -453,8 +463,13 @@ namespace LagoVista.VideoAssembly
             var outputOptions = $"-vf \"{videoFilter}\" -af \"{audioFilter}\" -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -r 30 -c:a aac -ar 48000 -ac 2 -t {FormatSeconds(segment.DurationSeconds)} -movflags +faststart -progress pipe:1 -nostats";
 
             if (segment.Block.Type == VideoAssemblyBlockType.Image) return $"-y -loop 1 -framerate 30 -i {ProcessRunner.Quote(segment.SourcePath)} -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 -map 0:v:0 -map 1:a:0 {outputOptions} {ProcessRunner.Quote(segment.NormalizedPath)}";
-            if (segment.Inspection.HasAudio) return $"-y -i {ProcessRunner.Quote(segment.SourcePath)} -map 0:v:0 -map 0:a:0 {outputOptions} {ProcessRunner.Quote(segment.NormalizedPath)}";
-            return $"-y -i {ProcessRunner.Quote(segment.SourcePath)} -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 -map 0:v:0 -map 1:a:0 {outputOptions} -shortest {ProcessRunner.Quote(segment.NormalizedPath)}";
+
+            var sourceInput = segment.LoopSourceVideo
+                ? $"-stream_loop -1 -i {ProcessRunner.Quote(segment.SourcePath)}"
+                : $"-i {ProcessRunner.Quote(segment.SourcePath)}";
+
+            if (segment.Inspection.HasAudio) return $"-y {sourceInput} -map 0:v:0 -map 0:a:0 {outputOptions} {ProcessRunner.Quote(segment.NormalizedPath)}";
+            return $"-y {sourceInput} -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 -map 0:v:0 -map 1:a:0 {outputOptions} -shortest {ProcessRunner.Quote(segment.NormalizedPath)}";
         }
 
         private string BuildCompositeArguments(VideoAssemblySegment segment)
@@ -462,7 +477,9 @@ namespace LagoVista.VideoAssembly
             var inputs = new List<string>();
             inputs.Add(segment.Block.Type == VideoAssemblyBlockType.Image
                 ? $"-loop 1 -framerate 30 -i {ProcessRunner.Quote(segment.SourcePath)}"
-                : $"-c:v libvpx-vp9 -i {ProcessRunner.Quote(segment.SourcePath)}");
+                : segment.LoopSourceVideo
+                    ? $"-stream_loop -1 -c:v libvpx-vp9 -i {ProcessRunner.Quote(segment.SourcePath)}"
+                    : $"-c:v libvpx-vp9 -i {ProcessRunner.Quote(segment.SourcePath)}");
 
             var nextInput = 1;
             int? backgroundInput = null;
@@ -658,6 +675,7 @@ namespace LagoVista.VideoAssembly
             public string BackgroundAudioPath { get; set; }
             public List<string> OverlayImagePaths { get; set; } = new List<string>();
             public bool BackgroundIsImage { get; set; }
+            public bool LoopSourceVideo { get; set; }
             public string NormalizedPath { get; set; }
             public string SubtitlePath { get; set; }
             public long SourceSizeBytes { get; set; }
