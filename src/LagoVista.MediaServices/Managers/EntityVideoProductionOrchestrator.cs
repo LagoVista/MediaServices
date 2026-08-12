@@ -18,6 +18,7 @@ namespace LagoVista.MediaServices.Managers
         private readonly IVideoCompositionManager _compositionManager;
         private readonly IVideoAvatarManager _videoAvatarManager;
         private readonly IVideoProductionManager _videoProductionManager;
+        private readonly IEntityVideoCompositionContinuation _compositionContinuation;
         private readonly INotificationPublisher _notificationPublisher;
 
         public EntityVideoProductionOrchestrator(
@@ -26,6 +27,7 @@ namespace LagoVista.MediaServices.Managers
             IVideoCompositionManager compositionManager,
             IVideoAvatarManager videoAvatarManager,
             IVideoProductionManager videoProductionManager,
+            IEntityVideoCompositionContinuation compositionContinuation,
             ICoreAppServices coreAppServices)
         {
             _entityCompositionManager = entityCompositionManager ?? throw new ArgumentNullException(nameof(entityCompositionManager));
@@ -33,6 +35,7 @@ namespace LagoVista.MediaServices.Managers
             _compositionManager = compositionManager ?? throw new ArgumentNullException(nameof(compositionManager));
             _videoAvatarManager = videoAvatarManager ?? throw new ArgumentNullException(nameof(videoAvatarManager));
             _videoProductionManager = videoProductionManager ?? throw new ArgumentNullException(nameof(videoProductionManager));
+            _compositionContinuation = compositionContinuation ?? throw new ArgumentNullException(nameof(compositionContinuation));
             _notificationPublisher = coreAppServices?.NotificationPublisher ?? throw new ArgumentNullException(nameof(coreAppServices.NotificationPublisher));
         }
 
@@ -155,7 +158,32 @@ namespace LagoVista.MediaServices.Managers
                     production));
             }
 
-            if (production == null)
+            if (production != null &&
+                (production.Status?.Value == VideoProductionStatus.ProviderVideoReady ||
+                 production.Status?.Value == VideoProductionStatus.Completed) &&
+                production.FinalVideoMediaResource != null &&
+                !String.IsNullOrWhiteSpace(production.FinalVideoMediaResource.Id) &&
+                String.Equals(production.Script?.Trim(), source.GetContent()?.Script?.Trim(), StringComparison.Ordinal))
+            {
+                production.NotificationRunId = request.RunId;
+                await _videoProductionManager.UpdateVideoProductionAsync(production, org, user).ConfigureAwait(false);
+
+                var continuationResult = await _compositionContinuation.ContinueAfterVideoImportAsync(production, cancellationToken).ConfigureAwait(false);
+                if (!continuationResult.Successful)
+                {
+                    return await FailAsync(request, continuationResult.Errors[0].Message, composition.ToEntityHeader(), production.ToEntityHeader());
+                }
+
+                return InvokeResult<EntityVideoProductionWorkspace>.Create(CreateWorkspace(
+                    request,
+                    production.Status?.Value == VideoProductionStatus.Completed ? EntityVideoProductionStage.Completed : EntityVideoProductionStage.Assembling,
+                    "The presenter video is ready and the composition is advancing.",
+                    composition,
+                    production));
+            }
+
+            var isNewProduction = production == null;
+            if (isNewProduction)
             {
                 production = new VideoProduction
                 {
@@ -172,7 +200,7 @@ namespace LagoVista.MediaServices.Managers
             ApplyProductionSettings(production, source, composition, avatar, voice, request, user);
 
             InvokeResult<VideoProduction> saveResult;
-            if (info?.VideoProduction == null || !String.Equals(info.VideoProduction.Id, production.Id, StringComparison.OrdinalIgnoreCase))
+            if (isNewProduction)
             {
                 saveResult = await _videoProductionManager.AddVideoProductionAsync(production, org, user).ConfigureAwait(false);
             }
@@ -465,7 +493,7 @@ namespace LagoVista.MediaServices.Managers
             }
 
             var assemblyResult = await _assemblyRequestManager.PrepareAssemblyRequestAsync(composition.Id, null, org, user, cancellationToken).ConfigureAwait(false);
-            return assemblyResult.Successful ? InvokeResult.Success : assemblyResult.ToInvokeResult();
+            return assemblyResult.Successful ? InvokeResult.Success : InvokeResult.FromError(assemblyResult.Errors[0].Message);
         }
     }
 }
