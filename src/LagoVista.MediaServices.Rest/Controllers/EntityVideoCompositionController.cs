@@ -18,10 +18,12 @@ namespace LagoVista.MediaServices.Rest.Controllers
     public class EntityVideoCompositionController : LagoVistaBaseController
     {
         private readonly IEntityVideoCompositionManager _manager;
+        private readonly IEntityVideoProductionOrchestrator _productionOrchestrator;
 
-        public EntityVideoCompositionController(IEntityVideoCompositionManager manager, UserManager<AppUser> userManager, IAdminLogger logger) : base(userManager, logger)
+        public EntityVideoCompositionController(IEntityVideoCompositionManager manager, IEntityVideoProductionOrchestrator productionOrchestrator, UserManager<AppUser> userManager, IAdminLogger logger) : base(userManager, logger)
         {
             _manager = manager ?? throw new ArgumentNullException(nameof(manager));
+            _productionOrchestrator = productionOrchestrator ?? throw new ArgumentNullException(nameof(productionOrchestrator));
         }
 
         [HttpGet("/api/media/entityvideocomposition/sources/{entityType}")]
@@ -46,6 +48,12 @@ namespace LagoVista.MediaServices.Rest.Controllers
         public Task<InvokeResult<VideoComposition>> SyncCompositionAsync(string entityType, string entityId, CancellationToken cancellationToken = default)
         {
             return _manager.SyncCompositionAsync(entityType, entityId, OrgEntityHeader, UserEntityHeader, cancellationToken);
+        }
+
+        [HttpPost("/api/media/entityvideocomposition/production")]
+        public Task<InvokeResult<EntityVideoProductionWorkspace>> PrepareProductionAsync([FromBody] PrepareEntityVideoProductionRequest request, CancellationToken cancellationToken = default)
+        {
+            return _productionOrchestrator.PrepareAsync(request, OrgEntityHeader, UserEntityHeader, cancellationToken);
         }
 
         [HttpPut("/api/media/entityvideocomposition/{entityType}/{entityId}/info")]
