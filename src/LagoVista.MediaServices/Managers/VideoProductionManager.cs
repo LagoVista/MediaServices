@@ -1882,6 +1882,11 @@ namespace LagoVista.MediaServices.Managers
         {
             await _notificationPublisher.PublishAsync(Targets.WebSocket, Channels.Entity, production.Id, "video-production-updated", production);
             await _notificationPublisher.PublishAsync(Targets.WebSocket, Channels.Org, production.OwnerOrganization.Id, "video-production-updated", production);
+
+            if (!String.IsNullOrWhiteSpace(production.NotificationRunId))
+            {
+                await _notificationPublisher.PublishAsync(Targets.WebSocket, Channels.Entity, production.NotificationRunId, "video-production-updated", production);
+            }
         }
 
         private static int EstimateDurationSeconds(string script, int wordsPerMinute = 150)
