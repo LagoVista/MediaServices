@@ -476,11 +476,15 @@ namespace LagoVista.VideoAssembly
         private string BuildCompositeArguments(VideoAssemblySegment segment)
         {
             var inputs = new List<string>();
+            var videoDecoder = String.Equals(segment.Inspection?.VideoCodec, "vp9", StringComparison.OrdinalIgnoreCase)
+                ? "-c:v libvpx-vp9 "
+                : String.Empty;
+
             inputs.Add(segment.Block.Type == VideoAssemblyBlockType.Image
                 ? $"-loop 1 -framerate 30 -i {ProcessRunner.Quote(segment.SourcePath)}"
                 : segment.LoopSourceVideo
-                    ? $"-stream_loop -1 -c:v libvpx-vp9 -i {ProcessRunner.Quote(segment.SourcePath)}"
-                    : $"-c:v libvpx-vp9 -i {ProcessRunner.Quote(segment.SourcePath)}");
+                    ? $"-stream_loop -1 {videoDecoder}-i {ProcessRunner.Quote(segment.SourcePath)}"
+                    : $"{videoDecoder}-i {ProcessRunner.Quote(segment.SourcePath)}");
 
             var nextInput = 1;
             int? backgroundInput = null;

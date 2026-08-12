@@ -4,9 +4,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LagoVista.UserAdmin" Version="3.0.3368.1533" />
-    <PackageReference Include="LagoVista.Core.Configuration" Version="3.0.3368.1533" />
-    <PackageReference Include="LagoVista.CloudStorage" Version="3.0.3368.1533" />
+    <PackageReference Include="LagoVista.UserAdmin" Version="3.0.3374.1300" />
+    <PackageReference Include="LagoVista.Core.Configuration" Version="3.0.3374.1300" />
+    <PackageReference Include="LagoVista.CloudStorage" Version="3.0.3374.1300" />
     <PackageReference Include="KubernetesClient" Version="19.0.2" />
   </ItemGroup>
 
