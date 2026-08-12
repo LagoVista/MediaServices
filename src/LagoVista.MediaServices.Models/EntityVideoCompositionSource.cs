@@ -19,6 +19,10 @@ namespace LagoVista.MediaServices.Models
 
         public EntityHeader VideoAvatar { get; set; }
 
+        public EntityHeader VideoProduction { get; set; }
+
+        public string ActiveRunId { get; set; }
+
         public int? TemplateVersion { get; set; }
 
         public UtcTimestamp? LastGeneratedUtc { get; set; }
@@ -87,6 +91,50 @@ namespace LagoVista.MediaServices.Models
         public EntityHeader BackgroundAudioMediaResource { get; set; }
 
         public EntityHeader ContentBackgroundMediaResource { get; set; }
+    }
+
+    public enum EntityVideoProductionStage
+    {
+        Validating,
+        CompositionReady,
+        WaitingForAvatar,
+        Submitted,
+        Rendering,
+        Assembling,
+        Completed,
+        Failed
+    }
+
+    public sealed class PrepareEntityVideoProductionRequest
+    {
+        public string EntityType { get; set; }
+
+        public string EntityId { get; set; }
+
+        public string CompositionTemplateId { get; set; }
+
+        public string VideoAvatarId { get; set; }
+
+        public string RunId { get; set; }
+    }
+
+    public sealed class EntityVideoProductionWorkspace
+    {
+        public string RunId { get; set; }
+
+        public string EntityType { get; set; }
+
+        public string EntityId { get; set; }
+
+        public EntityVideoProductionStage Stage { get; set; }
+
+        public string Message { get; set; }
+
+        public EntityHeader Composition { get; set; }
+
+        public EntityHeader VideoProduction { get; set; }
+
+        public EntityHeader OutputMediaResource { get; set; }
     }
 
     public sealed class PatchEntityVideoCompositionInfoRequest
