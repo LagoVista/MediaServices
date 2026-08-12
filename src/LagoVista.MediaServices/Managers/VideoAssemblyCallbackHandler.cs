@@ -404,6 +404,11 @@ namespace LagoVista.MediaServices.Managers
         {
             await _notificationPublisher.PublishAsync(Targets.WebSocket, Channels.Entity, composition.Id, "video-composition-updated", composition);
             await _notificationPublisher.PublishAsync(Targets.WebSocket, Channels.Org, composition.OwnerOrganization.Id, "video-composition-updated", composition);
+
+            if (!String.IsNullOrWhiteSpace(composition.NotificationRunId))
+            {
+                await _notificationPublisher.PublishAsync(Targets.WebSocket, Channels.Entity, composition.NotificationRunId, "video-composition-updated", composition);
+            }
         }
 
         private static VideoCompositionAssemblyStage MapStage(string stage)
