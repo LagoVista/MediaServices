@@ -32,10 +32,11 @@ namespace LagoVista.MediaServices.Managers
         private readonly IAppConfig _appConfig;
         private readonly ICacheProvider _cacheProvider;
         private readonly IMediaServicesRepo _mediaResourcesRepo;
+        private readonly IEntityVideoCompositionContinuation _entityVideoCompositionContinuation;
         private static readonly TimeSpan ProviderVideoImportLeaseDuration = TimeSpan.FromHours(2);
 
         public VideoMediaImportManager(IVideoProductionRepo videoProductionRepo, IMediaServicesManager mediaServicesManager, IMediaServicesRepo mediaResourcesRepo, IHeyGenVideoService heyGenVideoService, IVideoProcessorStorageUrlService videoProcessorStorageUrlService, ICacheProvider cacheProvider,
-            IVideoProcessorRequestStore videoProcessorRequestStore, IMediaLibraryRepo mediaLibraryRepo, IVideoProcessorCallbackRegistrationStore videoProcessorCallbackRegistrationStore, IVideoProcessorLauncher videoProcessorLauncher, ICoreAppServices coreAppServices)
+            IVideoProcessorRequestStore videoProcessorRequestStore, IMediaLibraryRepo mediaLibraryRepo, IVideoProcessorCallbackRegistrationStore videoProcessorCallbackRegistrationStore, IVideoProcessorLauncher videoProcessorLauncher, IEntityVideoCompositionContinuation entityVideoCompositionContinuation, ICoreAppServices coreAppServices)
         {
             _videoProductionRepo = videoProductionRepo ?? throw new ArgumentNullException(nameof(videoProductionRepo));
             _mediaServicesManager = mediaServicesManager ?? throw new ArgumentNullException(nameof(mediaServicesManager));
@@ -50,6 +51,7 @@ namespace LagoVista.MediaServices.Managers
             _appConfig = coreAppServices?.AppConfig ?? throw new ArgumentNullException(nameof(coreAppServices.AppConfig));
             _cacheProvider = cacheProvider ?? throw new ArgumentNullException(nameof(cacheProvider));
             _mediaResourcesRepo = mediaResourcesRepo ?? throw new ArgumentNullException(nameof(mediaResourcesRepo));
+            _entityVideoCompositionContinuation = entityVideoCompositionContinuation ?? throw new ArgumentNullException(nameof(entityVideoCompositionContinuation));
         }
 
         public async Task<InvokeResult<VideoMediaImportPreparationResult>> EnsureProviderVideoImportAsync(string productionId, double? thumbnailTimeSeconds, EntityHeader org, EntityHeader user, CancellationToken cancellationToken = default)
@@ -763,6 +765,22 @@ namespace LagoVista.MediaServices.Managers
                 await ReleaseProviderVideoImportLeaseAsync(production, registration.ImportLeaseKey, registration.ImportLeaseToken);
             }
 
+            if (callback.Type == VideoAssemblyCallbackType.Completed)
+            {
+                try
+                {
+                    var continuationResult = await _entityVideoCompositionContinuation.ContinueAfterVideoImportAsync(production, cancellationToken);
+                    if (!continuationResult.Successful)
+                    {
+                        _adminLogger.Trace($"{this.Tag()} [ENTITY COMPOSITION CONTINUATION FAILED] ProductionId={production.Id}, Error={continuationResult.Errors[0].Message}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _adminLogger.Trace($"{this.Tag()} [ENTITY COMPOSITION CONTINUATION FAILED] ProductionId={production.Id}, Error={ex.Message}");
+                }
+            }
+
             _adminLogger.Trace($"{this.Tag()} [CALLBACK APPLIED] ProductionId={production.Id}, RequestId={callback.RequestId}, AttemptId={callback.AttemptId}, Sequence={callback.Sequence}, Status={production.Status?.Value}, RegistrationCompleted={registration.IsCompleted}");
 
             return InvokeResult<VideoProduction>.Create(production);
@@ -972,6 +990,11 @@ namespace LagoVista.MediaServices.Managers
         {
             await _notificationPublisher.PublishAsync(Targets.WebSocket, Channels.Entity, production.Id, "video-production-updated", production);
             await _notificationPublisher.PublishAsync(Targets.WebSocket, Channels.Org, production.OwnerOrganization.Id, "video-production-updated", production);
+
+            if (!String.IsNullOrWhiteSpace(production.NotificationRunId))
+            {
+                await _notificationPublisher.PublishAsync(Targets.WebSocket, Channels.Entity, production.NotificationRunId, "video-production-updated", production);
+            }
         }
     }
 }
