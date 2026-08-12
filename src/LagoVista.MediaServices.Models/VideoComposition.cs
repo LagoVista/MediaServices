@@ -223,6 +223,8 @@ namespace LagoVista.MediaServices.Models
 
         public string SourceContentSha256 { get; set; }
 
+        public string NotificationRunId { get; set; }
+
         public bool IsReady { get; set; }
 
         public string CurrentInputSha256 { get; set; }

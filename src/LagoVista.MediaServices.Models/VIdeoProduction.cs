@@ -372,6 +372,8 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.VideoProduction_TargetEntityProperty, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
         public string TargetEntityProperty { get; set; }
 
+        public string NotificationRunId { get; set; }
+
         [FormField(LabelResource: MediaServicesResources.Names.VideoProduction_Provider, FieldType: FieldTypes.Picker, EnumType: typeof(VideoProductionProvider), ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
         public EntityHeader<VideoProductionProvider> Provider { get; set; }
 

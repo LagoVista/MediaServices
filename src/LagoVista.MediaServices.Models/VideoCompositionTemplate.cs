@@ -149,6 +149,10 @@ namespace LagoVista.MediaServices.Models
                 IsActive = IsActive,
                 DefaultLocale = DefaultLocale,
                 BlockCount = Blocks?.Count ?? 0,
+                IsEntityProductionTemplate = IsActive && Blocks != null && Blocks.Count == 3 &&
+                    Blocks.Count(block => block.Role == VideoCompositionBlockRole.Intro) == 1 &&
+                    Blocks.Count(block => block.Role == VideoCompositionBlockRole.Content) == 1 &&
+                    Blocks.Count(block => block.Role == VideoCompositionBlockRole.CallToAction) == 1,
                 TotalDurationSeconds = CalculateKnownDurationSeconds()
             };
 
@@ -196,6 +200,8 @@ namespace LagoVista.MediaServices.Models
         public string DefaultLocale { get; set; }
 
         public int BlockCount { get; set; }
+
+        public bool IsEntityProductionTemplate { get; set; }
 
         public int? TotalDurationSeconds { get; set; }
     }
