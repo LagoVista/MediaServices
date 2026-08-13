@@ -100,13 +100,11 @@ namespace LagoVista.MediaServices.Managers
                     return await FailAsync(request, "The entity is already bound to a different video composition template.");
                 }
 
-                var syncResult = await _entityCompositionManager.SyncCompositionAsync(request.EntityType, request.EntityId, org, user, cancellationToken).ConfigureAwait(false);
-                if (!syncResult.Successful)
+                composition = await _compositionManager.GetVideoCompositionAsync(info.Composition.Id, org, user).ConfigureAwait(false);
+                if (composition == null)
                 {
-                    return await FailAsync(request, syncResult.Errors[0].Message);
+                    return await FailAsync(request, $"Could not find bound video composition '{info.Composition.Id}'.");
                 }
-
-                composition = syncResult.Result;
             }
 
             composition.NotificationRunId = request.RunId;
@@ -163,7 +161,7 @@ namespace LagoVista.MediaServices.Managers
                  production.Status?.Value == VideoProductionStatus.Completed) &&
                 production.FinalVideoMediaResource != null &&
                 !String.IsNullOrWhiteSpace(production.FinalVideoMediaResource.Id) &&
-                String.Equals(production.Script?.Trim(), source.GetContent()?.Script?.Trim(), StringComparison.Ordinal))
+                production.IsCurrent)
             {
                 production.NotificationRunId = request.RunId;
                 await _videoProductionManager.UpdateVideoProductionAsync(production, org, user).ConfigureAwait(false);
@@ -262,7 +260,10 @@ namespace LagoVista.MediaServices.Managers
 
             production.VideoAvatar = avatar.ToEntityHeader();
             production.VideoAvatarLookId = look?.Id;
-            production.Script = content.Script;
+            if (String.IsNullOrWhiteSpace(production.Script))
+            {
+                production.Script = content.Script;
+            }
             production.VideoName = $"{source.Entity.Name} Presenter Video";
             production.VoiceBindingId = voice.Id;
             production.VoiceId = voice.VoiceId;
