@@ -9,6 +9,8 @@ namespace LagoVista.MediaServices.Interfaces
     public interface IEntityVideoProductionOrchestrator
     {
         Task<InvokeResult<EntityVideoProductionWorkspace>> PrepareAsync(PrepareEntityVideoProductionRequest request, EntityHeader org, EntityHeader user, CancellationToken cancellationToken = default);
+
+        Task<InvokeResult<EntityVideoProductionWorkspace>> CreateCompositionAsync(CreateEntityVideoCompositionFromProductionRequest request, EntityHeader org, EntityHeader user, CancellationToken cancellationToken = default);
     }
 
     public interface IEntityVideoCompositionContinuation
