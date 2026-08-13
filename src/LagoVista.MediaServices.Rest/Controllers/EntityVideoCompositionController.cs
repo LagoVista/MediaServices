@@ -56,6 +56,12 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return _productionOrchestrator.PrepareAsync(request, OrgEntityHeader, UserEntityHeader, cancellationToken);
         }
 
+        [HttpPost("/api/media/entityvideocomposition/from-production")]
+        public Task<InvokeResult<EntityVideoProductionWorkspace>> CreateCompositionFromProductionAsync([FromBody] CreateEntityVideoCompositionFromProductionRequest request, CancellationToken cancellationToken = default)
+        {
+            return _productionOrchestrator.CreateCompositionAsync(request, OrgEntityHeader, UserEntityHeader, cancellationToken);
+        }
+
         [HttpPut("/api/media/entityvideocomposition/{entityType}/{entityId}/info")]
         public Task<InvokeResult> PatchVideoCompositionInfoAsync(string entityType, string entityId, [FromBody] PatchEntityVideoCompositionInfoRequest request, CancellationToken cancellationToken = default)
         {

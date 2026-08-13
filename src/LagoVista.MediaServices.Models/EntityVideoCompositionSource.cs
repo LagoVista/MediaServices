@@ -102,10 +102,22 @@ namespace LagoVista.MediaServices.Models
         Rendering,
         Assembling,
         Completed,
-        Failed
+        Failed,
+        ProductionReady
     }
 
     public sealed class PrepareEntityVideoProductionRequest
+    {
+        public string EntityType { get; set; }
+
+        public string EntityId { get; set; }
+
+        public string VideoAvatarId { get; set; }
+
+        public string RunId { get; set; }
+    }
+
+    public sealed class CreateEntityVideoCompositionFromProductionRequest
     {
         public string EntityType { get; set; }
 
