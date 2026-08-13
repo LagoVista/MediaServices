@@ -240,6 +240,30 @@ namespace LagoVista.MediaServices.Managers
                 return await FailAsync(progressRequest, "The presenter video is out of date. Regenerate it before creating or refreshing the composition.", production: production.ToEntityHeader());
             }
 
+            var presenterMediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(
+                production.FinalVideoMediaResource.Id,
+                org,
+                user).ConfigureAwait(false);
+
+            if (presenterMediaResource == null)
+            {
+                return await FailAsync(
+                    progressRequest,
+                    $"Could not find presenter media resource '{production.FinalVideoMediaResource.Id}'.",
+                    production: production.ToEntityHeader());
+            }
+
+            if (!presenterMediaResource.Width.HasValue ||
+                presenterMediaResource.Width.Value <= 0 ||
+                !presenterMediaResource.Height.HasValue ||
+                presenterMediaResource.Height.Value <= 0)
+            {
+                return await FailAsync(
+                    progressRequest,
+                    "The completed presenter video does not include valid width and height metadata.",
+                    production: production.ToEntityHeader());
+            }
+
             var template = await _templateManager.GetVideoCompositionTemplateAsync(request.CompositionTemplateId, org, user).ConfigureAwait(false);
             if (template == null)
             {
@@ -302,32 +326,6 @@ namespace LagoVista.MediaServices.Managers
                 return await FailAsync(
                     progressRequest,
                     "The selected template must provide a background for its content block so the presenter can be scaled and positioned.",
-                    composition.ToEntityHeader(),
-                    production.ToEntityHeader());
-            }
-
-            var presenterMediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(
-                production.FinalVideoMediaResource.Id,
-                org,
-                user).ConfigureAwait(false);
-
-            if (presenterMediaResource == null)
-            {
-                return await FailAsync(
-                    progressRequest,
-                    $"Could not find presenter media resource '{production.FinalVideoMediaResource.Id}'.",
-                    composition.ToEntityHeader(),
-                    production.ToEntityHeader());
-            }
-
-            if (!presenterMediaResource.Width.HasValue ||
-                presenterMediaResource.Width.Value <= 0 ||
-                !presenterMediaResource.Height.HasValue ||
-                presenterMediaResource.Height.Value <= 0)
-            {
-                return await FailAsync(
-                    progressRequest,
-                    "The completed presenter video does not include valid width and height metadata.",
                     composition.ToEntityHeader(),
                     production.ToEntityHeader());
             }
@@ -446,6 +444,14 @@ namespace LagoVista.MediaServices.Managers
                 {
                     return InvokeResult.FromError($"Video composition template '{template.Name}' must contain exactly one {role} block.");
                 }
+            }
+
+            var contentBlock = template.Blocks.Single(block => block.Role == VideoCompositionBlockRole.Content);
+            var effectiveBackground = contentBlock.BackgroundMediaResource ?? template.BackgroundMediaResource;
+            if (effectiveBackground == null || String.IsNullOrWhiteSpace(effectiveBackground.Id))
+            {
+                return InvokeResult.FromError(
+                    $"Video composition template '{template.Name}' must provide a background for its content block so the presenter can be scaled and positioned.");
             }
 
             return InvokeResult.Success;
