@@ -18,7 +18,6 @@ namespace LagoVista.MediaServices.Managers
         private readonly IVideoCompositionManager _compositionManager;
         private readonly IVideoAvatarManager _videoAvatarManager;
         private readonly IVideoProductionManager _videoProductionManager;
-        private readonly IEntityVideoCompositionContinuation _compositionContinuation;
         private readonly INotificationPublisher _notificationPublisher;
 
         public EntityVideoProductionOrchestrator(
@@ -27,7 +26,6 @@ namespace LagoVista.MediaServices.Managers
             IVideoCompositionManager compositionManager,
             IVideoAvatarManager videoAvatarManager,
             IVideoProductionManager videoProductionManager,
-            IEntityVideoCompositionContinuation compositionContinuation,
             ICoreAppServices coreAppServices)
         {
             _entityCompositionManager = entityCompositionManager ?? throw new ArgumentNullException(nameof(entityCompositionManager));
@@ -35,7 +33,6 @@ namespace LagoVista.MediaServices.Managers
             _compositionManager = compositionManager ?? throw new ArgumentNullException(nameof(compositionManager));
             _videoAvatarManager = videoAvatarManager ?? throw new ArgumentNullException(nameof(videoAvatarManager));
             _videoProductionManager = videoProductionManager ?? throw new ArgumentNullException(nameof(videoProductionManager));
-            _compositionContinuation = compositionContinuation ?? throw new ArgumentNullException(nameof(compositionContinuation));
             _notificationPublisher = coreAppServices?.NotificationPublisher ?? throw new ArgumentNullException(nameof(coreAppServices.NotificationPublisher));
         }
 
@@ -51,7 +48,7 @@ namespace LagoVista.MediaServices.Managers
                 return validationResult.ToInvokeResult<EntityVideoProductionWorkspace>();
             }
 
-            await PublishAsync(request, EntityVideoProductionStage.Validating, "Validating the video template and source content.");
+            await PublishAsync(request, EntityVideoProductionStage.Validating, "Validating the source content and presenter avatar.");
 
             var source = await _entityCompositionManager.GetSourceAsync(request.EntityType, request.EntityId, org, user, cancellationToken).ConfigureAwait(false);
             if (source == null)
@@ -59,63 +56,7 @@ namespace LagoVista.MediaServices.Managers
                 return await FailAsync(request, $"Could not find entity '{request.EntityId}'.");
             }
 
-            var template = await _templateManager.GetVideoCompositionTemplateAsync(request.CompositionTemplateId, org, user).ConfigureAwait(false);
-            if (template == null)
-            {
-                return await FailAsync(request, $"Could not find video composition template '{request.CompositionTemplateId}'.");
-            }
-
-            var templateResult = ValidateTemplate(template);
-            if (!templateResult.Successful)
-            {
-                return await FailAsync(request, templateResult.Errors[0].Message);
-            }
-
-            VideoComposition composition;
             var info = source.Source.VideoCompositionInfo;
-            if (info?.Composition == null || String.IsNullOrWhiteSpace(info.Composition.Id))
-            {
-                var createResult = await _entityCompositionManager.CreateCompositionAsync(new CreateEntityVideoCompositionRequest
-                {
-                    EntityType = request.EntityType,
-                    EntityId = request.EntityId,
-                    CompositionTemplateId = request.CompositionTemplateId,
-                    VideoAvatarId = request.VideoAvatarId
-                }, org, user, cancellationToken).ConfigureAwait(false);
-
-                if (!createResult.Successful)
-                {
-                    return await FailAsync(request, createResult.Errors[0].Message);
-                }
-
-                composition = createResult.Result;
-                source = await _entityCompositionManager.GetSourceAsync(request.EntityType, request.EntityId, org, user, cancellationToken).ConfigureAwait(false);
-                info = source?.Source.VideoCompositionInfo;
-            }
-            else
-            {
-                if (info.CompositionTemplate == null ||
-                    !String.Equals(info.CompositionTemplate.Id, template.Id, StringComparison.OrdinalIgnoreCase))
-                {
-                    return await FailAsync(request, "The entity is already bound to a different video composition template.");
-                }
-
-                composition = await _compositionManager.GetVideoCompositionAsync(info.Composition.Id, org, user).ConfigureAwait(false);
-                if (composition == null)
-                {
-                    return await FailAsync(request, $"Could not find bound video composition '{info.Composition.Id}'.");
-                }
-            }
-
-            composition.NotificationRunId = request.RunId;
-            var compositionUpdateResult = await _compositionManager.UpdateVideoCompositionAsync(composition, org, user).ConfigureAwait(false);
-            if (!compositionUpdateResult.Successful)
-            {
-                return await FailAsync(request, compositionUpdateResult.Errors[0].Message);
-            }
-
-            await PublishAsync(request, EntityVideoProductionStage.CompositionReady, "The three-block video composition is ready.", composition: composition.ToEntityHeader());
-
             var videoAvatarId = !String.IsNullOrWhiteSpace(request.VideoAvatarId)
                 ? request.VideoAvatarId
                 : info?.VideoAvatar?.Id;
@@ -129,6 +70,13 @@ namespace LagoVista.MediaServices.Managers
             if (avatar == null)
             {
                 return await FailAsync(request, $"Could not find video avatar '{videoAvatarId}'.");
+            }
+
+            if (avatar.Status?.Value != VideoAvatarStatus.Ready)
+            {
+                var waiting = CreateWorkspace(request, EntityVideoProductionStage.WaitingForAvatar, "The presenter avatar must be ready before production can be created.", null, null);
+                await PublishAsync(request, waiting.Stage, waiting.Message, null, null);
+                return InvokeResult<EntityVideoProductionWorkspace>.Create(waiting);
             }
 
             var voice = avatar.GetDefaultVoice();
@@ -148,12 +96,9 @@ namespace LagoVista.MediaServices.Managers
                 production.NotificationRunId = request.RunId;
                 await _videoProductionManager.UpdateVideoProductionAsync(production, org, user).ConfigureAwait(false);
 
-                return InvokeResult<EntityVideoProductionWorkspace>.Create(CreateWorkspace(
-                    request,
-                    ResolveStage(production),
-                    "Video production is already in progress.",
-                    composition,
-                    production));
+                var activeWorkspace = CreateWorkspace(request, ResolveStage(production), "Presenter video production is already in progress.", null, production);
+                await PublishAsync(request, activeWorkspace.Stage, activeWorkspace.Message, null, production.ToEntityHeader());
+                return InvokeResult<EntityVideoProductionWorkspace>.Create(activeWorkspace);
             }
 
             if (production != null &&
@@ -166,18 +111,9 @@ namespace LagoVista.MediaServices.Managers
                 production.NotificationRunId = request.RunId;
                 await _videoProductionManager.UpdateVideoProductionAsync(production, org, user).ConfigureAwait(false);
 
-                var continuationResult = await _compositionContinuation.ContinueAfterVideoImportAsync(production, cancellationToken).ConfigureAwait(false);
-                if (!continuationResult.Successful)
-                {
-                    return await FailAsync(request, continuationResult.Errors[0].Message, composition.ToEntityHeader(), production.ToEntityHeader());
-                }
-
-                return InvokeResult<EntityVideoProductionWorkspace>.Create(CreateWorkspace(
-                    request,
-                    production.Status?.Value == VideoProductionStatus.Completed ? EntityVideoProductionStage.Completed : EntityVideoProductionStage.Assembling,
-                    "The presenter video is ready and the composition is advancing.",
-                    composition,
-                    production));
+                var readyWorkspace = CreateWorkspace(request, EntityVideoProductionStage.ProductionReady, "The presenter video is ready. Create the composition when you are ready for the next step.", null, production);
+                await PublishAsync(request, readyWorkspace.Stage, readyWorkspace.Message, null, production.ToEntityHeader());
+                return InvokeResult<EntityVideoProductionWorkspace>.Create(readyWorkspace);
             }
 
             var isNewProduction = production == null;
@@ -195,7 +131,7 @@ namespace LagoVista.MediaServices.Managers
                 };
             }
 
-            ApplyProductionSettings(production, source, composition, avatar, voice, request, user);
+            ApplyProductionSettings(production, source, avatar, voice, request, user);
 
             InvokeResult<VideoProduction> saveResult;
             if (isNewProduction)
@@ -209,12 +145,10 @@ namespace LagoVista.MediaServices.Managers
 
             if (!saveResult.Successful)
             {
-                return await FailAsync(request, saveResult.Errors[0].Message, composition.ToEntityHeader());
+                return await FailAsync(request, saveResult.Errors[0].Message, production: production.ToEntityHeader());
             }
 
             info = info ?? new EntityVideoCompositionInfo();
-            info.Composition = composition.ToEntityHeader();
-            info.CompositionTemplate = template.ToEntityHeader();
             info.VideoAvatar = avatar.ToEntityHeader();
             info.VideoProduction = production.ToEntityHeader();
             info.ActiveRunId = request.RunId;
@@ -222,7 +156,7 @@ namespace LagoVista.MediaServices.Managers
             var patchResult = await _entityCompositionManager.PatchVideoCompositionInfoAsync(request.EntityType, request.EntityId, info, org, user, cancellationToken).ConfigureAwait(false);
             if (!patchResult.Successful)
             {
-                return await FailAsync(request, patchResult.Errors[0].Message, composition.ToEntityHeader(), production.ToEntityHeader());
+                return await FailAsync(request, patchResult.Errors[0].Message, production: production.ToEntityHeader());
             }
 
             var submitResult = await _videoProductionManager.SubmitVideoProductionAsync(production.Id, org, user).ConfigureAwait(false);
@@ -231,24 +165,159 @@ namespace LagoVista.MediaServices.Managers
                 production = await _videoProductionManager.GetVideoProductionAsync(production.Id, org, user).ConfigureAwait(false);
                 if (production?.Status?.Value == VideoProductionStatus.WaitingForAvatar)
                 {
-                    var waiting = CreateWorkspace(request, EntityVideoProductionStage.WaitingForAvatar, production.ErrorMessage, composition, production);
-                    await PublishAsync(request, waiting.Stage, waiting.Message, waiting.Composition, waiting.VideoProduction);
+                    var waiting = CreateWorkspace(request, EntityVideoProductionStage.WaitingForAvatar, production.ErrorMessage, null, production);
+                    await PublishAsync(request, waiting.Stage, waiting.Message, null, waiting.VideoProduction);
                     return InvokeResult<EntityVideoProductionWorkspace>.Create(waiting);
                 }
 
-                return await FailAsync(request, submitResult.Errors[0].Message, composition.ToEntityHeader(), production?.ToEntityHeader());
+                return await FailAsync(request, submitResult.Errors[0].Message, production: production?.ToEntityHeader());
             }
 
             production = submitResult.Result;
-            var workspace = CreateWorkspace(request, EntityVideoProductionStage.Submitted, "Presenter video submitted for generation.", composition, production);
-            await PublishAsync(request, workspace.Stage, workspace.Message, workspace.Composition, workspace.VideoProduction);
+            var workspace = CreateWorkspace(request, EntityVideoProductionStage.Submitted, "Presenter video submitted for generation.", null, production);
+            await PublishAsync(request, workspace.Stage, workspace.Message, null, workspace.VideoProduction);
+            return InvokeResult<EntityVideoProductionWorkspace>.Create(workspace);
+        }
+
+        public async Task<InvokeResult<EntityVideoProductionWorkspace>> CreateCompositionAsync(
+            CreateEntityVideoCompositionFromProductionRequest request,
+            EntityHeader org,
+            EntityHeader user,
+            CancellationToken cancellationToken = default)
+        {
+            var validationResult = ValidateCompositionRequest(request);
+            if (!validationResult.Successful)
+            {
+                return validationResult.ToInvokeResult<EntityVideoProductionWorkspace>();
+            }
+
+            var progressRequest = new PrepareEntityVideoProductionRequest
+            {
+                EntityType = request.EntityType,
+                EntityId = request.EntityId,
+                VideoAvatarId = request.VideoAvatarId,
+                RunId = request.RunId
+            };
+
+            await PublishAsync(progressRequest, EntityVideoProductionStage.Validating, "Validating the completed presenter video and composition template.");
+
+            var source = await _entityCompositionManager.GetSourceAsync(request.EntityType, request.EntityId, org, user, cancellationToken).ConfigureAwait(false);
+            if (source == null)
+            {
+                return await FailAsync(progressRequest, $"Could not find entity '{request.EntityId}'.");
+            }
+
+            var info = source.Source.VideoCompositionInfo;
+            var productionId = info?.VideoProduction?.Id;
+            if (String.IsNullOrWhiteSpace(productionId))
+            {
+                return await FailAsync(progressRequest, "Create and complete the presenter video before creating the composition.");
+            }
+
+            var production = await _videoProductionManager.GetVideoProductionAsync(productionId, org, user).ConfigureAwait(false);
+            if (production == null)
+            {
+                return await FailAsync(progressRequest, $"Could not find video production '{productionId}'.");
+            }
+
+            if ((production.Status?.Value != VideoProductionStatus.ProviderVideoReady &&
+                 production.Status?.Value != VideoProductionStatus.Completed) ||
+                production.FinalVideoMediaResource == null ||
+                String.IsNullOrWhiteSpace(production.FinalVideoMediaResource.Id))
+            {
+                return await FailAsync(progressRequest, "The presenter video must finish rendering and importing before the composition can be created.", production: production.ToEntityHeader());
+            }
+
+            if (!production.IsCurrent)
+            {
+                return await FailAsync(progressRequest, "The presenter video is out of date. Regenerate it before creating or refreshing the composition.", production: production.ToEntityHeader());
+            }
+
+            var template = await _templateManager.GetVideoCompositionTemplateAsync(request.CompositionTemplateId, org, user).ConfigureAwait(false);
+            if (template == null)
+            {
+                return await FailAsync(progressRequest, $"Could not find video composition template '{request.CompositionTemplateId}'.", production: production.ToEntityHeader());
+            }
+
+            var templateResult = ValidateTemplate(template);
+            if (!templateResult.Successful)
+            {
+                return await FailAsync(progressRequest, templateResult.Errors[0].Message, production: production.ToEntityHeader());
+            }
+
+            VideoComposition composition;
+            if (info?.Composition == null || String.IsNullOrWhiteSpace(info.Composition.Id))
+            {
+                var videoAvatarId = !String.IsNullOrWhiteSpace(request.VideoAvatarId)
+                    ? request.VideoAvatarId
+                    : info?.VideoAvatar?.Id;
+
+                var createResult = await _entityCompositionManager.CreateCompositionAsync(new CreateEntityVideoCompositionRequest
+                {
+                    EntityType = request.EntityType,
+                    EntityId = request.EntityId,
+                    CompositionTemplateId = request.CompositionTemplateId,
+                    VideoAvatarId = videoAvatarId
+                }, org, user, cancellationToken).ConfigureAwait(false);
+
+                if (!createResult.Successful)
+                {
+                    return await FailAsync(progressRequest, createResult.Errors[0].Message, production: production.ToEntityHeader());
+                }
+
+                composition = createResult.Result;
+            }
+            else
+            {
+                if (info.CompositionTemplate == null ||
+                    !String.Equals(info.CompositionTemplate.Id, template.Id, StringComparison.OrdinalIgnoreCase))
+                {
+                    return await FailAsync(progressRequest, "The entity is already bound to a different video composition template.", info.Composition, production.ToEntityHeader());
+                }
+
+                composition = await _compositionManager.GetVideoCompositionAsync(info.Composition.Id, org, user).ConfigureAwait(false);
+                if (composition == null)
+                {
+                    return await FailAsync(progressRequest, $"Could not find bound video composition '{info.Composition.Id}'.", info.Composition, production.ToEntityHeader());
+                }
+            }
+
+            var contentBlocks = composition.Blocks?.Where(block => block.Role == VideoCompositionBlockRole.Content).ToList();
+            if (contentBlocks == null || contentBlocks.Count != 1)
+            {
+                return await FailAsync(progressRequest, "The video composition must contain exactly one content block.", composition.ToEntityHeader(), production.ToEntityHeader());
+            }
+
+            contentBlocks[0].MediaResource = production.FinalVideoMediaResource;
+            composition.NotificationRunId = request.RunId;
+            composition.LastUpdatedBy = user;
+            composition.LastUpdatedDate = UtcTimestamp.Now;
+
+            var updateResult = await _compositionManager.UpdateVideoCompositionAsync(composition, org, user).ConfigureAwait(false);
+            if (!updateResult.Successful)
+            {
+                return await FailAsync(progressRequest, updateResult.Errors[0].Message, composition.ToEntityHeader(), production.ToEntityHeader());
+            }
+
+            source = await _entityCompositionManager.GetSourceAsync(request.EntityType, request.EntityId, org, user, cancellationToken).ConfigureAwait(false);
+            info = source?.Source.VideoCompositionInfo ?? new EntityVideoCompositionInfo();
+            info.VideoProduction = production.ToEntityHeader();
+            info.ActiveRunId = request.RunId;
+
+            var patchResult = await _entityCompositionManager.PatchVideoCompositionInfoAsync(request.EntityType, request.EntityId, info, org, user, cancellationToken).ConfigureAwait(false);
+            if (!patchResult.Successful)
+            {
+                return await FailAsync(progressRequest, patchResult.Errors[0].Message, composition.ToEntityHeader(), production.ToEntityHeader());
+            }
+
+            var workspace = CreateWorkspace(progressRequest, EntityVideoProductionStage.CompositionReady, "The three-block composition is ready for review and assembly.", composition, production);
+            await PublishAsync(progressRequest, workspace.Stage, workspace.Message, workspace.Composition, workspace.VideoProduction);
             return InvokeResult<EntityVideoProductionWorkspace>.Create(workspace);
         }
 
         private static void ApplyProductionSettings(
             VideoProduction production,
             EntityVideoCompositionSource source,
-            VideoComposition composition,
             VideoAvatar avatar,
             VideoAvatarVoice voice,
             PrepareEntityVideoProductionRequest request,
@@ -270,8 +339,7 @@ namespace LagoVista.MediaServices.Managers
             production.VoiceName = String.IsNullOrWhiteSpace(voice.VoiceName) ? voice.Label : voice.VoiceName;
             production.LanguageCode = voice.LanguageCode;
             production.Locale = voice.Locale;
-            production.DefaultLocale = String.IsNullOrWhiteSpace(composition.DefaultLocale) ? VideoProduction.DefaultLocaleCode : composition.DefaultLocale;
-            production.OutputMediaLibrary = composition.OutputMediaLibrary;
+            production.DefaultLocale = String.IsNullOrWhiteSpace(production.DefaultLocale) ? VideoProduction.DefaultLocaleCode : production.DefaultLocale;
             production.TargetEntityType = request.EntityType.Trim();
             production.TargetEntityId = request.EntityId;
             production.TargetEntityName = source.Entity.Name;
@@ -285,6 +353,15 @@ namespace LagoVista.MediaServices.Managers
         private static InvokeResult ValidateRequest(PrepareEntityVideoProductionRequest request)
         {
             if (request == null) return InvokeResult.FromError("Prepare entity video production request is required.");
+            if (String.IsNullOrWhiteSpace(request.EntityType)) return InvokeResult.FromError("Entity type is required.");
+            if (String.IsNullOrWhiteSpace(request.EntityId)) return InvokeResult.FromError("Entity id is required.");
+            if (String.IsNullOrWhiteSpace(request.RunId)) return InvokeResult.FromError("Run id is required.");
+            return InvokeResult.Success;
+        }
+
+        private static InvokeResult ValidateCompositionRequest(CreateEntityVideoCompositionFromProductionRequest request)
+        {
+            if (request == null) return InvokeResult.FromError("Create entity video composition request is required.");
             if (String.IsNullOrWhiteSpace(request.EntityType)) return InvokeResult.FromError("Entity type is required.");
             if (String.IsNullOrWhiteSpace(request.EntityId)) return InvokeResult.FromError("Entity id is required.");
             if (String.IsNullOrWhiteSpace(request.CompositionTemplateId)) return InvokeResult.FromError("Composition template id is required.");
@@ -333,8 +410,8 @@ namespace LagoVista.MediaServices.Managers
         private static EntityVideoProductionStage ResolveStage(VideoProduction production)
         {
             if (production?.Status?.Value == VideoProductionStatus.WaitingForAvatar) return EntityVideoProductionStage.WaitingForAvatar;
-            if (production?.Status?.Value == VideoProductionStatus.ProviderVideoReady) return EntityVideoProductionStage.Assembling;
-            if (production?.Status?.Value == VideoProductionStatus.Completed) return EntityVideoProductionStage.Completed;
+            if (production?.Status?.Value == VideoProductionStatus.ProviderVideoReady) return EntityVideoProductionStage.ProductionReady;
+            if (production?.Status?.Value == VideoProductionStatus.Completed) return EntityVideoProductionStage.ProductionReady;
             if (production?.Status?.Value == VideoProductionStatus.Failed) return EntityVideoProductionStage.Failed;
             return EntityVideoProductionStage.Rendering;
         }
