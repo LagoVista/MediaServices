@@ -112,8 +112,6 @@ namespace LagoVista.MediaServices.Models
 
         public string EntityId { get; set; }
 
-        public string CompositionTemplateId { get; set; }
-
         public string VideoAvatarId { get; set; }
 
         public string RunId { get; set; }
