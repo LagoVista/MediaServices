@@ -98,6 +98,7 @@ namespace LagoVista.MediaServices.Models
         Validating,
         CompositionReady,
         WaitingForAvatar,
+        ProductionReady,
         Submitted,
         Rendering,
         Assembling,
@@ -106,6 +107,19 @@ namespace LagoVista.MediaServices.Models
     }
 
     public sealed class PrepareEntityVideoProductionRequest
+    {
+        public string EntityType { get; set; }
+
+        public string EntityId { get; set; }
+
+        public string CompositionTemplateId { get; set; }
+
+        public string VideoAvatarId { get; set; }
+
+        public string RunId { get; set; }
+    }
+
+    public sealed class CreateEntityVideoCompositionFromProductionRequest
     {
         public string EntityType { get; set; }
 
