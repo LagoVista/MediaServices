@@ -13,11 +13,16 @@ namespace LagoVista.MediaServices.Managers
 {
     public class EntityVideoProductionOrchestrator : IEntityVideoProductionOrchestrator
     {
+        private const double CompositionCanvasWidth = 1920.0;
+        private const double CompositionCanvasHeight = 1080.0;
+        private const double PresenterHeightRatio = 2.0 / 3.0;
+
         private readonly IEntityVideoCompositionManager _entityCompositionManager;
         private readonly IVideoCompositionTemplateManager _templateManager;
         private readonly IVideoCompositionManager _compositionManager;
         private readonly IVideoAvatarManager _videoAvatarManager;
         private readonly IVideoProductionManager _videoProductionManager;
+        private readonly IMediaServicesManager _mediaServicesManager;
         private readonly INotificationPublisher _notificationPublisher;
 
         public EntityVideoProductionOrchestrator(
@@ -26,6 +31,7 @@ namespace LagoVista.MediaServices.Managers
             IVideoCompositionManager compositionManager,
             IVideoAvatarManager videoAvatarManager,
             IVideoProductionManager videoProductionManager,
+            IMediaServicesManager mediaServicesManager,
             ICoreAppServices coreAppServices)
         {
             _entityCompositionManager = entityCompositionManager ?? throw new ArgumentNullException(nameof(entityCompositionManager));
@@ -33,6 +39,7 @@ namespace LagoVista.MediaServices.Managers
             _compositionManager = compositionManager ?? throw new ArgumentNullException(nameof(compositionManager));
             _videoAvatarManager = videoAvatarManager ?? throw new ArgumentNullException(nameof(videoAvatarManager));
             _videoProductionManager = videoProductionManager ?? throw new ArgumentNullException(nameof(videoProductionManager));
+            _mediaServicesManager = mediaServicesManager ?? throw new ArgumentNullException(nameof(mediaServicesManager));
             _notificationPublisher = coreAppServices?.NotificationPublisher ?? throw new ArgumentNullException(nameof(coreAppServices.NotificationPublisher));
         }
 
@@ -288,7 +295,45 @@ namespace LagoVista.MediaServices.Managers
                 return await FailAsync(progressRequest, "The video composition must contain exactly one content block.", composition.ToEntityHeader(), production.ToEntityHeader());
             }
 
-            contentBlocks[0].MediaResource = production.FinalVideoMediaResource;
+            var contentBlock = contentBlocks[0];
+            var effectiveBackground = contentBlock.BackgroundMediaResource ?? composition.BackgroundMediaResource;
+            if (effectiveBackground == null || String.IsNullOrWhiteSpace(effectiveBackground.Id))
+            {
+                return await FailAsync(
+                    progressRequest,
+                    "The selected template must provide a background for its content block so the presenter can be scaled and positioned.",
+                    composition.ToEntityHeader(),
+                    production.ToEntityHeader());
+            }
+
+            var presenterMediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(
+                production.FinalVideoMediaResource.Id,
+                org,
+                user).ConfigureAwait(false);
+
+            if (presenterMediaResource == null)
+            {
+                return await FailAsync(
+                    progressRequest,
+                    $"Could not find presenter media resource '{production.FinalVideoMediaResource.Id}'.",
+                    composition.ToEntityHeader(),
+                    production.ToEntityHeader());
+            }
+
+            if (!presenterMediaResource.Width.HasValue ||
+                presenterMediaResource.Width.Value <= 0 ||
+                !presenterMediaResource.Height.HasValue ||
+                presenterMediaResource.Height.Value <= 0)
+            {
+                return await FailAsync(
+                    progressRequest,
+                    "The completed presenter video does not include valid width and height metadata.",
+                    composition.ToEntityHeader(),
+                    production.ToEntityHeader());
+            }
+
+            contentBlock.MediaResource = production.FinalVideoMediaResource;
+            ApplyDefaultPresenterLayout(contentBlock, presenterMediaResource.Width.Value, presenterMediaResource.Height.Value);
             composition.NotificationRunId = request.RunId;
             composition.LastUpdatedBy = user;
             composition.LastUpdatedDate = UtcTimestamp.Now;
@@ -313,6 +358,17 @@ namespace LagoVista.MediaServices.Managers
             var workspace = CreateWorkspace(progressRequest, EntityVideoProductionStage.CompositionReady, "The three-block composition is ready for review and assembly.", composition, production);
             await PublishAsync(progressRequest, workspace.Stage, workspace.Message, workspace.Composition, workspace.VideoProduction);
             return InvokeResult<EntityVideoProductionWorkspace>.Create(workspace);
+        }
+
+        private static void ApplyDefaultPresenterLayout(VideoCompositionBlock contentBlock, int sourceWidth, int sourceHeight)
+        {
+            var targetHeight = CompositionCanvasHeight * PresenterHeightRatio;
+            var widthAtTargetHeight = targetHeight * sourceWidth / sourceHeight;
+            var presenterWidth = Math.Min(CompositionCanvasWidth, widthAtTargetHeight);
+
+            contentBlock.PresenterScale = presenterWidth / CompositionCanvasWidth;
+            contentBlock.PresenterPositionX = 0.5;
+            contentBlock.PresenterPositionY = 1.0;
         }
 
         private static void ApplyProductionSettings(
