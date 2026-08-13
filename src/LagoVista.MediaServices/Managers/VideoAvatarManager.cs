@@ -720,22 +720,59 @@ namespace LagoVista.MediaServices.Managers
             var fileName = String.IsNullOrWhiteSpace(content.FileName) ? mediaResource.Name ?? mediaResource.Id : content.FileName;
             var contentType = content.ContentType?.Trim().ToLowerInvariant();
             var extension = Path.GetExtension(fileName)?.ToLowerInvariant();
+            var isWebP = contentType == "image/webp" || extension == ".webp";
             var supportedContentType = contentType == "image/jpeg" || contentType == "image/jpg" || contentType == "image/png";
             var supportedExtension = extension == ".jpg" || extension == ".jpeg" || extension == ".png";
 
-            if (!supportedContentType && !supportedExtension)
+            if (!isWebP && !supportedContentType && !supportedExtension)
             {
                 var detectedFormat = !String.IsNullOrWhiteSpace(contentType) ? contentType : extension ?? "unknown format";
-                return InvokeResult<string>.FromError($"HeyGen photo-avatar looks require a PNG or JPEG image. '{fileName}' is '{detectedFormat}'. Convert the image to .png, .jpg, or .jpeg and upload it as a new Media Resource revision.");
+                return InvokeResult<string>.FromError($"HeyGen photo-avatar looks require a PNG or JPEG image. '{fileName}' is '{detectedFormat}'. Supported WebP images are converted to PNG automatically before upload.");
             }
 
-            using var stream = new MemoryStream(content.ImageBytes, writable: false);
+            var uploadBytes = content.ImageBytes;
+            var uploadFileName = fileName;
+            var uploadContentType = contentType;
 
-            var uploadResult = await _heyGenVideoService.UploadAssetAsync(stream, fileName, content.ContentType, mediaResource.Id);
+            if (isWebP)
+            {
+                try
+                {
+                    using var image = SixLabors.ImageSharp.Image.Load(content.ImageBytes);
+                    using var output = new MemoryStream();
+                    image.Save(output, new SixLabors.ImageSharp.Formats.Png.PngEncoder());
+                    uploadBytes = output.ToArray();
+                    uploadFileName = Path.ChangeExtension(fileName, ".png");
+                    uploadContentType = "image/png";
+                }
+                catch (Exception ex)
+                {
+                    _adminLogger.AddException(this.Tag(), ex, new KeyValuePair<string, string>("MediaResourceId", mediaResourceId));
+                    return InvokeResult<string>.FromError($"Could not convert WebP avatar look image '{fileName}' to PNG for HeyGen. {ex.Message}");
+                }
+            }
+            else if (contentType == "image/png" || (!supportedContentType && extension == ".png"))
+            {
+                uploadContentType = "image/png";
+                uploadFileName = Path.ChangeExtension(fileName, ".png");
+            }
+            else
+            {
+                uploadContentType = "image/jpeg";
+
+                if (extension != ".jpg" && extension != ".jpeg")
+                {
+                    uploadFileName = Path.ChangeExtension(fileName, ".jpg");
+                }
+            }
+
+            using var stream = new MemoryStream(uploadBytes, writable: false);
+
+            var uploadResult = await _heyGenVideoService.UploadAssetAsync(stream, uploadFileName, uploadContentType, mediaResource.Id);
             if (!uploadResult.Successful)
             {
                 var providerError = uploadResult.Errors.FirstOrDefault()?.Message ?? "The provider did not return an error message.";
-                return InvokeResult<string>.FromError($"HeyGen could not accept avatar look image '{fileName}'. {providerError}");
+                return InvokeResult<string>.FromError($"HeyGen could not accept avatar look image '{uploadFileName}'. {providerError}");
             }
 
             if (mediaResource.ExternalAssets == null)
