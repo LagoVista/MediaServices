@@ -98,12 +98,12 @@ namespace LagoVista.MediaServices.Models
         Validating,
         CompositionReady,
         WaitingForAvatar,
-        ProductionReady,
         Submitted,
         Rendering,
         Assembling,
         Completed,
-        Failed
+        Failed,
+        ProductionReady
     }
 
     public sealed class PrepareEntityVideoProductionRequest
