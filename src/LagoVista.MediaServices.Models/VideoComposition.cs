@@ -360,6 +360,8 @@ namespace LagoVista.MediaServices.Models
 
         public const string DefaultLocaleCode = "en-US";
 
+        private VideoCompositionCreativeDirection _creativeDirection = new VideoCompositionCreativeDirection();
+
         public VideoComposition()
         {
             Icon = "lago-icon://system/nuvos-semantic-icon/video-production-default";
@@ -379,7 +381,11 @@ namespace LagoVista.MediaServices.Models
 
         public string CallToAction { get; set; }
 
-        public VideoCompositionCreativeDirection CreativeDirection { get; set; } = new VideoCompositionCreativeDirection();
+        public VideoCompositionCreativeDirection CreativeDirection
+        {
+            get { return _creativeDirection ?? (_creativeDirection = new VideoCompositionCreativeDirection()); }
+            set { _creativeDirection = value ?? new VideoCompositionCreativeDirection(); }
+        }
 
         public EntityHeader SourceEntity { get; set; }
 
