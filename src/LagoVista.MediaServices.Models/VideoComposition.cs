@@ -80,6 +80,159 @@ namespace LagoVista.MediaServices.Models
         CallToAction
     }
 
+    public enum VideoCompositionVisualStyle
+    {
+        [EnumLabel("unspecified", VideoCompositionIntentResources.Names.VisualStyle_Unspecified, typeof(VideoCompositionIntentResources))]
+        Unspecified,
+
+        [EnumLabel("clean", VideoCompositionIntentResources.Names.VisualStyle_Clean, typeof(VideoCompositionIntentResources))]
+        Clean,
+
+        [EnumLabel("premium", VideoCompositionIntentResources.Names.VisualStyle_Premium, typeof(VideoCompositionIntentResources))]
+        Premium,
+
+        [EnumLabel("technical", VideoCompositionIntentResources.Names.VisualStyle_Technical, typeof(VideoCompositionIntentResources))]
+        Technical,
+
+        [EnumLabel("editorial", VideoCompositionIntentResources.Names.VisualStyle_Editorial, typeof(VideoCompositionIntentResources))]
+        Editorial,
+
+        [EnumLabel("conversational", VideoCompositionIntentResources.Names.VisualStyle_Conversational, typeof(VideoCompositionIntentResources))]
+        Conversational,
+
+        [EnumLabel("energetic", VideoCompositionIntentResources.Names.VisualStyle_Energetic, typeof(VideoCompositionIntentResources))]
+        Energetic,
+
+        [EnumLabel("minimal", VideoCompositionIntentResources.Names.VisualStyle_Minimal, typeof(VideoCompositionIntentResources))]
+        Minimal,
+
+        [EnumLabel("cinematic", VideoCompositionIntentResources.Names.VisualStyle_Cinematic, typeof(VideoCompositionIntentResources))]
+        Cinematic
+    }
+
+    public enum VideoCompositionPacing
+    {
+        [EnumLabel("unspecified", VideoCompositionIntentResources.Names.Pacing_Unspecified, typeof(VideoCompositionIntentResources))]
+        Unspecified,
+
+        [EnumLabel("slow", VideoCompositionIntentResources.Names.Pacing_Slow, typeof(VideoCompositionIntentResources))]
+        Slow,
+
+        [EnumLabel("moderate", VideoCompositionIntentResources.Names.Pacing_Moderate, typeof(VideoCompositionIntentResources))]
+        Moderate,
+
+        [EnumLabel("brisk", VideoCompositionIntentResources.Names.Pacing_Brisk, typeof(VideoCompositionIntentResources))]
+        Brisk,
+
+        [EnumLabel("dynamic", VideoCompositionIntentResources.Names.Pacing_Dynamic, typeof(VideoCompositionIntentResources))]
+        Dynamic
+    }
+
+    public enum VideoCompositionPresenterEmphasis
+    {
+        [EnumLabel("unspecified", VideoCompositionIntentResources.Names.PresenterEmphasis_Unspecified, typeof(VideoCompositionIntentResources))]
+        Unspecified,
+
+        [EnumLabel("presenter-led", VideoCompositionIntentResources.Names.PresenterEmphasis_PresenterLed, typeof(VideoCompositionIntentResources))]
+        PresenterLed,
+
+        [EnumLabel("balanced", VideoCompositionIntentResources.Names.PresenterEmphasis_Balanced, typeof(VideoCompositionIntentResources))]
+        Balanced,
+
+        [EnumLabel("visual-led", VideoCompositionIntentResources.Names.PresenterEmphasis_VisualLed, typeof(VideoCompositionIntentResources))]
+        VisualLed
+    }
+
+    public enum VideoCompositionAudience
+    {
+        [EnumLabel("unspecified", VideoCompositionIntentResources.Names.Audience_Unspecified, typeof(VideoCompositionIntentResources))]
+        Unspecified,
+
+        [EnumLabel("executive", VideoCompositionIntentResources.Names.Audience_Executive, typeof(VideoCompositionIntentResources))]
+        Executive,
+
+        [EnumLabel("general-business", VideoCompositionIntentResources.Names.Audience_GeneralBusiness, typeof(VideoCompositionIntentResources))]
+        GeneralBusiness,
+
+        [EnumLabel("technical", VideoCompositionIntentResources.Names.Audience_Technical, typeof(VideoCompositionIntentResources))]
+        Technical,
+
+        [EnumLabel("instructional", VideoCompositionIntentResources.Names.Audience_Instructional, typeof(VideoCompositionIntentResources))]
+        Instructional,
+
+        [EnumLabel("marketing", VideoCompositionIntentResources.Names.Audience_Marketing, typeof(VideoCompositionIntentResources))]
+        Marketing
+    }
+
+    public enum VideoCompositionTone
+    {
+        [EnumLabel("unspecified", VideoCompositionIntentResources.Names.Tone_Unspecified, typeof(VideoCompositionIntentResources))]
+        Unspecified,
+
+        [EnumLabel("confident", VideoCompositionIntentResources.Names.Tone_Confident, typeof(VideoCompositionIntentResources))]
+        Confident,
+
+        [EnumLabel("warm", VideoCompositionIntentResources.Names.Tone_Warm, typeof(VideoCompositionIntentResources))]
+        Warm,
+
+        [EnumLabel("authoritative", VideoCompositionIntentResources.Names.Tone_Authoritative, typeof(VideoCompositionIntentResources))]
+        Authoritative,
+
+        [EnumLabel("conversational", VideoCompositionIntentResources.Names.Tone_Conversational, typeof(VideoCompositionIntentResources))]
+        Conversational,
+
+        [EnumLabel("urgent", VideoCompositionIntentResources.Names.Tone_Urgent, typeof(VideoCompositionIntentResources))]
+        Urgent
+    }
+
+    public enum VideoCompositionInformationDensity
+    {
+        [EnumLabel("unspecified", VideoCompositionIntentResources.Names.InformationDensity_Unspecified, typeof(VideoCompositionIntentResources))]
+        Unspecified,
+
+        [EnumLabel("sparse", VideoCompositionIntentResources.Names.InformationDensity_Sparse, typeof(VideoCompositionIntentResources))]
+        Sparse,
+
+        [EnumLabel("moderate", VideoCompositionIntentResources.Names.InformationDensity_Moderate, typeof(VideoCompositionIntentResources))]
+        Moderate,
+
+        [EnumLabel("dense", VideoCompositionIntentResources.Names.InformationDensity_Dense, typeof(VideoCompositionIntentResources))]
+        Dense
+    }
+
+    public enum VideoCompositionBlockVisualFocus
+    {
+        [EnumLabel("unspecified", VideoCompositionIntentResources.Names.BlockVisualFocus_Unspecified, typeof(VideoCompositionIntentResources))]
+        Unspecified,
+
+        [EnumLabel("presenter", VideoCompositionIntentResources.Names.BlockVisualFocus_Presenter, typeof(VideoCompositionIntentResources))]
+        Presenter,
+
+        [EnumLabel("supporting-visual", VideoCompositionIntentResources.Names.BlockVisualFocus_SupportingVisual, typeof(VideoCompositionIntentResources))]
+        SupportingVisual,
+
+        [EnumLabel("text", VideoCompositionIntentResources.Names.BlockVisualFocus_Text, typeof(VideoCompositionIntentResources))]
+        Text,
+
+        [EnumLabel("balanced", VideoCompositionIntentResources.Names.BlockVisualFocus_Balanced, typeof(VideoCompositionIntentResources))]
+        Balanced
+    }
+
+    public enum VideoCompositionBlockEmphasis
+    {
+        [EnumLabel("unspecified", VideoCompositionIntentResources.Names.BlockEmphasis_Unspecified, typeof(VideoCompositionIntentResources))]
+        Unspecified,
+
+        [EnumLabel("supporting", VideoCompositionIntentResources.Names.BlockEmphasis_Supporting, typeof(VideoCompositionIntentResources))]
+        Supporting,
+
+        [EnumLabel("standard", VideoCompositionIntentResources.Names.BlockEmphasis_Standard, typeof(VideoCompositionIntentResources))]
+        Standard,
+
+        [EnumLabel("key-message", VideoCompositionIntentResources.Names.BlockEmphasis_KeyMessage, typeof(VideoCompositionIntentResources))]
+        KeyMessage
+    }
+
     public enum VideoCompositionTextAlignment
     {
         [EnumLabel(VideoComposition.TextAlignment_Left, MediaServicesResources.Names.VideoCompositionTextAlignment_Left, typeof(MediaServicesResources))]
@@ -140,6 +293,23 @@ namespace LagoVista.MediaServices.Models
 
         [EnumLabel(VideoComposition.AssemblyStage_Failed, MediaServicesResources.Names.VideoCompositionAssemblyStage_Failed, typeof(MediaServicesResources))]
         Failed
+    }
+
+    public sealed class VideoCompositionCreativeDirection
+    {
+        public EntityHeader<VideoCompositionVisualStyle> VisualStyle { get; set; } = EntityHeader<VideoCompositionVisualStyle>.Create(VideoCompositionVisualStyle.Unspecified);
+
+        public EntityHeader<VideoCompositionPacing> Pacing { get; set; } = EntityHeader<VideoCompositionPacing>.Create(VideoCompositionPacing.Unspecified);
+
+        public EntityHeader<VideoCompositionPresenterEmphasis> PresenterEmphasis { get; set; } = EntityHeader<VideoCompositionPresenterEmphasis>.Create(VideoCompositionPresenterEmphasis.Unspecified);
+
+        public EntityHeader<VideoCompositionAudience> Audience { get; set; } = EntityHeader<VideoCompositionAudience>.Create(VideoCompositionAudience.Unspecified);
+
+        public EntityHeader<VideoCompositionTone> Tone { get; set; } = EntityHeader<VideoCompositionTone>.Create(VideoCompositionTone.Unspecified);
+
+        public EntityHeader<VideoCompositionInformationDensity> InformationDensity { get; set; } = EntityHeader<VideoCompositionInformationDensity>.Create(VideoCompositionInformationDensity.Unspecified);
+
+        public string Guidance { get; set; }
     }
 
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.VideoComposition_Title, MediaServicesResources.Names.VideoComposition_Help, MediaServicesResources.Names.VideoComposition_Description,
@@ -208,6 +378,8 @@ namespace LagoVista.MediaServices.Models
         public string Subtitle { get; set; }
 
         public string CallToAction { get; set; }
+
+        public VideoCompositionCreativeDirection CreativeDirection { get; set; } = new VideoCompositionCreativeDirection();
 
         public EntityHeader SourceEntity { get; set; }
 
@@ -556,6 +728,14 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_Role, FieldType: FieldTypes.Picker, EnumType: typeof(VideoCompositionBlockRole), ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
         public VideoCompositionBlockRole Role { get; set; }
 
+        public string ContentIntent { get; set; }
+
+        public EntityHeader<VideoCompositionBlockVisualFocus> VisualFocus { get; set; } = EntityHeader<VideoCompositionBlockVisualFocus>.Create(VideoCompositionBlockVisualFocus.Unspecified);
+
+        public EntityHeader<VideoCompositionBlockEmphasis> Emphasis { get; set; } = EntityHeader<VideoCompositionBlockEmphasis>.Create(VideoCompositionBlockEmphasis.Unspecified);
+
+        public string DesignGuidance { get; set; }
+
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_MediaResource, FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
         public EntityHeader MediaResource { get; set; }
 
@@ -611,6 +791,10 @@ namespace LagoVista.MediaServices.Models
                 nameof(SortOrder),
                 nameof(Type),
                 nameof(Role),
+                nameof(ContentIntent),
+                nameof(VisualFocus),
+                nameof(Emphasis),
+                nameof(DesignGuidance),
                 nameof(MediaResource),
                 nameof(MediaResourceFileName),
                 nameof(MediaResourceMimeType),
