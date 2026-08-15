@@ -1,4 +1,4 @@
-// --- BEGIN CODE INDEX META (do not edit) ---
+// --- BEGIN CODE INDEX META (do not edit)
 // ContentHash: 5e90afd06a45bb5972894afa0fdcd6a7a130826382c0e4209be97a8b55effbcc
 // IndexVersion: 2
 // --- END CODE INDEX META ---
@@ -129,6 +129,14 @@ namespace LagoVista.MediaServices.Models
         public EntityHeader<MediaResourceStatus> Status { get; set; }
 
         public string ContentSha256 { get; set; }
+
+        public string ContentDescription { get; set; }
+
+        public string ContentDescriptionSourceSha256 { get; set; }
+
+        public string ContentDescriptionUpdatedUtc { get; set; }
+
+        public string SourceScript { get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.MediaResource_ThumbnailUrl, HelpResource: MediaServicesResources.Names.MediaResource_ThumbnailUrl_Help, FieldType: FieldTypes.WebLink, ResourceType: typeof(MediaServicesResources))]
         public string ThumbnailUrl { get; set; }
