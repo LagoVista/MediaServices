@@ -906,6 +906,7 @@ namespace LagoVista.MediaServices.Managers
                 SourceEntityType = nameof(VideoProduction),
                 SourceEntity = production.ToEntityHeader(),
                 OriginalUrl = production.ProviderVideoUrl,
+                SourceScript = production.Script,
                 DurationSeconds = production.ActualDurationSeconds
             };
 
