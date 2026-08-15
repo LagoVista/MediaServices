@@ -45,12 +45,30 @@ namespace LagoVista.VideoAssembly
 
                 var weight = label.Bold ? 800 : 400;
                 var color = ConvertColor(label.Color);
+                var effectColor = ConvertColor(label.EffectColor);
                 var alignment = ResolveAlignment(label.Alignment);
                 var fadeInMilliseconds = (int)Math.Round(label.FadeInSeconds * 1000);
                 var fadeOutMilliseconds = (int)Math.Round(label.FadeOutSeconds * 1000);
                 var fade = fadeInMilliseconds > 0 || fadeOutMilliseconds > 0 ? $"\\fad({fadeInMilliseconds},{fadeOutMilliseconds})" : String.Empty;
                 var text = EscapeText(WrapText(label.Text, label.FontSize, label.MaxWidth));
-                var overrides = $"{{\\an{alignment}\\pos({label.X},{label.Y})\\fn{EscapeOverride(_options.FontFamily)}\\b{weight}\\fs{label.FontSize}\\c{color}\\bord0\\shad0{fade}}}";
+                var effect = String.Empty;
+
+                switch (label.Effect)
+                {
+                    case VideoAssemblyTextEffect.DropShadow:
+                        effect = $"\\4c{effectColor}\\bord0\\shad3";
+                        break;
+
+                    case VideoAssemblyTextEffect.Glow:
+                        effect = $"\\3c{effectColor}\\bord3\\shad0";
+                        break;
+
+                    default:
+                        effect = "\\bord0\\shad0";
+                        break;
+                }
+
+                var overrides = $"{{\\an{alignment}\\pos({label.X},{label.Y})\\fn{EscapeOverride(_options.FontFamily)}\\b{weight}\\fs{label.FontSize}\\c{color}{effect}{fade}}}";
                 document.AppendLine($"Dialogue: 0,{FormatTime(startSeconds)},{FormatTime(endSeconds)},Default,,0,0,0,,{overrides}{text}");
             }
 

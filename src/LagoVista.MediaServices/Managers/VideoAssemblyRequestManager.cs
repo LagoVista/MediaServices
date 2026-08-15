@@ -705,30 +705,46 @@ namespace LagoVista.MediaServices.Managers
                 cancellationToken.ThrowIfCancellationRequested();
                 _adminLogger.Trace($"{this.Tag()} [ASSEMBLY BLOCK RESOLVING] CompositionId={composition.Id}, BlockKey={block.Key}, SortOrder={block.SortOrder}, BlockType={block.Type}, MediaResourceId={block.MediaResource?.Id}");
 
-                if (block.MediaResource == null || String.IsNullOrWhiteSpace(block.MediaResource.Id))
-                {
-                    return InvokeResult<List<VideoAssemblyBlock>>.FromError($"Video composition block '{block.Key}' does not reference a media resource.");
-                }
+                VideoAssemblySource source = null;
+                var hasSource = block.MediaResource != null && !String.IsNullOrWhiteSpace(block.MediaResource.Id);
 
-                var mediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(block.MediaResource.Id, org, user);
-                if (mediaResource == null)
+                if (hasSource)
                 {
-                    return InvokeResult<List<VideoAssemblyBlock>>.FromError($"Could not find media resource '{block.MediaResource.Id}' for block '{block.Key}'.");
-                }
+                    var mediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(block.MediaResource.Id, org, user);
+                    if (mediaResource == null)
+                    {
+                        return InvokeResult<List<VideoAssemblyBlock>>.FromError($"Could not find media resource '{block.MediaResource.Id}' for block '{block.Key}'.");
+                    }
 
-                if (mediaResource.Status?.Value != MediaResourceStatus.Ready)
+                    if (mediaResource.Status?.Value != MediaResourceStatus.Ready)
+                    {
+                        return InvokeResult<List<VideoAssemblyBlock>>.FromError($"Media resource '{mediaResource.Name}' for block '{block.Key}' is not ready.");
+                    }
+
+                    _adminLogger.Trace($"{this.Tag()} [ASSEMBLY SOURCE URL CREATING] CompositionId={composition.Id}, BlockKey={block.Key}, MediaResourceId={mediaResource.Id}, IsFileUpload={mediaResource.IsFileUpload}, ResourceType={mediaResource.ResourceType?.Value}, StorageReferenceName={mediaResource.GetCurrentStorageReferenceName()}");
+                    var sourceResult = await _mediaSourceResolver.ResolveAsync(mediaResource, org.Id, cancellationToken);
+                    if (!sourceResult.Successful)
+                    {
+                        return sourceResult.ToInvokeResult<List<VideoAssemblyBlock>>();
+                    }
+
+                    source = sourceResult.Result;
+                    _adminLogger.Trace($"{this.Tag()} [ASSEMBLY SOURCE URL CREATED] CompositionId={composition.Id}, BlockKey={block.Key}, MediaResourceId={mediaResource.Id}, FileName={source.FileName}, ContentType={source.ContentType}");
+                }
+                else
                 {
-                    return InvokeResult<List<VideoAssemblyBlock>>.FromError($"Media resource '{mediaResource.Name}' for block '{block.Key}' is not ready.");
-                }
+                    if (block.Role != VideoCompositionBlockRole.Content)
+                    {
+                        return InvokeResult<List<VideoAssemblyBlock>>.FromError($"Video composition block '{block.Key}' does not reference a media resource.");
+                    }
 
-                _adminLogger.Trace($"{this.Tag()} [ASSEMBLY SOURCE URL CREATING] CompositionId={composition.Id}, BlockKey={block.Key}, MediaResourceId={mediaResource.Id}, IsFileUpload={mediaResource.IsFileUpload}, ResourceType={mediaResource.ResourceType?.Value}, StorageReferenceName={mediaResource.GetCurrentStorageReferenceName()}");
-                var sourceResult = await _mediaSourceResolver.ResolveAsync(mediaResource, org.Id, cancellationToken);
-                if (!sourceResult.Successful)
-                {
-                    return sourceResult.ToInvokeResult<List<VideoAssemblyBlock>>();
-                }
+                    if (!block.DurationSeconds.HasValue || block.DurationSeconds.Value <= 0)
+                    {
+                        return InvokeResult<List<VideoAssemblyBlock>>.FromError($"Content block '{block.Key}' must provide a positive duration when it does not reference a source media resource.");
+                    }
 
-                _adminLogger.Trace($"{this.Tag()} [ASSEMBLY SOURCE URL CREATED] CompositionId={composition.Id}, BlockKey={block.Key}, MediaResourceId={mediaResource.Id}, FileName={sourceResult.Result.FileName}, ContentType={sourceResult.Result.ContentType}");
+                    _adminLogger.Trace($"{this.Tag()} [ASSEMBLY SOURCELESS CONTENT] CompositionId={composition.Id}, BlockKey={block.Key}, DurationSeconds={block.DurationSeconds.Value}");
+                }
 
                 VideoAssemblySource backgroundSource = null;
                 var effectiveBackground = block.Type == VideoCompositionBlockType.Video
@@ -767,6 +783,11 @@ namespace LagoVista.MediaServices.Managers
                     _adminLogger.Trace($"{this.Tag()} [ASSEMBLY BACKGROUND RESOLVED] CompositionId={composition.Id}, BlockKey={block.Key}, MediaResourceId={backgroundMediaResource.Id}, FileName={backgroundSource.FileName}, ContentType={backgroundSource.ContentType}");
                 }
 
+                if (source == null && backgroundSource == null)
+                {
+                    return InvokeResult<List<VideoAssemblyBlock>>.FromError($"Content block '{block.Key}' must have an effective background media resource when it does not reference a source media resource.");
+                }
+
                 var backgroundAudioResult = await ResolveOptionalAssemblySourceAsync(block.BackgroundAudioMediaResource, $"background audio for block '{block.Key}'", org, user, cancellationToken);
                 if (!backgroundAudioResult.Successful)
                 {
@@ -800,9 +821,9 @@ namespace LagoVista.MediaServices.Managers
                 {
                     Key = block.Key,
                     Type = block.Type == VideoCompositionBlockType.Image ? VideoAssemblyBlockType.Image : VideoAssemblyBlockType.Video,
-                    Source = sourceResult.Result,
+                    Source = source,
                     Background = backgroundSource,
-                    PresenterLayout = backgroundSource == null
+                    PresenterLayout = source == null || backgroundSource == null
                         ? null
                         : new VideoAssemblyPresenterLayout
                         {
@@ -943,6 +964,12 @@ namespace LagoVista.MediaServices.Managers
                 FontSize = label.FontSize,
                 Bold = label.Bold,
                 Color = label.Color,
+                Effect = label.Effect == VideoCompositionTextEffect.DropShadow
+                    ? VideoAssemblyTextEffect.DropShadow
+                    : label.Effect == VideoCompositionTextEffect.Glow
+                        ? VideoAssemblyTextEffect.Glow
+                        : VideoAssemblyTextEffect.None,
+                EffectColor = label.EffectColor,
                 Alignment = label.Alignment == VideoCompositionTextAlignment.Center ? VideoAssemblyTextAlignment.Center : label.Alignment == VideoCompositionTextAlignment.Right ? VideoAssemblyTextAlignment.Right : VideoAssemblyTextAlignment.Left,
                 MaxWidth = label.MaxWidth,
                 DelaySeconds = label.DelaySeconds,

@@ -253,6 +253,13 @@ namespace LagoVista.MediaServices.Models
         CallToAction
     }
 
+    public enum VideoCompositionTextEffect
+    {
+        None,
+        DropShadow,
+        Glow
+    }
+
     public enum VideoCompositionAssemblyStage
     {
         [EnumLabel(VideoComposition.AssemblyStage_None, MediaServicesResources.Names.VideoCompositionAssemblyStage_None, typeof(MediaServicesResources))]
@@ -481,7 +488,7 @@ namespace LagoVista.MediaServices.Models
         {
             var content = new StringBuilder();
 
-            content.AppendLine("version=4");
+            content.AppendLine("version=5");
             content.AppendLine($"defaultLocale={NormalizeHashValue(DefaultLocale)}");
             content.AppendLine($"title={NormalizeHashValue(Title)}");
             content.AppendLine($"subtitle={NormalizeHashValue(Subtitle)}");
@@ -546,6 +553,8 @@ namespace LagoVista.MediaServices.Models
                     content.AppendLine($"fontSize={label.FontSize.ToString(CultureInfo.InvariantCulture)}");
                     content.AppendLine($"bold={label.Bold}");
                     content.AppendLine($"color={NormalizeHashValue(label.Color)}");
+                    content.AppendLine($"effect={label.Effect}");
+                    content.AppendLine($"effectColor={NormalizeHashValue(label.EffectColor)}");
                     content.AppendLine($"alignment={label.Alignment}");
                     content.AppendLine($"maxWidth={NormalizeHashValue(label.MaxWidth)}");
                     content.AppendLine($"delaySeconds={NormalizeHashValue(label.DelaySeconds)}");
@@ -655,6 +664,15 @@ namespace LagoVista.MediaServices.Models
             foreach (var block in Blocks)
             {
                 block.Validate(result);
+
+                var hasSource = block.MediaResource != null && !String.IsNullOrWhiteSpace(block.MediaResource.Id);
+                var hasBlockBackground = block.BackgroundMediaResource != null && !String.IsNullOrWhiteSpace(block.BackgroundMediaResource.Id);
+                var hasCompositionBackground = BackgroundMediaResource != null && !String.IsNullOrWhiteSpace(BackgroundMediaResource.Id);
+
+                if (block.Role == VideoCompositionBlockRole.Content && !hasSource && !hasBlockBackground && !hasCompositionBackground)
+                {
+                    result.AddUserError($"Content block '{block.Key}' must reference a media resource or have an effective background media resource.");
+                }
             }
         }
 
@@ -843,6 +861,13 @@ namespace LagoVista.MediaServices.Models
                 result.AddUserError($"Content block '{Key}' must be a video block.");
             }
 
+            if (Role == VideoCompositionBlockRole.Content &&
+                (MediaResource == null || String.IsNullOrWhiteSpace(MediaResource.Id)) &&
+                (!DurationSeconds.HasValue || DurationSeconds.Value <= 0))
+            {
+                result.AddUserError($"Content block '{Key}' must have a duration greater than zero when it does not reference a source media resource.");
+            }
+
             if (FadeInSeconds < 0 || FadeOutSeconds < 0)
             {
                 result.AddUserError($"Video composition block '{Key}' cannot have negative fade durations.");
@@ -978,6 +1003,10 @@ namespace LagoVista.MediaServices.Models
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTextLabel_Color, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
         public string Color { get; set; } = "#FFFFFF";
 
+        public VideoCompositionTextEffect Effect { get; set; } = VideoCompositionTextEffect.None;
+
+        public string EffectColor { get; set; } = "#000000";
+
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionTextLabel_Alignment, FieldType: FieldTypes.Picker, EnumType: typeof(VideoCompositionTextAlignment), ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
         public VideoCompositionTextAlignment Alignment { get; set; } = VideoCompositionTextAlignment.Left;
 
@@ -1007,6 +1036,8 @@ namespace LagoVista.MediaServices.Models
                 nameof(FontSize),
                 nameof(Bold),
                 nameof(Color),
+                nameof(Effect),
+                nameof(EffectColor),
                 nameof(Alignment),
                 nameof(MaxWidth),
                 nameof(DelaySeconds),
@@ -1041,6 +1072,12 @@ namespace LagoVista.MediaServices.Models
             if (String.IsNullOrWhiteSpace(Color) || Color.Length != 7 || Color[0] != '#')
             {
                 result.AddUserError($"A label on block '{blockKey}' must use a six-digit hexadecimal color such as #FFFFFF.");
+            }
+
+            if (Effect != VideoCompositionTextEffect.None &&
+                (String.IsNullOrWhiteSpace(EffectColor) || EffectColor.Length != 7 || EffectColor[0] != '#'))
+            {
+                result.AddUserError($"A label effect on block '{blockKey}' must use a six-digit hexadecimal color such as #000000.");
             }
         }
     }

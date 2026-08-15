@@ -4,4 +4,4 @@ metadata:
   name: video-processor-launcher-config
   namespace: video-processing
 data:
-  WorkerImage: "nuviot/video-processor:v1.6.3374.1431"
+  WorkerImage: "nuviot/video-processor:v1.6.3375.1912"

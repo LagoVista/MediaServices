@@ -4,7 +4,7 @@ namespace LagoVista.VideoAssembly.Contracts
 {
     public static class VideoAssemblyContractVersions
     {
-        public const string Current = "2.3";
+        public const string Current = "2.5";
     }
 
     public enum VideoAssemblyBlockType
@@ -18,6 +18,13 @@ namespace LagoVista.VideoAssembly.Contracts
         Left,
         Center,
         Right
+    }
+
+    public enum VideoAssemblyTextEffect
+    {
+        None,
+        DropShadow,
+        Glow
     }
 
     public enum VideoAssemblyOperation
@@ -172,6 +179,8 @@ namespace LagoVista.VideoAssembly.Contracts
         public int FontSize { get; set; } = 48;
         public bool Bold { get; set; }
         public string Color { get; set; } = "#FFFFFF";
+        public VideoAssemblyTextEffect Effect { get; set; } = VideoAssemblyTextEffect.None;
+        public string EffectColor { get; set; } = "#000000";
         public VideoAssemblyTextAlignment Alignment { get; set; } = VideoAssemblyTextAlignment.Left;
         public int? MaxWidth { get; set; }
         public double DelaySeconds { get; set; }
