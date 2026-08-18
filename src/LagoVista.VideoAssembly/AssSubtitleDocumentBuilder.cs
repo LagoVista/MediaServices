@@ -51,25 +51,36 @@ namespace LagoVista.VideoAssembly
                 var fadeOutMilliseconds = (int)Math.Round(label.FadeOutSeconds * 1000);
                 var fade = fadeInMilliseconds > 0 || fadeOutMilliseconds > 0 ? $"\\fad({fadeInMilliseconds},{fadeOutMilliseconds})" : String.Empty;
                 var text = EscapeText(WrapText(label.Text, label.FontSize, label.MaxWidth));
-                var effect = String.Empty;
+                var baseOverrides = $"\\an{alignment}\\pos({label.X},{label.Y})\\fn{EscapeOverride(_options.FontFamily)}\\b{weight}\\fs{label.FontSize}";
 
                 switch (label.Effect)
                 {
                     case VideoAssemblyTextEffect.DropShadow:
-                        effect = $"\\4c{effectColor}\\bord0\\shad3";
+                    {
+                        var overrides = $"{{{baseOverrides}\\c{color}\\4c{effectColor}\\bord0\\shad3{fade}}}";
+                        document.AppendLine($"Dialogue: 0,{FormatTime(startSeconds)},{FormatTime(endSeconds)},Default,,0,0,0,,{overrides}{text}");
                         break;
+                    }
 
                     case VideoAssemblyTextEffect.Glow:
-                        effect = $"\\3c{effectColor}\\bord3\\shad0";
+                    {
+                        var wideGlow = $"{{{baseOverrides}\\1a&HFF&\\3c{effectColor}\\3a&HBF&\\bord8\\blur6\\shad0{fade}}}";
+                        var innerGlow = $"{{{baseOverrides}\\1a&HFF&\\3c{effectColor}\\3a&H73&\\bord4\\blur3\\shad0{fade}}}";
+                        var foreground = $"{{{baseOverrides}\\c{color}\\bord0\\shad0\\blur0{fade}}}";
+
+                        document.AppendLine($"Dialogue: 0,{FormatTime(startSeconds)},{FormatTime(endSeconds)},Default,,0,0,0,,{wideGlow}{text}");
+                        document.AppendLine($"Dialogue: 1,{FormatTime(startSeconds)},{FormatTime(endSeconds)},Default,,0,0,0,,{innerGlow}{text}");
+                        document.AppendLine($"Dialogue: 2,{FormatTime(startSeconds)},{FormatTime(endSeconds)},Default,,0,0,0,,{foreground}{text}");
                         break;
+                    }
 
                     default:
-                        effect = "\\bord0\\shad0";
+                    {
+                        var overrides = $"{{{baseOverrides}\\c{color}\\bord0\\shad0{fade}}}";
+                        document.AppendLine($"Dialogue: 0,{FormatTime(startSeconds)},{FormatTime(endSeconds)},Default,,0,0,0,,{overrides}{text}");
                         break;
+                    }
                 }
-
-                var overrides = $"{{\\an{alignment}\\pos({label.X},{label.Y})\\fn{EscapeOverride(_options.FontFamily)}\\b{weight}\\fs{label.FontSize}\\c{color}{effect}{fade}}}";
-                document.AppendLine($"Dialogue: 0,{FormatTime(startSeconds)},{FormatTime(endSeconds)},Default,,0,0,0,,{overrides}{text}");
             }
 
             return document.ToString();
