@@ -52,10 +52,11 @@ namespace LagoVista.VideoAssembly
                 var segments = new List<VideoAssemblySegment>();
                 long totalInputBytes = 0;
                 double totalDurationSeconds = 0;
+                var assemblyStartedUtc = DateTime.UtcNow;
 
                 for (var index = 0; index < request.Blocks.Count; index++)
                 {
-                    var segment = await DownloadAndInspectAsync(request.Blocks[index], index, workspace, request, progress, executionTimeout.Token);
+                    var segment = await DownloadAndInspectAsync(request.Blocks[index], index, workspace, request, assemblyStartedUtc, progress, executionTimeout.Token);
                     totalInputBytes += segment.SourceSizeBytes;
                     totalDurationSeconds += segment.DurationSeconds;
 
@@ -296,7 +297,7 @@ namespace LagoVista.VideoAssembly
             }
         }
 
-        private async Task<VideoAssemblySegment> DownloadAndInspectAsync(VideoAssemblyBlock block, int index, VideoAssemblyWorkspace workspace, VideoAssemblyRequest request, IProgress<VideoAssemblyProgress> progress, CancellationToken cancellationToken)
+        private async Task<VideoAssemblySegment> DownloadAndInspectAsync(VideoAssemblyBlock block, int index, VideoAssemblyWorkspace workspace, VideoAssemblyRequest request, DateTime assemblyStartedUtc, IProgress<VideoAssemblyProgress> progress, CancellationToken cancellationToken)
         {
             var hasSource = block.Source != null;
             var sourcePath = hasSource ? workspace.GetSourcePath(index, block.Type) : null;
@@ -384,10 +385,15 @@ namespace LagoVista.VideoAssembly
                 durationSeconds = block.DurationSeconds.Value;
             }
 
-            if ((block.Labels?.Count ?? 0) > 0)
+            var includeProductionStamp = index == request.Blocks.Count - 1;
+
+            if ((block.Labels?.Count ?? 0) > 0 || includeProductionStamp)
             {
                 progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.RenderingLabels, Message = $"Preparing labels for block '{block.Key}'." });
-                await File.WriteAllTextAsync(subtitlePath, _subtitleBuilder.Build(block, durationSeconds), cancellationToken);
+                await File.WriteAllTextAsync(
+                    subtitlePath,
+                    _subtitleBuilder.Build(block, durationSeconds, assemblyStartedUtc, includeProductionStamp),
+                    cancellationToken);
             }
 
             return new VideoAssemblySegment

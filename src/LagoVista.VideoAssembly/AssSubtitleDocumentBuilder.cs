@@ -15,7 +15,7 @@ namespace LagoVista.VideoAssembly
             _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
-        public string Build(VideoAssemblyBlock block, double blockDurationSeconds)
+        public string Build(VideoAssemblyBlock block, double blockDurationSeconds, DateTime? producedUtc = null, bool includeProductionStamp = false)
         {
             if (block == null) throw new ArgumentNullException(nameof(block));
 
@@ -81,6 +81,16 @@ namespace LagoVista.VideoAssembly
                         break;
                     }
                 }
+            }
+
+            if (includeProductionStamp && producedUtc.HasValue && blockDurationSeconds > 0)
+            {
+                var stampStartSeconds = Math.Max(0, blockDurationSeconds - 5.0);
+                var stampEndSeconds = blockDurationSeconds;
+                var stampText = $"© {producedUtc.Value.Year}   Produced {producedUtc.Value:yyyy-MM-dd HH:mm} UTC";
+                var stampOverrides = $"{{\\an3\\pos(1880,1048)\\fn{EscapeOverride(_options.FontFamily)}\\b400\\fs22\\c&H000000&\\1a&H66&\\4c&HFFFFFF&\\4a&H99&\\bord0\\shad1}}";
+
+                document.AppendLine($"Dialogue: 10,{FormatTime(stampStartSeconds)},{FormatTime(stampEndSeconds)},Default,,0,0,0,,{stampOverrides}{EscapeText(stampText)}");
             }
 
             return document.ToString();
