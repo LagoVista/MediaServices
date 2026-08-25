@@ -5,9 +5,9 @@ using LagoVista.MediaServices.Models;
 namespace LagoVista.MediaServices.CloudRepos.StorageRecords
 {
     /// <summary>
-    /// Durable Application Data state that binds a rich source entity to its
-    /// video-composition workflow. The source entity remains authoritative for
-    /// its name, key, content and authorization metadata.
+    /// Durable Application Data record owned by the entity video composition feature.
+    /// Rich source content remains on the source EntityBase and is loaded explicitly only
+    /// when composition generation/synchronization requires it.
     /// </summary>
     internal sealed class EntityVideoComposition : IApplicationDataRecord
     {
@@ -17,6 +17,8 @@ namespace LagoVista.MediaServices.CloudRepos.StorageRecords
         public UtcTimestamp LastUpdatedDate { get; set; }
 
         public string EntityType { get; set; }
+        public string Name { get; set; }
+        public string Key { get; set; }
         public EntityVideoCompositionInfo VideoCompositionInfo { get; set; }
     }
 }
