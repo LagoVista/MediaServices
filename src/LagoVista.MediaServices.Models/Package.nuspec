@@ -2,7 +2,7 @@
 <package>
   <metadata>
     <id>LagoVista.MediaServices.Models</id>
-    <version>3.0.3374.1300</version>
+    <version>3.0.3387.0809</version>
     <authors>Software Logistics, LLC</authors>
     <owners>Software Logistics, LLC</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
@@ -12,11 +12,11 @@
     <copyright>Copyright Software Logistics - 2026</copyright>
     <tags>LagoVista HomeAutomation IoT</tags>
     <icon>LagoVistaIcon.png</icon>
-    <releaseNotes>Build Date: 8/12/2026 5:00:12 PM UTC</releaseNotes>
+    <releaseNotes>Build Date: 8/25/2026 12:09:23 PM UTC</releaseNotes>
     <repository url="https://www.github.com/lagovista" type="git" branch="master"></repository>
     <dependencies>
       <group targetFramework="netstandard2.1">
-        <dependency id="LagoVista.UserAdmin" version="3.0.3374.1300" />
+        <dependency id="LagoVista.UserAdmin" version="3.0.3387.0809" />
       </group>
     </dependencies>
   </metadata>
