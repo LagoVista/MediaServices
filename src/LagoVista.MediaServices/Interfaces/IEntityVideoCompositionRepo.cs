@@ -13,6 +13,6 @@ namespace LagoVista.MediaServices.Interfaces
 
         Task<EntityVideoCompositionSource> GetSourceAsync(string entityType, string entityId, string orgId, CancellationToken cancellationToken = default);
 
-        Task<InvokeResult> PatchVideoCompositionInfoAsync(string entityId, EntityVideoCompositionInfo videoCompositionInfo, EntityHeader user, CancellationToken cancellationToken = default);
+        Task<InvokeResult> PatchVideoCompositionInfoAsync(string entityType, string entityId, EntityHeader org, string name, string key, EntityVideoCompositionInfo videoCompositionInfo, EntityHeader user, CancellationToken cancellationToken = default);
     }
 }

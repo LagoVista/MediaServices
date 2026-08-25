@@ -1,5 +1,6 @@
 using LagoVista.CloudStorage.Storage;
 using LagoVista.IoT.Logging.Loggers;
+using LagoVista.MediaServices.CloudRepos.StorageRecords;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Managers;
 using LagoVista.MediaServices.Models;
@@ -18,6 +19,10 @@ namespace LagoVista.MediaServices.CloudRepos
         public static void ConfigureServices(IServiceCollection services)
         {
             services.AddApplicationDataStorageConnection();
+            services.ConfigureApplicationData<EntityVideoComposition>(storage => storage
+                .Index(x => x.EntityType)
+                .Index(x => x.Name));
+
             services.AddTransient<IMediaServicesRepo, MongoMediaServicesRepo>();
             services.AddTransient<IVideoProcessorStorageUrlService, VideoProcessorStorageUrlService>();
             services.AddTransient<IVideoProcessorRequestStore, VideoProcessorRequestStore>();
