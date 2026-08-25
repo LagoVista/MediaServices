@@ -171,7 +171,7 @@ namespace LagoVista.MediaServices.Managers
             info.TemplateVersion = template.Version;
             info.SourceContentSha256 = sourceContentSha256;
 
-            var patchResult = await PatchVideoCompositionInfoInternalAsync(source.Entity.Id, info, user, cancellationToken).ConfigureAwait(false);
+            var patchResult = await PatchVideoCompositionInfoInternalAsync(request.EntityType, source.Entity, info, org, user, cancellationToken).ConfigureAwait(false);
             if (!patchResult.Successful)
             {
                 return patchResult.ToInvokeResult<VideoComposition>();
@@ -238,7 +238,7 @@ namespace LagoVista.MediaServices.Managers
             info.Composition = composition.ToEntityHeader();
             info.SourceContentSha256 = sourceContentSha256;
 
-            var patchResult = await PatchVideoCompositionInfoInternalAsync(source.Entity.Id, info, user, cancellationToken).ConfigureAwait(false);
+            var patchResult = await PatchVideoCompositionInfoInternalAsync(entityType, source.Entity, info, org, user, cancellationToken).ConfigureAwait(false);
             if (!patchResult.Successful)
             {
                 return patchResult.ToInvokeResult<VideoComposition>();
@@ -256,12 +256,20 @@ namespace LagoVista.MediaServices.Managers
             }
 
             await AuthorizeAsync(source.Entity, AuthorizeResult.AuthorizeActions.Update, user, org);
-            return await PatchVideoCompositionInfoInternalAsync(entityId, videoCompositionInfo, user, cancellationToken).ConfigureAwait(false);
+            return await PatchVideoCompositionInfoInternalAsync(entityType, source.Entity, videoCompositionInfo, org, user, cancellationToken).ConfigureAwait(false);
         }
 
-        private Task<InvokeResult> PatchVideoCompositionInfoInternalAsync(string entityId, EntityVideoCompositionInfo videoCompositionInfo, EntityHeader user, CancellationToken cancellationToken)
+        private Task<InvokeResult> PatchVideoCompositionInfoInternalAsync(string entityType, EntityBase sourceEntity, EntityVideoCompositionInfo videoCompositionInfo, EntityHeader org, EntityHeader user, CancellationToken cancellationToken)
         {
-            return _repo.PatchVideoCompositionInfoAsync(entityId, videoCompositionInfo, user, cancellationToken);
+            return _repo.PatchVideoCompositionInfoAsync(
+                entityType.Trim(),
+                sourceEntity.Id,
+                org,
+                sourceEntity.Name,
+                sourceEntity.Key,
+                videoCompositionInfo,
+                user,
+                cancellationToken);
         }
 
         private Type ResolveSourceType(string entityType)
