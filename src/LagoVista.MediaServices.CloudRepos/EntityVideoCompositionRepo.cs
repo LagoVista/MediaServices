@@ -87,36 +87,39 @@ namespace LagoVista.MediaServices.CloudRepos
             return new EntityVideoCompositionSource(entity, source);
         }
 
-        public async Task<InvokeResult> PatchVideoCompositionInfoAsync(string entityType, string entityId, string orgId, EntityVideoCompositionInfo videoCompositionInfo, EntityHeader user, CancellationToken cancellationToken = default)
+        public async Task<InvokeResult> PatchVideoCompositionInfoAsync(string entityId, EntityVideoCompositionInfo videoCompositionInfo, EntityHeader user, CancellationToken cancellationToken = default)
         {
-            if (String.IsNullOrWhiteSpace(entityType)) throw new ArgumentException("Entity type is required.", nameof(entityType));
             if (String.IsNullOrWhiteSpace(entityId)) throw new ArgumentException("Entity id is required.", nameof(entityId));
-            if (String.IsNullOrWhiteSpace(orgId)) throw new ArgumentException("Organization id is required.", nameof(orgId));
             if (user == null) throw new ArgumentNullException(nameof(user));
 
-            var normalizedEntityType = entityType.Trim();
             var normalizedEntityId = entityId.Trim();
-            var normalizedOrgId = orgId.Trim();
-            ValidateSourceType(normalizedEntityType);
-
-            var key = new StorageKey(normalizedEntityId, normalizedOrgId);
-            var record = await _applicationDataStore.GetAsync<EntityVideoComposition>(key, cancellationToken).ConfigureAwait(false);
+            var record = await _applicationDataStore.GetAsync<EntityVideoComposition>(new StorageKey(normalizedEntityId), cancellationToken).ConfigureAwait(false);
             if (record == null)
             {
+                var lookupRequest = new ListRequest { PageIndex = 1, PageSize = 2 };
+                var sourceResult = await _documentCollection.QueryAsync<EntityVideoCompositionDocument>(document => document.Id == normalizedEntityId, document => document.Name, lookupRequest, cancellationToken).ConfigureAwait(false);
+                var sourceDocuments = sourceResult.Model.ToList();
+                if (sourceDocuments.Count == 0)
+                    return InvokeResult.FromError($"Could not find video composition source entity '{normalizedEntityId}'.");
+                if (sourceDocuments.Count > 1)
+                    throw new InvalidOperationException($"More than one source entity was found for id '{normalizedEntityId}'.");
+
+                var source = sourceDocuments[0];
+                ValidateSourceType(source.EntityType);
+                if (EntityHeader.IsNullOrEmpty(source.OwnerOrganization))
+                    throw new InvalidOperationException($"Video composition source entity '{normalizedEntityId}' does not have an owner organization.");
+
                 record = new EntityVideoComposition
                 {
                     Id = new NormalizedId32(normalizedEntityId),
-                    Organization = EntityHeader.Create(normalizedOrgId, normalizedOrgId),
-                    EntityType = normalizedEntityType,
+                    Organization = source.OwnerOrganization,
+                    EntityType = source.EntityType,
                     VideoCompositionInfo = videoCompositionInfo
                 };
                 await _applicationDataStore.InsertAsync(record, cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                if (!String.Equals(record.EntityType, normalizedEntityType, StringComparison.OrdinalIgnoreCase))
-                    throw new InvalidOperationException($"Entity video composition '{normalizedEntityId}' is stored as '{record.EntityType}', not '{normalizedEntityType}'.");
-
                 record.VideoCompositionInfo = videoCompositionInfo;
                 await _applicationDataStore.UpdateAsync(record, cancellationToken).ConfigureAwait(false);
             }
