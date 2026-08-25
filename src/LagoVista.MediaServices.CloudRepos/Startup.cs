@@ -20,7 +20,8 @@ namespace LagoVista.MediaServices.CloudRepos
         {
             services.AddApplicationDataStorageConnection();
             services.ConfigureApplicationData<EntityVideoComposition>(storage => storage
-                .Index(x => x.EntityType));
+                .Index(x => x.EntityType)
+                .Index(x => x.Name));
 
             services.AddTransient<IMediaServicesRepo, MongoMediaServicesRepo>();
             services.AddTransient<IVideoProcessorStorageUrlService, VideoProcessorStorageUrlService>();
