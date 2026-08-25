@@ -72,9 +72,8 @@ namespace LagoVista.MediaServices.CloudRepos
             var normalizedOrgId = orgId.Trim();
             var modelType = ValidateSourceType(normalizedEntityType);
 
-            // Loading the rich source entity is intentionally explicit and limited to operations
-            // that need its content/authorization metadata. Repository listing and composition
-            // state persistence are Application Data only.
+            // Rich source content is loaded explicitly only for operations that need it.
+            // Listing and composition-state persistence are Application Data only.
             var document = await _entityUtilsRepository.GetEntityByIdAsync(normalizedEntityType, normalizedEntityId, normalizedOrgId, cancellationToken).ConfigureAwait(false);
             if (document == null) return null;
 
@@ -90,18 +89,17 @@ namespace LagoVista.MediaServices.CloudRepos
             return new EntityVideoCompositionSource(entity, source);
         }
 
-        public async Task<InvokeResult> PatchVideoCompositionInfoAsync(string entityType, string entityId, string orgId, string name, string key, EntityVideoCompositionInfo videoCompositionInfo, EntityHeader user, CancellationToken cancellationToken = default)
+        public async Task<InvokeResult> PatchVideoCompositionInfoAsync(string entityType, string entityId, EntityHeader org, string name, string key, EntityVideoCompositionInfo videoCompositionInfo, EntityHeader user, CancellationToken cancellationToken = default)
         {
             if (String.IsNullOrWhiteSpace(entityType)) throw new ArgumentException("Entity type is required.", nameof(entityType));
             if (String.IsNullOrWhiteSpace(entityId)) throw new ArgumentException("Entity id is required.", nameof(entityId));
-            if (String.IsNullOrWhiteSpace(orgId)) throw new ArgumentException("Organization id is required.", nameof(orgId));
+            if (EntityHeader.IsNullOrEmpty(org)) throw new ArgumentException("Organization is required.", nameof(org));
             if (user == null) throw new ArgumentNullException(nameof(user));
 
             ValidateSourceType(entityType);
 
             var normalizedEntityId = entityId.Trim();
-            var normalizedOrgId = orgId.Trim();
-            var storageKey = new StorageKey(normalizedEntityId, normalizedOrgId);
+            var storageKey = new StorageKey(normalizedEntityId, org.Id);
             var record = await _applicationDataStore.GetAsync<EntityVideoComposition>(storageKey, cancellationToken).ConfigureAwait(false);
 
             if (record == null)
@@ -109,7 +107,7 @@ namespace LagoVista.MediaServices.CloudRepos
                 record = new EntityVideoComposition
                 {
                     Id = new NormalizedId32(normalizedEntityId),
-                    Organization = EntityHeader.Create(normalizedOrgId, normalizedOrgId),
+                    Organization = org,
                     EntityType = entityType.Trim(),
                     Name = name,
                     Key = key,
@@ -119,6 +117,7 @@ namespace LagoVista.MediaServices.CloudRepos
             }
             else
             {
+                record.Organization = org;
                 record.EntityType = entityType.Trim();
                 record.Name = name;
                 record.Key = key;
