@@ -4,6 +4,7 @@
 // --- END CODE INDEX META ---
 using LagoVista.CloudStorage;
 using LagoVista.CloudStorage.DocumentDB;
+using LagoVista.CloudStorage.Interfaces;
 using LagoVista.Core.Interfaces;
 using LagoVista.Core.Models.UIMetaData;
 using LagoVista.IoT.Logging.Loggers;
@@ -18,8 +19,7 @@ namespace LagoVista.MediaServices.CloudRepos
 {
     public class MediaLibraryRepo : DocumentDBRepoBase<MediaLibrary>, IMediaLibraryRepo
     {
-        public MediaLibraryRepo(IMediaServicesConnectionSettings repoSettings, IAdminLogger logger, ICacheProvider cacheProvider)
-            : base(repoSettings.MediaLibraryConnection.Uri, repoSettings.MediaLibraryConnection.AccessKey, repoSettings.MediaLibraryConnection.ResourceName, logger, cacheProvider)
+        public MediaLibraryRepo(IDocumentCloudCachedServices services) : base(services)
         {
         }
 

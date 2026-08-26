@@ -18,7 +18,6 @@ namespace LagoVista.MediaServices.CloudRepos
     {
         public static void ConfigureServices(IServiceCollection services)
         {
-            services.AddApplicationDataStorageConnection();
             services.ConfigureApplicationData<EntityVideoComposition>(storage => storage
                 .Index(x => x.EntityType)
                 .Index(x => x.Name));

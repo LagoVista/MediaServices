@@ -17,7 +17,7 @@ namespace LagoVista.MediaServices.CloudRepos
         private readonly ICacheProvider _cacheProvider;
         private static readonly TimeSpan ProviderCreationLockDuration = TimeSpan.FromMinutes(5);
 
-        public VideoAvatarRepo(IMediaServicesConnectionSettings settings, IDocumentCloudCachedServices services) : base(settings.MediaLibraryConnection.Uri, settings.MediaLibraryConnection.AccessKey, settings.MediaLibraryConnection.ResourceName, services)
+        public VideoAvatarRepo(IDocumentCloudCachedServices services) : base(services)
         {
             _cacheProvider = services?.CacheProvider ?? throw new ArgumentNullException(nameof(services.CacheProvider));
         }

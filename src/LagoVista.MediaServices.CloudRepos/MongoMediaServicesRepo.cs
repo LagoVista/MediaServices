@@ -24,12 +24,11 @@ namespace LagoVista.MediaServices.CloudRepos
 
         private readonly IDocumentDBRepoBase<MediaResource> _metadataStore;
 
-        public MongoMediaServicesRepo(
-            IAdminLogger adminLogger,
+        public MongoMediaServicesRepo(IDocumentCloudCachedServices services,
             IMediaServicesConnectionSettings settings,
             ICacheProvider cacheProvider,
             IApplicationDataStorageSettings applicationDataSettings)
-            : base(adminLogger, settings, cacheProvider)
+            : base(settings, services)
         {
             if (applicationDataSettings == null) throw new ArgumentNullException(nameof(applicationDataSettings));
 
@@ -46,8 +45,8 @@ namespace LagoVista.MediaServices.CloudRepos
 
             _metadataStore = DocumentStorageFactory.Create<MediaResource>(
                 storageSettings,
-                adminLogger,
-                cacheProvider,
+                services.AdminLogger,
+                services.CacheProvider,
                 collectionNameResolver: new MediaResourceCollectionNameResolver());
         }
 

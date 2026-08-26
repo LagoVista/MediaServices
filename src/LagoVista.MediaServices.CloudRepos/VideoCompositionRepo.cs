@@ -12,7 +12,7 @@ namespace LagoVista.MediaServices.CloudRepos
 {
     public class VideoCompositionRepo : DocumentDBRepoBase<VideoComposition>, IVideoCompositionRepo
     {
-        public VideoCompositionRepo(IMediaServicesConnectionSettings settings, IDocumentCloudCachedServices services) : base(settings.MediaLibraryConnection.Uri, settings.MediaLibraryConnection.AccessKey, settings.MediaLibraryConnection.ResourceName, services)
+        public VideoCompositionRepo(IDocumentCloudCachedServices services) : base(services)
         {
         }
 

@@ -2,22 +2,23 @@
 // ContentHash: 826c150e8f7f6fcafa4cd121967be2dacecb4fb698f8cde9e5ed0fe1b5015706
 // IndexVersion: 2
 // --- END CODE INDEX META ---
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using LagoVista.CloudStorage.DocumentDB;
+using LagoVista.CloudStorage.Interfaces;
+using LagoVista.Core;
 using LagoVista.Core.Interfaces;
+using LagoVista.Core.Models.UIMetaData;
 using LagoVista.Core.PlatformSupport;
 using LagoVista.Core.Validation;
 using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Interfaces;
+using LagoVista.MediaServices.Models;
 using System;
-using LagoVista.Core;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
-using LagoVista.CloudStorage.DocumentDB;
-using LagoVista.MediaServices.Models;
-using System.Collections.Generic;
-using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
-using LagoVista.Core.Models.UIMetaData;
-using System.Diagnostics;
 
 namespace LagoVista.MediaServices.CloudRepos
 {
@@ -26,10 +27,9 @@ namespace LagoVista.MediaServices.CloudRepos
         ILogger _logger;
         IConnectionSettings _blobConnectionSettings;
 
-        public MediaServicesRepo(IAdminLogger adminLogger, IMediaServicesConnectionSettings settings, ICacheProvider cacheProvider)
-             : base(settings.MediaLibraryConnection.Uri, settings.MediaLibraryConnection.AccessKey, settings.MediaLibraryConnection.ResourceName, adminLogger, cacheProvider)
+        public MediaServicesRepo(IMediaServicesConnectionSettings settings, IDocumentCloudCachedServices services) : base(services)
         {
-            _logger = adminLogger;
+            _logger = services.AdminLogger;
             _blobConnectionSettings = settings.MediaStorageConnection;
         }
 

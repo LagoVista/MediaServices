@@ -11,7 +11,7 @@ namespace LagoVista.MediaServices.CloudRepos
 {
     public class VideoCompositionBlockTemplateRepo : DocumentDBRepoBase<VideoCompositionBlockTemplate>, IVideoCompositionBlockTemplateRepo
     {
-        public VideoCompositionBlockTemplateRepo(IMediaServicesConnectionSettings settings, IDocumentCloudCachedServices services) : base(settings.MediaLibraryConnection.Uri, settings.MediaLibraryConnection.AccessKey, settings.MediaLibraryConnection.ResourceName, services)
+        public VideoCompositionBlockTemplateRepo(IDocumentCloudCachedServices services) : base(services)
         {
         }
 
