@@ -262,11 +262,7 @@ namespace LagoVista.MediaServices.Managers
         private Task<InvokeResult> PatchVideoCompositionInfoInternalAsync(string entityType, EntityBase sourceEntity, EntityVideoCompositionInfo videoCompositionInfo, EntityHeader org, EntityHeader user, CancellationToken cancellationToken)
         {
             return _repo.PatchVideoCompositionInfoAsync(
-                entityType.Trim(),
                 sourceEntity.Id,
-                org,
-                sourceEntity.Name,
-                sourceEntity.Key,
                 videoCompositionInfo,
                 user,
                 cancellationToken);

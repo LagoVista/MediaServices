@@ -7,8 +7,12 @@ using LagoVista.Core.Validation;
 using LagoVista.MediaServices.CloudRepos.StorageRecords;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -21,13 +25,15 @@ namespace LagoVista.MediaServices.CloudRepos
 
         private readonly IEntityUtilsRepository _entityUtilsRepository;
         private readonly IEntityTypeResolver _entityTypeResolver;
-        private readonly IApplicationDataStore _applicationDataStore;
+        private readonly IDocumentStorageClient _storagClient;
 
-        public EntityVideoCompositionRepo(IEntityUtilsRepository entityUtilsRepository, IEntityTypeResolver entityTypeResolver, IApplicationDataStore applicationDataStore)
+        public EntityVideoCompositionRepo(IMediaServicesConnectionSettings settings, IDocumentStorageClientProvider storageProvider, IEntityUtilsRepository entityUtilsRepository, IEntityTypeResolver entityTypeResolver)
         {
+            if (settings == null) throw new ArgumentNullException(nameof(settings));
+            if (storageProvider == null) throw new ArgumentNullException(nameof(storageProvider));
+
             _entityUtilsRepository = entityUtilsRepository ?? throw new ArgumentNullException(nameof(entityUtilsRepository));
             _entityTypeResolver = entityTypeResolver ?? throw new ArgumentNullException(nameof(entityTypeResolver));
-            _applicationDataStore = applicationDataStore ?? throw new ArgumentNullException(nameof(applicationDataStore));
         }
 
         public async Task<ListResponse<EntityVideoCompositionSummary>> GetSourcesAsync(string entityType, string orgId, ListRequest listRequest, CancellationToken cancellationToken = default)
@@ -38,28 +44,21 @@ namespace LagoVista.MediaServices.CloudRepos
             ValidateSourceType(entityType);
 
             var request = NormalizeListRequest(listRequest);
-            var query = new StorageQuery<EntityVideoComposition>()
-                .Where(record => record.Organization.Id, StorageFilterOperator.Equal, orgId.Trim())
-                .Where(record => record.EntityType, StorageFilterOperator.Equal, entityType.Trim())
-                .OrderBy(record => record.Name)
-                .WithPage(new StoragePageRequest(request.PageSize, request.NextRowKey));
+            var normalizedEntityType = entityType.Trim();
+            var normalizedOrgId = orgId.Trim();
 
-            var page = await _applicationDataStore.QueryAsync(query, cancellationToken).ConfigureAwait(false);
-            var summaries = page.Items.Select(record => new EntityVideoCompositionSummary
+
+            var documents = await _storagClient.QueryAsync<EntityVideoCompositionDocument>(document => document.EntityType == normalizedEntityType && document.OwnerOrganization.Id == normalizedOrgId);
+            var summaries = documents.Select(document => new EntityVideoCompositionSummary
             {
-                Id = record.Id.Value,
-                Name = record.Name,
-                Key = record.Key,
-                EntityType = record.EntityType,
-                VideoCompositionInfo = record.VideoCompositionInfo
-            }).ToList();
+                Id = document.Id,
+                Name = document.Name,
+                Key = document.Key,
+                EntityType = document.EntityType,
+                VideoCompositionInfo = document.VideoCompositionInfo
+            });
 
-            return ListResponse<EntityVideoCompositionSummary>.Create(
-                summaries,
-                request,
-                page.HasMoreRecords,
-                null,
-                page.ContinuationToken);
+            return ListResponse<EntityVideoCompositionSummary>.Create(request, summaries);
         }
 
         public async Task<EntityVideoCompositionSource> GetSourceAsync(string entityType, string entityId, string orgId, CancellationToken cancellationToken = default)
@@ -68,14 +67,8 @@ namespace LagoVista.MediaServices.CloudRepos
             if (String.IsNullOrWhiteSpace(entityId)) throw new ArgumentException("Entity id is required.", nameof(entityId));
             if (String.IsNullOrWhiteSpace(orgId)) throw new ArgumentException("Organization id is required.", nameof(orgId));
 
-            var normalizedEntityType = entityType.Trim();
-            var normalizedEntityId = entityId.Trim();
-            var normalizedOrgId = orgId.Trim();
-            var modelType = ValidateSourceType(normalizedEntityType);
-
-            // Rich source content is loaded explicitly only for operations that need it.
-            // Listing and composition-state persistence are Application Data only.
-            var document = await _entityUtilsRepository.GetEntityByIdAsync(normalizedEntityType, normalizedEntityId, normalizedOrgId, cancellationToken).ConfigureAwait(false);
+            var modelType = ValidateSourceType(entityType);
+            var document = await _entityUtilsRepository.GetEntityByIdAsync(entityType.Trim(), entityId.Trim(), orgId.Trim(), cancellationToken).ConfigureAwait(false);
             if (document == null) return null;
 
             var model = document.ToObject(modelType);
@@ -85,48 +78,21 @@ namespace LagoVista.MediaServices.CloudRepos
             if (entity == null) throw new InvalidOperationException($"Entity type '{entityType}' did not deserialize to {nameof(EntityBase)}.");
             if (source == null) throw new InvalidOperationException($"Entity type '{entityType}' did not deserialize to {nameof(IVideoCompositionSource)}.");
 
-            var record = await _applicationDataStore.GetAsync<EntityVideoComposition>(new StorageKey(normalizedEntityId, normalizedOrgId), cancellationToken).ConfigureAwait(false);
-            source.VideoCompositionInfo = record?.VideoCompositionInfo ?? new EntityVideoCompositionInfo();
+            source.VideoCompositionInfo = source.VideoCompositionInfo ?? new EntityVideoCompositionInfo();
             return new EntityVideoCompositionSource(entity, source);
         }
 
-        public async Task<InvokeResult> PatchVideoCompositionInfoAsync(string entityType, string entityId, EntityHeader org, string name, string key, EntityVideoCompositionInfo videoCompositionInfo, EntityHeader user, CancellationToken cancellationToken = default)
+        public Task<InvokeResult> PatchVideoCompositionInfoAsync(string entityId, EntityVideoCompositionInfo videoCompositionInfo, EntityHeader user, CancellationToken cancellationToken = default)
         {
-            if (String.IsNullOrWhiteSpace(entityType)) throw new ArgumentException("Entity type is required.", nameof(entityType));
             if (String.IsNullOrWhiteSpace(entityId)) throw new ArgumentException("Entity id is required.", nameof(entityId));
-            if (EntityHeader.IsNullOrEmpty(org)) throw new ArgumentException("Organization is required.", nameof(org));
             if (user == null) throw new ArgumentNullException(nameof(user));
 
-            ValidateSourceType(entityType);
-
-            var normalizedEntityId = entityId.Trim();
-            var storageKey = new StorageKey(normalizedEntityId, org.Id);
-            var record = await _applicationDataStore.GetAsync<EntityVideoComposition>(storageKey, cancellationToken).ConfigureAwait(false);
-
-            if (record == null)
+            var fields = new Dictionary<string, JToken>
             {
-                record = new EntityVideoComposition
-                {
-                    Id = new NormalizedId32(normalizedEntityId),
-                    Organization = org,
-                    EntityType = entityType.Trim(),
-                    Name = name,
-                    Key = key,
-                    VideoCompositionInfo = videoCompositionInfo
-                };
-                await _applicationDataStore.InsertAsync(record, cancellationToken).ConfigureAwait(false);
-            }
-            else
-            {
-                record.Organization = org;
-                record.EntityType = entityType.Trim();
-                record.Name = name;
-                record.Key = key;
-                record.VideoCompositionInfo = videoCompositionInfo;
-                await _applicationDataStore.UpdateAsync(record, cancellationToken).ConfigureAwait(false);
-            }
+                [nameof(IVideoCompositionSource.VideoCompositionInfo)] = videoCompositionInfo == null ? JValue.CreateNull() : JObject.FromObject(videoCompositionInfo)
+            };
 
-            return InvokeResult.Success;
+            return _entityUtilsRepository.PatchEntityFieldsAsync(entityId.Trim(), fields, user, cancellationToken);
         }
 
         private Type ValidateSourceType(string entityType)
@@ -144,6 +110,11 @@ namespace LagoVista.MediaServices.CloudRepos
             if (request.PageSize < 1) request.PageSize = DefaultPageSize;
             else if (request.PageSize > MaximumPageSize) request.PageSize = MaximumPageSize;
             return request;
+        }
+
+        private sealed class EntityVideoCompositionDocument : EntityBase
+        {
+            public EntityVideoCompositionInfo VideoCompositionInfo { get; set; }
         }
     }
 }

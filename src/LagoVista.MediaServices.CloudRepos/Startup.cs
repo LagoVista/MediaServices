@@ -22,7 +22,7 @@ namespace LagoVista.MediaServices.CloudRepos
                 .Index(x => x.EntityType)
                 .Index(x => x.Name));
 
-            services.AddTransient<IMediaServicesRepo, MongoMediaServicesRepo>();
+            services.AddTransient<IMediaServicesRepo, MediaServicesRepo>();
             services.AddTransient<IVideoProcessorStorageUrlService, VideoProcessorStorageUrlService>();
             services.AddTransient<IVideoProcessorRequestStore, VideoProcessorRequestStore>();
             services.AddTransient<IVideoProcessorCallbackRegistrationStore, VideoProcessorCallbackRegistrationStore>();

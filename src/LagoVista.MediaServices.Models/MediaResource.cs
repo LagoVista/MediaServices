@@ -95,6 +95,7 @@ namespace LagoVista.MediaServices.Models
         public string ErrorMessage { get; set; }
     }
 
+    [CollectionName("MediaResources")]
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaResource_Title, MediaServicesResources.Names.MediaResource_Help, 
         MediaServicesResources.Names.MediaResource_Description, EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources),
         EditUIUrl: "/contentmanagement/mediaresource/{id}", ListUIUrl: "/contentmanagement/mediaresources", CreateUIUrl: "/contentmanagement/mediaresource/add",
