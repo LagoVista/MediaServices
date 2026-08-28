@@ -1,18 +1,14 @@
 using LagoVista.CloudStorage.Interfaces;
-using LagoVista.CloudStorage.Storage;
-using LagoVista.Core.Interfaces;
+using LagoVista.CloudStorage.Repositories;
 using LagoVista.Core.Models;
 using LagoVista.Core.Models.UIMetaData;
 using LagoVista.Core.Validation;
-using LagoVista.MediaServices.CloudRepos.StorageRecords;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,7 +21,7 @@ namespace LagoVista.MediaServices.CloudRepos
 
         private readonly IEntityUtilsRepository _entityUtilsRepository;
         private readonly IEntityTypeResolver _entityTypeResolver;
-        private readonly IDocumentStorageClient _storagClient;
+        private readonly IDocumentStorageClient _storageClient;
 
         public EntityVideoCompositionRepo(IMediaServicesConnectionSettings settings, IDocumentStorageClientProvider storageProvider, IEntityUtilsRepository entityUtilsRepository, IEntityTypeResolver entityTypeResolver)
         {
@@ -34,6 +30,7 @@ namespace LagoVista.MediaServices.CloudRepos
 
             _entityUtilsRepository = entityUtilsRepository ?? throw new ArgumentNullException(nameof(entityUtilsRepository));
             _entityTypeResolver = entityTypeResolver ?? throw new ArgumentNullException(nameof(entityTypeResolver));
+            _storageClient = storageProvider?.GetClient() ?? throw new ArgumentNullException(nameof(storageProvider));
         }
 
         public async Task<ListResponse<EntityVideoCompositionSummary>> GetSourcesAsync(string entityType, string orgId, ListRequest listRequest, CancellationToken cancellationToken = default)
@@ -48,7 +45,7 @@ namespace LagoVista.MediaServices.CloudRepos
             var normalizedOrgId = orgId.Trim();
 
 
-            var documents = await _storagClient.QueryAsync<EntityVideoCompositionDocument>(document => document.EntityType == normalizedEntityType && document.OwnerOrganization.Id == normalizedOrgId);
+            var documents = await _storageClient.QueryAsync<EntityVideoCompositionDocument>(document => document.EntityType == normalizedEntityType && document.OwnerOrganization.Id == normalizedOrgId);
             var summaries = documents.Select(document => new EntityVideoCompositionSummary
             {
                 Id = document.Id,
