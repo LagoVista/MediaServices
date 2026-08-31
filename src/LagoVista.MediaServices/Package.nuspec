@@ -1,8 +1,8 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <package>
   <metadata>
     <id>LagoVista.MediaServices</id>
-    <version>3.0.3387.1915</version>
+    <version>6.0.0</version>
     <authors>Software Logistics, LLC</authors>
     <owners>Software Logistics, LLC</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
@@ -16,16 +16,16 @@
     <repository url="https://www.github.com/lagovista" type="git" branch="master"></repository>
     <dependencies>
       <group targetFramework="netstandard2.1">
-        <dependency id="LagoVista.UserAdmin" version="3.0.3387.1915" />
+        <dependency id="LagoVista.MediaServices.Models" version="6.0.0" />
+        <dependency id="LagoVista.UserAdmin" version="6.0.1" />
         <dependency id="Microsoft.Extensions.Http" version="9.0.0" />
         <dependency id="SixLabors.ImageSharp" version="2.1.11" />
-        <dependency id="LagoVista.MediaServices.Models" version="3.0.3387.1915" />
       </group>
     </dependencies>
   </metadata>
   <files>
     <file src="LagoVistaIcon.png" target="LagoVistaIcon.png" />
-    <file src="bin\release\netstandard2.1\LagoVista.MediaServices.dll" target="lib\netstandard2.1\LagoVista.MediaServices.dll" />
-    <file src="bin\release\netstandard2.1\LagoVista.MediaServices.pdb" target="lib\netstandard2.1\LagoVista.MediaServices.pdb" />
+    <file src="bin/Release/netstandard2.1/LagoVista.MediaServices.dll" target="lib/netstandard2.1/LagoVista.MediaServices.dll" />
+    <file src="bin/Release/netstandard2.1/LagoVista.MediaServices.pdb" target="lib/netstandard2.1/LagoVista.MediaServices.pdb" />
   </files>
 </package>
