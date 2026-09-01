@@ -10,6 +10,7 @@ namespace LagoVista.MediaServices.Interfaces
     {
         Task<InvokeResult> AddVideoCompositionBlockTemplateAsync(VideoCompositionBlockTemplate template, EntityHeader org, EntityHeader user);
         Task<InvokeResult> UpdateVideoCompositionBlockTemplateAsync(VideoCompositionBlockTemplate template, EntityHeader org, EntityHeader user);
+        Task<InvokeResult> UpdateVideoCompositionBlockTemplateFromBlockAsync(string id, VideoCompositionBlock block, EntityHeader org, EntityHeader user);
         Task<InvokeResult> DeleteVideoCompositionBlockTemplateAsync(string id, EntityHeader org, EntityHeader user);
         Task<VideoCompositionBlockTemplate> GetVideoCompositionBlockTemplateAsync(string id, EntityHeader org, EntityHeader user);
         Task<ListResponse<VideoCompositionBlockTemplateSummary>> GetVideoCompositionBlockTemplatesForOrgAsync(EntityHeader org, EntityHeader user, ListRequest listRequest);
