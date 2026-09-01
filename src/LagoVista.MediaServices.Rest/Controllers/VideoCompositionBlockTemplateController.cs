@@ -40,6 +40,13 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return _manager.CreateTemplateFromBlockAsync(request, OrgEntityHeader, UserEntityHeader);
         }
 
+        [HttpPut("/api/media/videocomposition/blocktemplate/{id}/fromblock")]
+        public Task<InvokeResult> UpdateVideoCompositionBlockTemplateFromBlockAsync(string id, [FromBody] UpdateVideoCompositionBlockTemplateFromBlockRequest request)
+        {
+            if (request == null) throw new ArgumentNullException(nameof(request));
+            return _manager.UpdateVideoCompositionBlockTemplateFromBlockAsync(id, request.Block, OrgEntityHeader, UserEntityHeader);
+        }
+
         [HttpGet("/api/media/videocomposition/blocktemplate/{id}/block")]
         public Task<DetailResponse<VideoCompositionBlock>> CreateVideoCompositionBlockFromTemplateAsync(string id)
         {
