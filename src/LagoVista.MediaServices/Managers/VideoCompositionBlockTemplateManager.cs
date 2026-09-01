@@ -45,12 +45,38 @@ namespace LagoVista.MediaServices.Managers
             return InvokeResult.Success;
         }
 
+        public async Task<InvokeResult> UpdateVideoCompositionBlockTemplateFromBlockAsync(string id, VideoCompositionBlock block, EntityHeader org, EntityHeader user)
+        {
+            if (block == null) throw new ArgumentNullException(nameof(block));
+
+            var template = await _repo.GetVideoCompositionBlockTemplateAsync(id);
+            await AuthorizeAsync(template, AuthorizeResult.AuthorizeActions.Update, user, org);
+
+            template.Block = CloneBlock(block);
+            template.LastUpdatedBy = user;
+            template.LastUpdatedDate = UtcTimestamp.Now;
+
+            NormalizeTemplate(template);
+            ValidationCheck(template, Actions.Update);
+            await _repo.UpdateVideoCompositionBlockTemplateAsync(template);
+            await PublishTemplateUpdatedAsync(template);
+            return InvokeResult.Success;
+        }
+
         public async Task<InvokeResult> DeleteVideoCompositionBlockTemplateAsync(string id, EntityHeader org, EntityHeader user)
         {
             var template = await _repo.GetVideoCompositionBlockTemplateAsync(id);
             await AuthorizeAsync(template, AuthorizeResult.AuthorizeActions.Delete, user, org);
             await ConfirmNoDepenenciesAsync(template);
-            await _repo.DeleteVideoCompositionBlockTemplateAsync(id);
+
+            template.IsDeleted = true;
+            template.DeletedBy = user;
+            template.DeletionDate = UtcTimestamp.Now;
+            template.IsActive = false;
+            template.LastUpdatedBy = user;
+            template.LastUpdatedDate = UtcTimestamp.Now;
+
+            await _repo.UpdateVideoCompositionBlockTemplateAsync(template);
             await PublishTemplateDeletedAsync(template);
             return InvokeResult.Success;
         }
@@ -84,6 +110,7 @@ namespace LagoVista.MediaServices.Managers
             {
                 Name = request.Name?.Trim(),
                 Description = request.Description?.Trim(),
+                Category = request.Category,
                 Key = CreateTemplateKey(request.Name),
                 Block = CloneBlock(request.Block),
                 IsActive = true,
@@ -101,6 +128,11 @@ namespace LagoVista.MediaServices.Managers
         public async Task<DetailResponse<VideoCompositionBlock>> CreateBlockFromTemplateAsync(string templateId, EntityHeader org, EntityHeader user)
         {
             var template = await GetVideoCompositionBlockTemplateAsync(templateId, org, user);
+
+            if (template.IsDeleted == true)
+            {
+                throw new InvalidOperationException($"Video composition block template '{template.Name}' has been deleted.");
+            }
 
             if (!template.IsActive)
             {
@@ -161,7 +193,7 @@ namespace LagoVista.MediaServices.Managers
                 }
                 else if (!previousWasSeparator && chars.Count > 0)
                 {
-                    chars.Add('-'); 
+                    chars.Add('-');
                     previousWasSeparator = true;
                 }
             }
