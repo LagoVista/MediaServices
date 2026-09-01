@@ -5,7 +5,6 @@ using LagoVista.Core.Models.UIMetaData;
 using LagoVista.Core.Validation;
 using LagoVista.MediaServices.Models.Resources;
 using System;
-using System.Collections.Generic;
 
 namespace LagoVista.MediaServices.Models
 {
@@ -28,7 +27,6 @@ namespace LagoVista.MediaServices.Models
 
         public bool IsActive { get; set; }
 
-        
         public void Validate(ValidationResult result)
         {
             if (String.IsNullOrWhiteSpace(Name))
@@ -77,7 +75,6 @@ namespace LagoVista.MediaServices.Models
         EntityDescriptionAttribute.EntityTypes.Dto, typeof(MediaServicesResources), Icon: "lago-icon://system/nuvos-semantic-icon/video-production-default")]
     public class VideoCompositionBlockTemplateSummary : SummaryData
     {
-
         public VideoCompositionBlockType? BlockType { get; set; }
 
         public EntityHeader MediaResource { get; set; }
@@ -97,6 +94,13 @@ namespace LagoVista.MediaServices.Models
 
         public string Description { get; set; }
 
+        public EntityHeader Category { get; set; }
+
+        public VideoCompositionBlock Block { get; set; }
+    }
+
+    public sealed class UpdateVideoCompositionBlockTemplateFromBlockRequest
+    {
         public VideoCompositionBlock Block { get; set; }
     }
 }
