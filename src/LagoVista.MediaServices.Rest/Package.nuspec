@@ -2,7 +2,7 @@
 <package>
   <metadata>
     <id>LagoVista.MediaServices.Rest</id>
-    <version>7.0.0</version>
+    <version>7.0.1</version>
     <authors>Software Logistics, LLC</authors>
     <owners>Software Logistics, LLC</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
@@ -17,8 +17,8 @@
     <dependencies>
       <group targetFramework="net9.0">
         <dependency id="LagoVista.IoT.Web.Common" version="7.0.0" />
-        <dependency id="LagoVista.MediaServices" version="7.0.0" />
-        <dependency id="LagoVista.MediaServices.Models" version="7.0.0" />
+        <dependency id="LagoVista.MediaServices" version="7.0.1" />
+        <dependency id="LagoVista.MediaServices.Models" version="7.0.1" />
       </group>
     </dependencies>
   </metadata>
