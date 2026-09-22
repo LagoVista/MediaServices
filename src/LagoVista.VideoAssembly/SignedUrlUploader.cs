@@ -25,6 +25,10 @@ namespace LagoVista.VideoAssembly
             if (String.IsNullOrWhiteSpace(destination.UploadUrl)) throw new InvalidOperationException("The signed upload URL is required.");
 
             var fileInfo = new FileInfo(filePath);
+            var uploadUri = new Uri(destination.UploadUrl);
+            var safeDestination = uploadUri.GetLeftPart(UriPartial.Path);
+
+            Console.WriteLine($"[OBJECT STORAGE UPLOAD START] File={fileInfo.Name}, Size={fileInfo.Length} bytes, ContentType={destination.ContentType ?? "application/octet-stream"}, Destination={safeDestination}");
             progress?.Report(new SignedUrlUploadProgress { BytesCompleted = 0, BytesTotal = fileInfo.Length, PercentComplete = 0 });
 
             using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 131072, FileOptions.Asynchronous | FileOptions.SequentialScan);
@@ -38,12 +42,33 @@ namespace LagoVista.VideoAssembly
                 Content = content
             };
 
-            using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
-            if (!response.IsSuccessStatusCode) throw new InvalidOperationException($"Signed object-storage upload failed with status {(int)response.StatusCode}: {responseContent}");
+            try
+            {
+                Console.WriteLine($"[OBJECT STORAGE HTTP PUT] Sending {fileInfo.Length} bytes to {safeDestination}.");
+                using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 
-            progress?.Report(new SignedUrlUploadProgress { BytesCompleted = fileInfo.Length, BytesTotal = fileInfo.Length, PercentComplete = 100 });
-            return fileInfo.Length;
+                Console.WriteLine($"[OBJECT STORAGE HTTP RESPONSE] Status={(int)response.StatusCode} {response.StatusCode}, BytesRead={progressStream.BytesRead}/{fileInfo.Length}, ResponseBody={Truncate(responseContent, 2048)}");
+
+                if (!response.IsSuccessStatusCode)
+                    throw new InvalidOperationException($"Signed object-storage upload failed with status {(int)response.StatusCode} ({response.StatusCode}): {responseContent}");
+
+                progress?.Report(new SignedUrlUploadProgress { BytesCompleted = fileInfo.Length, BytesTotal = fileInfo.Length, PercentComplete = 100 });
+                Console.WriteLine($"[OBJECT STORAGE UPLOAD COMPLETED] {fileInfo.Length}/{fileInfo.Length} bytes uploaded to {safeDestination}.");
+                return fileInfo.Length;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[OBJECT STORAGE UPLOAD FAILED] Destination={safeDestination}, BytesRead={progressStream.BytesRead}/{fileInfo.Length}, Exception={ex}");
+                throw;
+            }
+        }
+    }
+
+        private static string Truncate(string value, int maxLength)
+        {
+            if (String.IsNullOrEmpty(value) || value.Length <= maxLength) return value ?? String.Empty;
+            return value.Substring(0, maxLength) + "...";
         }
     }
 
@@ -84,6 +109,8 @@ namespace LagoVista.VideoAssembly
             _length = length;
             _progress = progress;
         }
+
+        public long BytesRead => _bytesRead;
 
         public override bool CanRead => _innerStream.CanRead;
         public override bool CanSeek => _innerStream.CanSeek;
@@ -147,6 +174,7 @@ namespace LagoVista.VideoAssembly
 
             _lastReportedBytes = _bytesRead;
             var percentComplete = _length <= 0 ? 100 : (int)Math.Min(100, _bytesRead * 100L / _length);
+            Console.WriteLine($"[OBJECT STORAGE UPLOAD PROGRESS] {_bytesRead}/{_length} bytes ({percentComplete}%).");
             _progress?.Report(new SignedUrlUploadProgress { BytesCompleted = _bytesRead, BytesTotal = _length, PercentComplete = percentComplete });
         }
     }
