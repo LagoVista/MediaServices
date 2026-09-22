@@ -324,7 +324,10 @@ namespace LagoVista.MediaServices.Managers
 
                 if (!launchResult.Successful)
                 {
-                    return await ApplyPreparationFailureAsync(composition, launchResult.Errors[0].Message);
+                    var launchError = String.Join(" | ", launchResult.Errors.Select(error =>
+                        String.IsNullOrWhiteSpace(error.Details) ? error.Message : $"{error.Message} Details={error.Details}"));
+                    _adminLogger.Trace($"{this.Tag()} [ASSEMBLY PROCESSOR LAUNCH FAILED] CompositionId={composition.Id}, RequestId={requestId}, AttemptId={attemptId}, Error={launchError}");
+                    return await ApplyPreparationFailureAsync(composition, launchError);
                 }
 
                 composition.AssemblyLaunchProvider = launchResult.Result.Provider;
