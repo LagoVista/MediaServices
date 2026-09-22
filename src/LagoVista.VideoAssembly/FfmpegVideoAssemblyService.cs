@@ -18,20 +18,20 @@ namespace LagoVista.VideoAssembly
         private readonly FfprobeMediaInspectionService _inspectionService;
         private readonly ProcessRunner _processRunner;
         private readonly AssSubtitleDocumentBuilder _subtitleBuilder;
-        private readonly AzureBlobSasUploader _azureBlobSasUploader;
+        private readonly SignedUrlUploader _signedUrlUploader;
         private readonly VideoThumbnailExtractor _thumbnailExtractor;
         private readonly VimeoUploadSessionClient _vimeoUploadSessionClient;
         private readonly TusVideoUploader _tusVideoUploader;
         private readonly VideoAssemblyOptions _options;
 
-        public FfmpegVideoAssemblyService(VideoAssemblyWorkspaceFactory workspaceFactory, VideoAssemblySourceDownloader sourceDownloader, FfprobeMediaInspectionService inspectionService, ProcessRunner processRunner, AssSubtitleDocumentBuilder subtitleBuilder, AzureBlobSasUploader azureBlobSasUploader, VideoThumbnailExtractor thumbnailExtractor, VimeoUploadSessionClient vimeoUploadSessionClient, TusVideoUploader tusVideoUploader, VideoAssemblyOptions options)
+        public FfmpegVideoAssemblyService(VideoAssemblyWorkspaceFactory workspaceFactory, VideoAssemblySourceDownloader sourceDownloader, FfprobeMediaInspectionService inspectionService, ProcessRunner processRunner, AssSubtitleDocumentBuilder subtitleBuilder, SignedUrlUploader signedUrlUploader, VideoThumbnailExtractor thumbnailExtractor, VimeoUploadSessionClient vimeoUploadSessionClient, TusVideoUploader tusVideoUploader, VideoAssemblyOptions options)
         {
             _workspaceFactory = workspaceFactory ?? throw new ArgumentNullException(nameof(workspaceFactory));
             _sourceDownloader = sourceDownloader ?? throw new ArgumentNullException(nameof(sourceDownloader));
             _inspectionService = inspectionService ?? throw new ArgumentNullException(nameof(inspectionService));
             _processRunner = processRunner ?? throw new ArgumentNullException(nameof(processRunner));
             _subtitleBuilder = subtitleBuilder ?? throw new ArgumentNullException(nameof(subtitleBuilder));
-            _azureBlobSasUploader = azureBlobSasUploader ?? throw new ArgumentNullException(nameof(azureBlobSasUploader));
+            _signedUrlUploader = signedUrlUploader ?? throw new ArgumentNullException(nameof(signedUrlUploader));
             _thumbnailExtractor = thumbnailExtractor ?? throw new ArgumentNullException(nameof(thumbnailExtractor));
             _vimeoUploadSessionClient = vimeoUploadSessionClient ?? throw new ArgumentNullException(nameof(vimeoUploadSessionClient));
             _tusVideoUploader = tusVideoUploader ?? throw new ArgumentNullException(nameof(tusVideoUploader));
@@ -101,17 +101,17 @@ namespace LagoVista.VideoAssembly
 
                 if (request.ExecutionOptions?.UploadToAzure == true)
                 {
-                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingToAzure, PercentComplete = 0, Message = "Uploading assembled video to Azure.", BytesCompleted = 0, BytesTotal = outputInspection.SizeBytes });
-                    var azureVideoProgress = new InlineProgress<AzureBlobUploadProgress>(upload => progress?.Report(new VideoAssemblyProgress
+                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingToAzure, PercentComplete = 0, Message = "Uploading assembled video to object storage.", BytesCompleted = 0, BytesTotal = outputInspection.SizeBytes });
+                    var videoUploadProgress = new InlineProgress<SignedUrlUploadProgress>(upload => progress?.Report(new VideoAssemblyProgress
                     {
                         OrganizationId = request.OrganizationId,
                         Stage = VideoAssemblyStage.UploadingToAzure,
                         PercentComplete = upload.PercentComplete,
-                        Message = "Uploading assembled video to Azure.",
+                        Message = "Uploading assembled video to object storage.",
                         BytesCompleted = upload.BytesCompleted,
                         BytesTotal = upload.BytesTotal
                     }));
-                    await _azureBlobSasUploader.UploadAsync(workspace.OutputPath, request.AzureVideoDestination, executionTimeout.Token, azureVideoProgress);
+                    await _signedUrlUploader.UploadAsync(workspace.OutputPath, request.AzureVideoDestination, executionTimeout.Token, videoUploadProgress);
 
                     outputs.Add(new VideoProcessorOutputArtifact
                     {
@@ -127,7 +127,7 @@ namespace LagoVista.VideoAssembly
                         Sha256 = sha256
                     });
 
-                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingToAzure, PercentComplete = 100, Message = "Assembled video uploaded to Azure.", BytesCompleted = outputInspection.SizeBytes, BytesTotal = outputInspection.SizeBytes });
+                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingToAzure, PercentComplete = 100, Message = "Assembled video uploaded to object storage.", BytesCompleted = outputInspection.SizeBytes, BytesTotal = outputInspection.SizeBytes });
                 }
 
                 if (request.ExecutionOptions?.GenerateThumbnail == true)
@@ -142,18 +142,18 @@ namespace LagoVista.VideoAssembly
                     var thumbnailFileInfo = new FileInfo(workspace.ThumbnailPath);
 
                     progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.GeneratingThumbnail, PercentComplete = 100, Message = "Assembled video thumbnail generated." });
-                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingThumbnail, PercentComplete = 0, Message = "Uploading assembled video thumbnail to Azure.", BytesCompleted = 0, BytesTotal = thumbnailFileInfo.Length });
+                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingThumbnail, PercentComplete = 0, Message = "Uploading assembled video thumbnail to object storage.", BytesCompleted = 0, BytesTotal = thumbnailFileInfo.Length });
 
-                    var thumbnailUploadProgress = new InlineProgress<AzureBlobUploadProgress>(upload => progress?.Report(new VideoAssemblyProgress
+                    var thumbnailUploadProgress = new InlineProgress<SignedUrlUploadProgress>(upload => progress?.Report(new VideoAssemblyProgress
                     {
                         OrganizationId = request.OrganizationId,
                         Stage = VideoAssemblyStage.UploadingThumbnail,
                         PercentComplete = upload.PercentComplete,
-                        Message = "Uploading assembled video thumbnail to Azure.",
+                        Message = "Uploading assembled video thumbnail to object storage.",
                         BytesCompleted = upload.BytesCompleted,
                         BytesTotal = upload.BytesTotal
                     }));
-                    await _azureBlobSasUploader.UploadAsync(workspace.ThumbnailPath, request.Thumbnail.Destination, executionTimeout.Token, thumbnailUploadProgress);
+                    await _signedUrlUploader.UploadAsync(workspace.ThumbnailPath, request.Thumbnail.Destination, executionTimeout.Token, thumbnailUploadProgress);
 
                     outputs.Add(new VideoProcessorOutputArtifact
                     {
@@ -168,7 +168,7 @@ namespace LagoVista.VideoAssembly
                         Sha256 = thumbnailSha256
                     });
 
-                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingThumbnail, PercentComplete = 100, Message = "Assembled video thumbnail uploaded to Azure.", BytesCompleted = thumbnailFileInfo.Length, BytesTotal = thumbnailFileInfo.Length });
+                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingThumbnail, PercentComplete = 100, Message = "Assembled video thumbnail uploaded to object storage.", BytesCompleted = thumbnailFileInfo.Length, BytesTotal = thumbnailFileInfo.Length });
                 }
 
                 if (request.ExecutionOptions?.UploadToVimeo == true)
@@ -234,7 +234,7 @@ namespace LagoVista.VideoAssembly
 
             try
             {
-                progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.DownloadingMedia, PercentComplete = 0, Message = "Downloading approved Azure video for Vimeo publishing." });
+                progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.DownloadingMedia, PercentComplete = 0, Message = "Downloading approved video for Vimeo publishing." });
                 var downloaded = await _sourceDownloader.DownloadAsync(request.PublishedVideoSource, workspace.OutputPath, request.Limits.MaxSourceFileBytes, VideoAssemblyStage.DownloadingMedia, progress, executionTimeout.Token);
 
                 progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.InspectingMedia, Message = "Inspecting approved video before Vimeo publishing." });
