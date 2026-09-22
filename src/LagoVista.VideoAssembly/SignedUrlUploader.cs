@@ -63,7 +63,6 @@ namespace LagoVista.VideoAssembly
                 throw;
             }
         }
-    }
 
         private static string Truncate(string value, int maxLength)
         {
