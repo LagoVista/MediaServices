@@ -4,7 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="KubernetesClient" Version="19.0.2" />
-    <PackageVersion Include="LagoVista.CloudStorage" Version="7.0.32" />
+    <PackageVersion Include="LagoVista.CloudStorage" Version="7.0.33" />
     <PackageVersion Include="LagoVista.Core.Configuration" Version="7.0.12" />
     <PackageVersion Include="LagoVista.Core.TestBase" Version="7.0.12" />
     <PackageVersion Include="LagoVista.IoT.Web.Common" Version="7.0.5" />
