@@ -1,7 +1,4 @@
-using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
-using Azure.Storage.Sas;
-using LagoVista.Core.Interfaces;
+using LagoVista.CloudStorage.Interfaces;
 using LagoVista.Core.Validation;
 using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Interfaces;
@@ -17,17 +14,12 @@ namespace LagoVista.MediaServices.CloudRepos
         private static readonly TimeSpan WriteUrlLifetime = TimeSpan.FromMinutes(60);
         private static readonly TimeSpan ReadUrlLifetime = TimeSpan.FromMinutes(60);
 
-        private readonly IConnectionSettings _connectionSettings;
+        private readonly ICloudFileStorageClient _fileStorage;
         private readonly IAdminLogger _logger;
 
-        public VideoProcessorStorageUrlService(IMediaServicesConnectionSettings settings, IAdminLogger logger)
+        public VideoProcessorStorageUrlService(ICloudFileStorageClient fileStorage, IAdminLogger logger)
         {
-            if (settings == null)
-            {
-                throw new ArgumentNullException(nameof(settings));
-            }
-
-            _connectionSettings = settings.MediaStorageConnection ?? throw new ArgumentNullException(nameof(settings.MediaStorageConnection));
+            _fileStorage = fileStorage ?? throw new ArgumentNullException(nameof(fileStorage));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -35,44 +27,25 @@ namespace LagoVista.MediaServices.CloudRepos
         {
             var validationResult = ValidateRequest(orgId, storageReferenceName);
             if (!validationResult.Successful)
-            {
                 return validationResult.ToInvokeResult<VideoProcessorStorageDestination>();
-            }
 
             if (String.IsNullOrWhiteSpace(contentType))
-            {
                 return InvokeResult<VideoProcessorStorageDestination>.FromError("Content type is required when creating a video processor write destination.");
-            }
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             try
             {
-                var blobClientResult = await GetBlobClientAsync(orgId, storageReferenceName, cancellationToken);
-                if (!blobClientResult.Successful)
-                {
-                    return blobClientResult.ToInvokeResult<VideoProcessorStorageDestination>();
-                }
+                var result = await _fileStorage.CreateWriteUrlAsync(CreateContainerName(orgId), storageReferenceName, contentType, WriteUrlLifetime);
+                if (!result.Successful)
+                    return InvokeResult<VideoProcessorStorageDestination>.FromInvokeResult(result.ToInvokeResult());
 
-                var blobClient = blobClientResult.Result;
-                var startsOn = DateTimeOffset.UtcNow.AddMinutes(-5);
-                var expiresOn = DateTimeOffset.UtcNow.Add(WriteUrlLifetime);
-                var sasBuilder = new BlobSasBuilder
-                {
-                    BlobContainerName = blobClient.BlobContainerName,
-                    BlobName = blobClient.Name,
-                    Resource = "b",
-                    Protocol = SasProtocol.Https,
-                    StartsOn = startsOn,
-                    ExpiresOn = expiresOn,
-                    ContentType = contentType
-                };
-
-                sasBuilder.SetPermissions(BlobSasPermissions.Create | BlobSasPermissions.Write);
-
+                var uploadUrl = result.Result.ToString();
                 return InvokeResult<VideoProcessorStorageDestination>.Create(new VideoProcessorStorageDestination
                 {
                     StorageReferenceName = storageReferenceName,
-                    BlobUrl = blobClient.Uri.ToString(),
-                    UploadUrl = blobClient.GenerateSasUri(sasBuilder).ToString()
+                    BlobUrl = result.Result.GetLeftPart(UriPartial.Path),
+                    UploadUrl = uploadUrl
                 });
             }
             catch (Exception ex)
@@ -86,55 +59,23 @@ namespace LagoVista.MediaServices.CloudRepos
         {
             var validationResult = ValidateRequest(orgId, storageReferenceName);
             if (!validationResult.Successful)
-            {
                 return validationResult.ToInvokeResult<string>();
-            }
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             try
             {
-                var blobClientResult = await GetBlobClientAsync(orgId, storageReferenceName, cancellationToken);
-                if (!blobClientResult.Successful)
-                {
-                    return blobClientResult.ToInvokeResult<string>();
-                }
+                var result = await _fileStorage.CreateReadUrlAsync(CreateContainerName(orgId), storageReferenceName, ReadUrlLifetime);
+                if (!result.Successful)
+                    return InvokeResult<string>.FromInvokeResult(result.ToInvokeResult());
 
-                var blobClient = blobClientResult.Result;
-                var sasBuilder = new BlobSasBuilder
-                {
-                    BlobContainerName = blobClient.BlobContainerName,
-                    BlobName = blobClient.Name,
-                    Resource = "b",
-                    Protocol = SasProtocol.Https,
-                    StartsOn = DateTimeOffset.UtcNow.AddMinutes(-5),
-                    ExpiresOn = DateTimeOffset.UtcNow.Add(ReadUrlLifetime)
-                };
-
-                sasBuilder.SetPermissions(BlobSasPermissions.Read);
-
-                return InvokeResult<string>.Create(blobClient.GenerateSasUri(sasBuilder).ToString());
+                return InvokeResult<string>.Create(result.Result.ToString());
             }
             catch (Exception ex)
             {
                 _logger.AddException("VideoProcessorStorageUrlService_CreateReadUrlAsync", ex);
                 return InvokeResult<string>.FromException("VideoProcessorStorageUrlService_CreateReadUrlAsync", ex);
             }
-        }
-
-        private async Task<InvokeResult<BlobClient>> GetBlobClientAsync(string orgId, string storageReferenceName, CancellationToken cancellationToken)
-        {
-            var blobServiceClient = CreateBlobServiceClient();
-            var containerName = CreateContainerName(orgId);
-            var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
-
-            await containerClient.CreateIfNotExistsAsync(PublicAccessType.None, cancellationToken: cancellationToken);
-
-            return InvokeResult<BlobClient>.Create(containerClient.GetBlobClient(storageReferenceName));
-        }
-
-        private BlobServiceClient CreateBlobServiceClient()
-        {
-            var connectionString = $"DefaultEndpointsProtocol=https;AccountName={_connectionSettings.AccountId};AccountKey={_connectionSettings.AccessKey}";
-            return new BlobServiceClient(connectionString);
         }
 
         private static string CreateContainerName(string orgId)
@@ -146,14 +87,10 @@ namespace LagoVista.MediaServices.CloudRepos
         private static InvokeResult ValidateRequest(string orgId, string storageReferenceName)
         {
             if (String.IsNullOrWhiteSpace(orgId))
-            {
                 return InvokeResult.FromError("Organization ID is required when creating a video processor storage URL.");
-            }
 
             if (String.IsNullOrWhiteSpace(storageReferenceName))
-            {
                 return InvokeResult.FromError("Storage reference name is required when creating a video processor storage URL.");
-            }
 
             return InvokeResult.Success;
         }
