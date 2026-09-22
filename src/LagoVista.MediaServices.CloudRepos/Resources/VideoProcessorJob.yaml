@@ -43,9 +43,9 @@ spec:
             - replace-with-request-read-sas-url
           envFrom:
             - configMapRef:
-                name: video-processor-config
+                name: video-processor-bootstrap
             - secretRef:
-                name: video-processor-secrets
+                name: video-processor-remote-config-secrets
           resources:
             requests:
               cpu: "1"
