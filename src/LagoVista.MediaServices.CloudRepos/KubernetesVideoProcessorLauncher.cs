@@ -32,10 +32,12 @@ namespace LagoVista.MediaServices.Services
                 return validationResult.ToInvokeResult<VideoProcessorLaunchResult>();
             }
 
+            var launchStage = "validate launch request";
             try
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
+                launchStage = $"read worker image from ConfigMap '{_options.Namespace}/{_options.ConfigMapName}' key '{_options.WorkerImageConfigKey}'";
                 var workerImageResult = await ResolveWorkerImageAsync(cancellationToken);
                 if (!workerImageResult.Successful)
                 {
@@ -43,15 +45,21 @@ namespace LagoVista.MediaServices.Services
                 }
 
                 var jobName = CreateJobName(request.AttemptId);
+
+                launchStage = $"load embedded Job template '{_options.JobTemplateResourceName}'";
                 var yaml = LoadJobTemplate();
+
+                launchStage = $"apply Job template values for '{jobName}'";
                 yaml = ApplyTemplateValues(yaml, request, jobName, workerImageResult.Result);
 
+                launchStage = $"deserialize Kubernetes Job '{jobName}'";
                 var job = KubernetesYaml.Deserialize<V1Job>(yaml);
                 if (job == null)
                 {
                     return InvokeResult<VideoProcessorLaunchResult>.FromError("The embedded video processor Kubernetes Job template could not be deserialized.");
                 }
 
+                launchStage = $"create Kubernetes Job '{_options.Namespace}/{jobName}' using image '{workerImageResult.Result}'";
                 var createdJob = await _kubernetesClient.BatchV1.CreateNamespacedJobAsync(job, _options.Namespace, cancellationToken: cancellationToken);
                 var createdJobName = createdJob?.Metadata?.Name;
 
@@ -70,10 +78,16 @@ namespace LagoVista.MediaServices.Services
             }
             catch (Exception ex)
             {
-                var detail = ex.InnerException != null && !String.Equals(ex.InnerException.Message, ex.Message, StringComparison.Ordinal)
-                    ? $"{ex.Message} | Inner: {ex.InnerException.Message}"
-                    : ex.Message;
-                return InvokeResult<VideoProcessorLaunchResult>.FromError($"Could not launch the video processor Kubernetes Job: {detail}");
+                var message = $"Video processor Kubernetes launch failed while attempting to {launchStage}: {ex.Message}";
+                var details = ex.ToString();
+
+                if (ex.InnerException != null && !String.Equals(ex.InnerException.Message, ex.Message, StringComparison.Ordinal))
+                {
+                    message += $" | Inner: {ex.InnerException.Message}";
+                }
+
+                return InvokeResult<VideoProcessorLaunchResult>.FromErrors(
+                    new ErrorMessage("VIDEO_PROCESSOR_K8S_LAUNCH", message) { Details = details });
             }
         }
 
