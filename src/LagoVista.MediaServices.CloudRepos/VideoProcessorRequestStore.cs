@@ -1,13 +1,8 @@
-using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
-using Azure.Storage.Sas;
-using LagoVista.Core.Interfaces;
+using LagoVista.CloudStorage.Interfaces;
 using LagoVista.Core.Validation;
 using LagoVista.IoT.Logging.Loggers;
 using LagoVista.MediaServices.Interfaces;
 using System;
-using System.IO;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,86 +14,62 @@ namespace LagoVista.MediaServices.CloudRepos
         private const string ContainerPrefix = "video-processor-requests-";
         private static readonly TimeSpan RequestUrlLifetime = TimeSpan.FromMinutes(60);
 
-        private readonly IConnectionSettings _connectionSettings;
+        private readonly ICloudFileStorageClient _fileStorage;
         private readonly IAdminLogger _logger;
 
-        public VideoProcessorRequestStore(IMediaServicesConnectionSettings settings, IAdminLogger logger)
+        public VideoProcessorRequestStore(ICloudFileStorageClient fileStorage, IAdminLogger logger)
         {
-            if (settings == null)
-            {
-                throw new ArgumentNullException(nameof(settings));
-            }
-
-            _connectionSettings = settings.MediaStorageConnection ?? throw new ArgumentNullException(nameof(settings.MediaStorageConnection));
+            _fileStorage = fileStorage ?? throw new ArgumentNullException(nameof(fileStorage));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task<InvokeResult<VideoProcessorStoredRequest>> SaveAsync<TRequest>(string orgId, string jobType, string requestId, string attemptId, TRequest request, CancellationToken cancellationToken = default)
         {
             if (String.IsNullOrWhiteSpace(orgId))
-            {
                 return InvokeResult<VideoProcessorStoredRequest>.FromError("Organization ID is required when storing a video processor request.");
-            }
 
             if (String.IsNullOrWhiteSpace(jobType))
-            {
                 return InvokeResult<VideoProcessorStoredRequest>.FromError("Video processor job type is required.");
-            }
 
             if (String.IsNullOrWhiteSpace(requestId))
-            {
                 return InvokeResult<VideoProcessorStoredRequest>.FromError("Video processor request ID is required.");
-            }
 
             if (String.IsNullOrWhiteSpace(attemptId))
-            {
                 return InvokeResult<VideoProcessorStoredRequest>.FromError("Video processor attempt ID is required.");
-            }
 
             if (request == null)
-            {
                 return InvokeResult<VideoProcessorStoredRequest>.FromError("Video processor request payload is required.");
-            }
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             try
             {
-                var containerClient = await GetContainerClientAsync(orgId, cancellationToken);
+                var containerName = CreateContainerName(orgId);
                 var storageReferenceName = CreateStorageReferenceName(jobType, requestId, attemptId);
-                var blobClient = containerClient.GetBlobClient(storageReferenceName);
                 var json = JsonSerializer.Serialize(request, new JsonSerializerOptions
                 {
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
                     WriteIndented = true
                 });
 
-                using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
-                {
-                    await blobClient.UploadAsync(stream, new BlobUploadOptions
-                    {
-                        HttpHeaders = new BlobHttpHeaders
-                        {
-                            ContentType = "application/json; charset=utf-8"
-                        }
-                    }, cancellationToken);
-                }
+                var writeResult = await _fileStorage.AddFileAsync(
+                    containerName,
+                    storageReferenceName,
+                    json,
+                    "application/json; charset=utf-8");
 
-                var sasBuilder = new BlobSasBuilder
-                {
-                    BlobContainerName = blobClient.BlobContainerName,
-                    BlobName = blobClient.Name,
-                    Resource = "b",
-                    Protocol = SasProtocol.Https,
-                    StartsOn = DateTimeOffset.UtcNow.AddMinutes(-5),
-                    ExpiresOn = DateTimeOffset.UtcNow.Add(RequestUrlLifetime)
-                };
+                if (!writeResult.Successful)
+                    return InvokeResult<VideoProcessorStoredRequest>.FromInvokeResult(writeResult.ToInvokeResult());
 
-                sasBuilder.SetPermissions(BlobSasPermissions.Read);
+                var readUrlResult = await _fileStorage.CreateReadUrlAsync(containerName, storageReferenceName, RequestUrlLifetime);
+                if (!readUrlResult.Successful)
+                    return InvokeResult<VideoProcessorStoredRequest>.FromInvokeResult(readUrlResult.ToInvokeResult());
 
                 return InvokeResult<VideoProcessorStoredRequest>.Create(new VideoProcessorStoredRequest
                 {
                     StorageReferenceName = storageReferenceName,
-                    BlobUrl = blobClient.Uri.ToString(),
-                    RequestUrl = blobClient.GenerateSasUri(sasBuilder).ToString()
+                    BlobUrl = writeResult.Result.ToString(),
+                    RequestUrl = readUrlResult.Result.ToString()
                 });
             }
             catch (Exception ex)
@@ -106,20 +77,6 @@ namespace LagoVista.MediaServices.CloudRepos
                 _logger.AddException("VideoProcessorRequestStore_SaveAsync", ex);
                 return InvokeResult<VideoProcessorStoredRequest>.FromException("VideoProcessorRequestStore_SaveAsync", ex);
             }
-        }
-
-        private async Task<BlobContainerClient> GetContainerClientAsync(string orgId, CancellationToken cancellationToken)
-        {
-            var blobServiceClient = CreateBlobServiceClient();
-            var containerClient = blobServiceClient.GetBlobContainerClient(CreateContainerName(orgId));
-            await containerClient.CreateIfNotExistsAsync(PublicAccessType.None, cancellationToken: cancellationToken);
-            return containerClient;
-        }
-
-        private BlobServiceClient CreateBlobServiceClient()
-        {
-            var connectionString = $"DefaultEndpointsProtocol=https;AccountName={_connectionSettings.AccountId};AccountKey={_connectionSettings.AccessKey}";
-            return new BlobServiceClient(connectionString);
         }
 
         private static string CreateContainerName(string orgId)
