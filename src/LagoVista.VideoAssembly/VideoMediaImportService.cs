@@ -22,7 +22,7 @@ namespace LagoVista.VideoAssembly
         private readonly FfprobeMediaInspectionService _inspectionService;
         private readonly TransparentVideoCropper _transparentVideoCropper;
         private readonly VideoThumbnailExtractor _thumbnailExtractor;
-        private readonly AzureBlobSasUploader _azureUploader;
+        private readonly SignedUrlUploader _signedUrlUploader;
         private readonly VideoProcessorCallbackClient _callbackClient;
         private readonly VideoProcessorNotificationPublisher _notificationPublisher;
         private readonly VideoAssemblyOptions _options;
@@ -30,13 +30,13 @@ namespace LagoVista.VideoAssembly
         private Task _pendingUploadNotification = Task.CompletedTask;
         private long _sequence;
 
-        public VideoMediaImportService(HttpClient httpClient, FfprobeMediaInspectionService inspectionService, TransparentVideoCropper transparentVideoCropper, VideoThumbnailExtractor thumbnailExtractor, AzureBlobSasUploader azureUploader, VideoProcessorCallbackClient callbackClient, VideoProcessorNotificationPublisher notificationPublisher, VideoAssemblyOptions options)
+        public VideoMediaImportService(HttpClient httpClient, FfprobeMediaInspectionService inspectionService, TransparentVideoCropper transparentVideoCropper, VideoThumbnailExtractor thumbnailExtractor, SignedUrlUploader signedUrlUploader, VideoProcessorCallbackClient callbackClient, VideoProcessorNotificationPublisher notificationPublisher, VideoAssemblyOptions options)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             _inspectionService = inspectionService ?? throw new ArgumentNullException(nameof(inspectionService));
             _transparentVideoCropper = transparentVideoCropper ?? throw new ArgumentNullException(nameof(transparentVideoCropper));
             _thumbnailExtractor = thumbnailExtractor ?? throw new ArgumentNullException(nameof(thumbnailExtractor));
-            _azureUploader = azureUploader ?? throw new ArgumentNullException(nameof(azureUploader));
+            _signedUrlUploader = signedUrlUploader ?? throw new ArgumentNullException(nameof(signedUrlUploader));
             _callbackClient = callbackClient ?? throw new ArgumentNullException(nameof(callbackClient));
             _notificationPublisher = notificationPublisher ?? throw new ArgumentNullException(nameof(notificationPublisher));
             _options = options ?? throw new ArgumentNullException(nameof(options));
@@ -75,8 +75,8 @@ namespace LagoVista.VideoAssembly
                 var videoSha256 = await CalculateSha256Async(importedVideoPath, timeout.Token);
 
                 currentStage = VideoMediaImportStage.UploadingVideo;
-                await SendCallbackSafelyAsync(request, VideoAssemblyCallbackType.Progress, currentStage, cropResult.WasCropped ? "Uploading cropped transparent source video to Azure." : "Uploading source video to Azure.", outputs, null, timeout.Token);
-                await _azureUploader.UploadAsync(importedVideoPath, request.VideoDestination, timeout.Token, CreateUploadProgress(request, currentStage, "Uploading source video to Azure."));
+                await SendCallbackSafelyAsync(request, VideoAssemblyCallbackType.Progress, currentStage, cropResult.WasCropped ? "Uploading cropped transparent source video to object storage." : "Uploading source video to object storage.", outputs, null, timeout.Token);
+                await _signedUrlUploader.UploadAsync(importedVideoPath, request.VideoDestination, timeout.Token, CreateUploadProgress(request, currentStage, "Uploading source video to object storage."));
                 await FlushUploadNotificationsAsync();
 
                 outputs.Add(new VideoProcessorOutputArtifact
@@ -104,8 +104,8 @@ namespace LagoVista.VideoAssembly
                     var thumbnailSha256 = await CalculateSha256Async(thumbnailPath, timeout.Token);
 
                     currentStage = VideoMediaImportStage.UploadingThumbnail;
-                    await SendCallbackSafelyAsync(request, VideoAssemblyCallbackType.Progress, currentStage, "Uploading video thumbnail to Azure.", outputs, null, timeout.Token);
-                    var thumbnailSize = await _azureUploader.UploadAsync(thumbnailPath, request.Thumbnail.Destination, timeout.Token, CreateUploadProgress(request, currentStage, "Uploading video thumbnail to Azure."));
+                    await SendCallbackSafelyAsync(request, VideoAssemblyCallbackType.Progress, currentStage, "Uploading video thumbnail to object storage.", outputs, null, timeout.Token);
+                    var thumbnailSize = await _signedUrlUploader.UploadAsync(thumbnailPath, request.Thumbnail.Destination, timeout.Token, CreateUploadProgress(request, currentStage, "Uploading video thumbnail to object storage."));
                     await FlushUploadNotificationsAsync();
 
                     outputs.Add(new VideoProcessorOutputArtifact
@@ -172,9 +172,9 @@ namespace LagoVista.VideoAssembly
             return totalBytes;
         }
 
-        private IProgress<AzureBlobUploadProgress> CreateUploadProgress(VideoMediaImportRequest request, VideoMediaImportStage stage, string message)
+        private IProgress<SignedUrlUploadProgress> CreateUploadProgress(VideoMediaImportRequest request, VideoMediaImportStage stage, string message)
         {
-            return new InlineProgress<AzureBlobUploadProgress>(upload =>
+            return new InlineProgress<SignedUrlUploadProgress>(upload =>
             {
                 Console.WriteLine($"[{stage}] {upload.PercentComplete}% {upload.BytesCompleted}/{upload.BytesTotal} bytes {message}");
 
