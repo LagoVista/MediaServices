@@ -17,8 +17,8 @@
     <dependencies>
       <group targetFramework="net9.0">
         <dependency id="LagoVista.IoT.Web.Common" version="7.0.5" />
-        <dependency id="LagoVista.MediaServices" version="7.0.13" />
-        <dependency id="LagoVista.MediaServices.Models" version="7.0.13" />
+        <dependency id="LagoVista.MediaServices" version="7.0.14" />
+        <dependency id="LagoVista.MediaServices.Models" version="7.0.14" />
       </group>
     </dependencies>
   </metadata>
