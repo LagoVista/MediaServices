@@ -47,7 +47,7 @@ namespace LagoVista.VideoAssembly.Worker
             builder.Services.AddHttpClient<VideoProcessorRequestLoader>(client => client.Timeout = TimeSpan.FromMinutes(options.HttpTimeoutMinutes));
             builder.Services.AddHttpClient<VideoAssemblySourceDownloader>(client => client.Timeout = TimeSpan.FromMinutes(options.HttpTimeoutMinutes));
             builder.Services.AddHttpClient<VideoMediaImportService>(client => client.Timeout = TimeSpan.FromMinutes(options.HttpTimeoutMinutes));
-            builder.Services.AddHttpClient<AzureBlobSasUploader>(client => client.Timeout = Timeout.InfiniteTimeSpan);
+            builder.Services.AddHttpClient<SignedUrlUploader>(client => client.Timeout = Timeout.InfiniteTimeSpan);
             builder.Services.AddHttpClient<VideoProcessorCallbackClient>(client => client.Timeout = TimeSpan.FromSeconds(options.CallbackTimeoutSeconds));
             builder.Services.AddHttpClient<VimeoUploadSessionClient>(client => client.Timeout = TimeSpan.FromMinutes(options.HttpTimeoutMinutes));
             builder.Services.AddHttpClient<TusVideoUploader>(client => client.Timeout = Timeout.InfiniteTimeSpan);
