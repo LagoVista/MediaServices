@@ -449,7 +449,10 @@ namespace LagoVista.MediaServices.Managers
 
                 if (!launchResult.Successful)
                 {
-                    await ApplyPreparationFailureAsync(production, launchResult.Errors[0].Message);
+                    var launchError = String.Join(" | ", launchResult.Errors.Select(error =>
+                        String.IsNullOrWhiteSpace(error.Details) ? error.Message : $"{error.Message} Details={error.Details}"));
+                    _adminLogger.Trace($"{this.Tag()} [VIDEO IMPORT PROCESSOR LAUNCH FAILED] ProductionId={production.Id}, RequestId={requestId}, AttemptId={attemptId}, Error={launchError}");
+                    await ApplyPreparationFailureAsync(production, launchError);
                     return launchResult.ToInvokeResult<VideoMediaImportPreparationResult>();
                 }
 
