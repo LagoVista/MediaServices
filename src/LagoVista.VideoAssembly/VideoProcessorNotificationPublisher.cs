@@ -18,8 +18,8 @@ namespace LagoVista.VideoAssembly
         public string VirtualHost { get; set; } = "/";
         public string UserName { get; set; }
         public string Password { get; set; }
-        public string Exchange { get; set; } = "notif.publish";
-        public string RoutingKey { get; set; } = "notif-publish";
+        public string ExchangeName { get; set; } = "notif.publish";
+        public string RouteKey { get; set; } = "notif-publish";
         public string ClientName { get; set; } = "VideoProcessorNotificationPublisher";
     }
 
@@ -82,9 +82,9 @@ namespace LagoVista.VideoAssembly
 
             var json = JsonSerializer.Serialize(notification, _jsonOptions);
             var body = Encoding.UTF8.GetBytes(json);
-            Console.WriteLine($"[VideoProcessorNotificationPublisher__TryPublishAsync] Pubilshing {notification.Channel.Id}/{channelId}/{text}/{_settings.Exchange}/{_settings.RoutingKey}");
-            await channel.BasicPublishAsync(_settings.Exchange, _settings.RoutingKey, body: body, mandatory:true, cancellationToken: cancellationToken);
-            Console.WriteLine($"[VideoProcessorNotificationPublisher__TryPublishAsync] Confirmed {notification.Channel.Id}/{channelId}/{text}/{_settings.Exchange}/{_settings.RoutingKey}");
+            Console.WriteLine($"[VideoProcessorNotificationPublisher__TryPublishAsync] Pubilshing {notification.Channel.Id}/{channelId}/{text}/{_settings.ExchangeName}/{_settings.RouteKey}");
+            await channel.BasicPublishAsync(_settings.ExchangeName, _settings.RouteKey, body: body, mandatory:true, cancellationToken: cancellationToken);
+            Console.WriteLine($"[VideoProcessorNotificationPublisher__TryPublishAsync] Confirmed {notification.Channel.Id}/{channelId}/{text}/{_settings.ExchangeName}/{_settings.RouteKey}");
         }
 
         private async Task<IChannel> GetChannelAsync(CancellationToken cancellationToken)
