@@ -70,7 +70,10 @@ namespace LagoVista.MediaServices.Services
             }
             catch (Exception ex)
             {
-                return InvokeResult<VideoProcessorLaunchResult>.FromException("Could not launch the video processor Kubernetes Job.", ex);
+                var detail = ex.InnerException != null && !String.Equals(ex.InnerException.Message, ex.Message, StringComparison.Ordinal)
+                    ? $"{ex.Message} | Inner: {ex.InnerException.Message}"
+                    : ex.Message;
+                return InvokeResult<VideoProcessorLaunchResult>.FromError($"Could not launch the video processor Kubernetes Job: {detail}");
             }
         }
 
