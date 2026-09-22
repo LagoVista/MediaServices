@@ -19,7 +19,7 @@
         <dependency id="KubernetesClient" version="19.0.2" />
         <dependency id="LagoVista.CloudStorage" version="7.0.33" />
         <dependency id="LagoVista.Core.Configuration" version="7.0.12" />
-        <dependency id="LagoVista.MediaServices" version="7.0.15" />
+        <dependency id="LagoVista.MediaServices" version="7.0.16" />
         <dependency id="LagoVista.UserAdmin" version="7.0.10" />
       </group>
     </dependencies>
