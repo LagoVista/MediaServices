@@ -17,9 +17,9 @@
     <dependencies>
       <group targetFramework="net9.0">
         <dependency id="KubernetesClient" version="19.0.2" />
-        <dependency id="LagoVista.CloudStorage" version="7.0.31" />
+        <dependency id="LagoVista.CloudStorage" version="7.0.32" />
         <dependency id="LagoVista.Core.Configuration" version="7.0.12" />
-        <dependency id="LagoVista.MediaServices" version="7.0.6" />
+        <dependency id="LagoVista.MediaServices" version="7.0.7" />
         <dependency id="LagoVista.UserAdmin" version="7.0.10" />
       </group>
     </dependencies>

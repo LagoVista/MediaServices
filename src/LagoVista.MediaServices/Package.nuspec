@@ -16,7 +16,7 @@
     <repository url="https://www.github.com/lagovista" type="git" branch="master"></repository>
     <dependencies>
       <group targetFramework="netstandard2.1">
-        <dependency id="LagoVista.MediaServices.Models" version="7.0.6" />
+        <dependency id="LagoVista.MediaServices.Models" version="7.0.7" />
         <dependency id="LagoVista.UserAdmin" version="7.0.10" />
         <dependency id="Microsoft.Extensions.Http" version="9.0.13" />
         <dependency id="SixLabors.ImageSharp" version="2.1.11" />
