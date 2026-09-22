@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package>
+  <metadata>
+    <id>LagoVista.VideoAssembly.Contracts</id>
+    <version>7.0.9</version>
+    <authors>Software Logistics, LLC</authors>
+    <owners>Software Logistics, LLC</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectUrl>https://www.nuviot.com</projectUrl>
+    <description>Contracts for NuvIoT video assembly and media-processing jobs.</description>
+    <copyright>Copyright Software Logistics - 2026</copyright>
+    <tags>LagoVista NuvIoT Video Assembly Media</tags>
+    <repository url="https://github.com/LagoVista/MediaServices" type="git" branch="master"></repository>
+  </metadata>
+  <files>
+    <file src="bin/Release/netstandard2.1/LagoVista.VideoAssembly.Contracts.dll" target="lib/netstandard2.1/LagoVista.VideoAssembly.Contracts.dll" />
+    <file src="bin/Release/netstandard2.1/LagoVista.VideoAssembly.Contracts.pdb" target="lib/netstandard2.1/LagoVista.VideoAssembly.Contracts.pdb" />
+  </files>
+</package>
