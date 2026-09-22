@@ -12,6 +12,7 @@ using System.Collections.Generic;
 
 namespace LagoVista.MediaServices.Models
 {
+    [CollectionName("MediaResources")]
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.MediaLibrary_Title, MediaServicesResources.Names.MediaLibrary_Help, MediaServicesResources.Names.MediaLibrary_Description, 
         EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources), Icon: "lago-icon://system/nuvos-semantic-icon/media-library-default",
         EditUIUrl: "/contentmanagement/medialibrary/{id}", ListUIUrl: "/contentmanagement/medialibraries", CreateUIUrl: "/contentmanagement/medialibrary/add",
