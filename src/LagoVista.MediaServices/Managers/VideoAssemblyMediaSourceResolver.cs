@@ -98,7 +98,7 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<VideoAssemblySource>.FromError($"Generated media resource '{mediaResource.Id}' did not produce a valid absolute read URL.");
             }
 
-            if (String.IsNullOrWhiteSpace(readUri.Query) || readUri.Query.IndexOf("sig=", StringComparison.OrdinalIgnoreCase) < 0)
+            if (String.IsNullOrWhiteSpace(readUri.Query))
             {
                 return InvokeResult<VideoAssemblySource>.FromError($"Generated media resource '{mediaResource.Id}' did not produce a signed read URL.");
             }
@@ -110,16 +110,16 @@ namespace LagoVista.MediaServices.Managers
         {
             if (String.IsNullOrWhiteSpace(mediaResource.ExternalUrl))
             {
-                return InvokeResult<string>.FromError($"Generated video media resource '{mediaResource.Id}' does not have a storage reference name or blob URL.");
+                return InvokeResult<string>.FromError($"Generated video media resource '{mediaResource.Id}' does not have a storage reference name or storage URL.");
             }
 
-            if (!Uri.TryCreate(mediaResource.ExternalUrl, UriKind.Absolute, out var blobUri))
+            if (!Uri.TryCreate(mediaResource.ExternalUrl, UriKind.Absolute, out var storageUri))
             {
-                return InvokeResult<string>.FromError($"Generated video media resource '{mediaResource.Id}' has an invalid blob URL.");
+                return InvokeResult<string>.FromError($"Generated video media resource '{mediaResource.Id}' has an invalid storage URL.");
             }
 
             var expectedContainerName = $"video-processor-{orgId.Trim().ToLowerInvariant().Replace("_", "-")}";
-            var pathSegments = blobUri.AbsolutePath.Trim('/').Split('/');
+            var pathSegments = storageUri.AbsolutePath.Trim('/').Split('/');
 
             if (pathSegments.Length != 2 || !String.Equals(pathSegments[0], expectedContainerName, StringComparison.OrdinalIgnoreCase))
             {
@@ -129,7 +129,7 @@ namespace LagoVista.MediaServices.Managers
             var storageReferenceName = Uri.UnescapeDataString(pathSegments[1]);
             if (String.IsNullOrWhiteSpace(storageReferenceName))
             {
-                return InvokeResult<string>.FromError($"Generated video media resource '{mediaResource.Id}' blob URL does not contain a storage reference name.");
+                return InvokeResult<string>.FromError($"Generated video media resource '{mediaResource.Id}' storage URL does not contain a storage reference name.");
             }
 
             return InvokeResult<string>.Create(storageReferenceName);
