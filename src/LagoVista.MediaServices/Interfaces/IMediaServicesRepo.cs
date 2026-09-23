@@ -14,6 +14,7 @@ namespace LagoVista.MediaServices.Interfaces
         Task<InvokeResult> AddMediaAsync(byte[] data, string org, string fileName, string contentType);
         Task<InvokeResult<byte[]>> GetMediaAsync(string blobReferenceName, string org);
         Task<InvokeResult<string>> GetMediaReadUrlAsync(string blobReferenceName, string org, System.Threading.CancellationToken cancellationToken = default);
+        Task<InvokeResult<string>> GetMediaReadUrlAsync(string blobReferenceName, string org, VideoProcessorStorageUrlScope scope, System.Threading.CancellationToken cancellationToken = default);
         Task<MediaResource> GetMediaResourceRecordAsync(string id);
         Task<MediaResource> TryGetMediaResourceRecordAsync(string id);
         Task DeleteMediaRecordAsync(string id);
