@@ -58,7 +58,7 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<VideoAssemblySource>.FromError($"Uploaded media resource '{mediaResource.Id}' does not have a storage reference name.");
             }
 
-            var readUrlResult = await _mediaRepo.GetMediaReadUrlAsync(storageReferenceName, orgId, cancellationToken);
+            var readUrlResult = await _mediaRepo.GetMediaReadUrlAsync(storageReferenceName, orgId, VideoProcessorStorageUrlScope.Internal, cancellationToken);
             if (!readUrlResult.Successful)
             {
                 return InvokeResult<VideoAssemblySource>.FromInvokeResult(readUrlResult.ToInvokeResult());
