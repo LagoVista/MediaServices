@@ -1,3 +1,4 @@
+using LagoVista.CloudStorage.Interfaces;
 using LagoVista.Core;
 using LagoVista.Core.Interfaces;
 using LagoVista.Core.Models;
@@ -262,7 +263,7 @@ namespace LagoVista.MediaServices.Managers
             var pendingRevision = PreparePendingRevision(mediaResource, user, production.Settings?.GenerateTransparentPresenter == true);
             var videoContentType = String.IsNullOrWhiteSpace(pendingRevision.MimeType) ? "video/mp4" : pendingRevision.MimeType;
             _adminLogger.Trace($"{this.Tag()} [CREATING VIDEO DESTINATION] ProductionId={production.Id}, MediaResourceId={mediaResource.Id}, StorageReferenceName={pendingRevision.StorageReferenceName}");
-            var videoWriteDestinationResult = await _videoProcessorStorageUrlService.CreateWriteDestinationAsync(org.Id, pendingRevision.StorageReferenceName, videoContentType, cancellationToken);
+            var videoWriteDestinationResult = await _videoProcessorStorageUrlService.CreateWriteDestinationAsync(org.Id, pendingRevision.StorageReferenceName, videoContentType, CloudStorageUrlScope.Internal, cancellationToken);
             if (!videoWriteDestinationResult.Successful)
             {
                 await ApplyPreparationFailureAsync(production, videoWriteDestinationResult.Errors[0].Message);
@@ -275,7 +276,7 @@ namespace LagoVista.MediaServices.Managers
             if (generateThumbnail)
             {
                 _adminLogger.Trace($"{this.Tag()} [CREATING THUMBNAIL DESTINATION] ProductionId={production.Id}, MediaResourceId={mediaResource.Id}, StorageReferenceName={pendingRevision.ThumbnailStorageReferenceName}");
-                var thumbnailWriteDestinationResult = await _videoProcessorStorageUrlService.CreateWriteDestinationAsync(org.Id, pendingRevision.ThumbnailStorageReferenceName, "image/jpeg", cancellationToken);
+                var thumbnailWriteDestinationResult = await _videoProcessorStorageUrlService.CreateWriteDestinationAsync(org.Id, pendingRevision.ThumbnailStorageReferenceName, "image/jpeg", CloudStorageUrlScope.Internal, cancellationToken);
                 if (!thumbnailWriteDestinationResult.Successful)
                 {
                     await ApplyPreparationFailureAsync(production, thumbnailWriteDestinationResult.Errors[0].Message);
