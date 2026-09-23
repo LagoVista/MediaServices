@@ -1,4 +1,3 @@
-using LagoVista.CloudStorage.Interfaces;
 using LagoVista.Core.Validation;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
@@ -88,7 +87,7 @@ namespace LagoVista.MediaServices.Managers
                 await _mediaRepo.UpdateMediaResourceRecordAsync(mediaResource);
             }
 
-            var readUrlResult = await _videoProcessorStorageUrlService.CreateReadUrlAsync(orgId, storageReferenceName, CloudStorageUrlScope.Internal, cancellationToken);
+            var readUrlResult = await _videoProcessorStorageUrlService.CreateReadUrlAsync(orgId, storageReferenceName, VideoProcessorStorageUrlScope.Internal, cancellationToken);
             if (!readUrlResult.Successful)
             {
                 return InvokeResult<VideoAssemblySource>.FromInvokeResult(readUrlResult.ToInvokeResult());
