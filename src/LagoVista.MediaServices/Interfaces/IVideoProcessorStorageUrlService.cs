@@ -7,8 +7,10 @@ namespace LagoVista.MediaServices.Interfaces
 {
     public interface IVideoProcessorStorageUrlService
     {
-        Task<InvokeResult<VideoProcessorStorageDestination>> CreateWriteDestinationAsync(string orgId, string storageReferenceName, string contentType, CloudStorageUrlScope scope = CloudStorageUrlScope.Public, CancellationToken cancellationToken = default);
-        Task<InvokeResult<string>> CreateReadUrlAsync(string orgId, string storageReferenceName, CloudStorageUrlScope scope = CloudStorageUrlScope.Public, CancellationToken cancellationToken = default);
+        Task<InvokeResult<VideoProcessorStorageDestination>> CreateWriteDestinationAsync(string orgId, string storageReferenceName, string contentType, CancellationToken cancellationToken = default);
+        Task<InvokeResult<VideoProcessorStorageDestination>> CreateWriteDestinationAsync(string orgId, string storageReferenceName, string contentType, CloudStorageUrlScope scope, CancellationToken cancellationToken = default);
+        Task<InvokeResult<string>> CreateReadUrlAsync(string orgId, string storageReferenceName, CancellationToken cancellationToken = default);
+        Task<InvokeResult<string>> CreateReadUrlAsync(string orgId, string storageReferenceName, CloudStorageUrlScope scope, CancellationToken cancellationToken = default);
     }
 
     public sealed class VideoProcessorStorageDestination
