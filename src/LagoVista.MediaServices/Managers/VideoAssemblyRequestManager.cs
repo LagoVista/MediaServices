@@ -1,3 +1,4 @@
+using LagoVista.CloudStorage.Interfaces;
 using LagoVista.Core;
 using LagoVista.Core.Interfaces;
 using LagoVista.Core.Models;
@@ -158,14 +159,14 @@ namespace LagoVista.MediaServices.Managers
 
             var pendingRevision = PreparePendingRevision(outputMediaResource, user);
             _adminLogger.Trace($"{this.Tag()} [ASSEMBLY VIDEO DESTINATION CREATING] CompositionId={composition.Id}, MediaResourceId={outputMediaResource.Id}, StorageReferenceName={pendingRevision.StorageReferenceName}");
-            var videoDestinationResult = await _videoProcessorStorageUrlService.CreateWriteDestinationAsync(org.Id, pendingRevision.StorageReferenceName, "video/mp4", cancellationToken);
+            var videoDestinationResult = await _videoProcessorStorageUrlService.CreateWriteDestinationAsync(org.Id, pendingRevision.StorageReferenceName, "video/mp4", CloudStorageUrlScope.Internal, cancellationToken);
             if (!videoDestinationResult.Successful)
             {
                 return await ApplyPreparationFailureAsync(composition, videoDestinationResult.Errors[0].Message);
             }
 
             _adminLogger.Trace($"{this.Tag()} [ASSEMBLY THUMBNAIL DESTINATION CREATING] CompositionId={composition.Id}, MediaResourceId={outputMediaResource.Id}, StorageReferenceName={pendingRevision.ThumbnailStorageReferenceName}");
-            var thumbnailDestinationResult = await _videoProcessorStorageUrlService.CreateWriteDestinationAsync(org.Id, pendingRevision.ThumbnailStorageReferenceName, "image/jpeg", cancellationToken);
+            var thumbnailDestinationResult = await _videoProcessorStorageUrlService.CreateWriteDestinationAsync(org.Id, pendingRevision.ThumbnailStorageReferenceName, "image/jpeg", CloudStorageUrlScope.Internal, cancellationToken);
             if (!thumbnailDestinationResult.Successful)
             {
                 return await ApplyPreparationFailureAsync(composition, thumbnailDestinationResult.Errors[0].Message);
