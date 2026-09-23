@@ -28,7 +28,7 @@ namespace LagoVista.MediaServices.CloudRepos
             return CreateWriteDestinationAsync(orgId, storageReferenceName, contentType, CloudStorageUrlScope.Public, cancellationToken);
         }
 
-        public async Task<InvokeResult<VideoProcessorStorageDestination>> CreateWriteDestinationAsync(string orgId, string storageReferenceName, string contentType, CloudStorageUrlScope scope, CancellationToken cancellationToken = default)
+        public async Task<InvokeResult<VideoProcessorStorageDestination>> CreateWriteDestinationAsync(string orgId, string storageReferenceName, string contentType, VideoProcessorStorageUrlScope scope, CancellationToken cancellationToken = default)
         {
             var validationResult = ValidateRequest(orgId, storageReferenceName);
             if (!validationResult.Successful)
@@ -41,7 +41,7 @@ namespace LagoVista.MediaServices.CloudRepos
 
             try
             {
-                var result = await _fileStorage.CreateWriteUrlAsync(CreateContainerName(orgId), storageReferenceName, contentType, WriteUrlLifetime, scope);
+                var result = await _fileStorage.CreateWriteUrlAsync(CreateContainerName(orgId), storageReferenceName, contentType, WriteUrlLifetime, MapScope(scope));
                 if (!result.Successful)
                     return InvokeResult<VideoProcessorStorageDestination>.FromInvokeResult(result.ToInvokeResult());
 
@@ -65,7 +65,7 @@ namespace LagoVista.MediaServices.CloudRepos
             return CreateReadUrlAsync(orgId, storageReferenceName, CloudStorageUrlScope.Public, cancellationToken);
         }
 
-        public async Task<InvokeResult<string>> CreateReadUrlAsync(string orgId, string storageReferenceName, CloudStorageUrlScope scope, CancellationToken cancellationToken = default)
+        public async Task<InvokeResult<string>> CreateReadUrlAsync(string orgId, string storageReferenceName, VideoProcessorStorageUrlScope scope, CancellationToken cancellationToken = default)
         {
             var validationResult = ValidateRequest(orgId, storageReferenceName);
             if (!validationResult.Successful)
@@ -75,7 +75,7 @@ namespace LagoVista.MediaServices.CloudRepos
 
             try
             {
-                var result = await _fileStorage.CreateReadUrlAsync(CreateContainerName(orgId), storageReferenceName, ReadUrlLifetime, scope);
+                var result = await _fileStorage.CreateReadUrlAsync(CreateContainerName(orgId), storageReferenceName, ReadUrlLifetime, MapScope(scope));
                 if (!result.Successful)
                     return InvokeResult<string>.FromInvokeResult(result.ToInvokeResult());
 
@@ -86,6 +86,13 @@ namespace LagoVista.MediaServices.CloudRepos
                 _logger.AddException("VideoProcessorStorageUrlService_CreateReadUrlAsync", ex);
                 return InvokeResult<string>.FromException("VideoProcessorStorageUrlService_CreateReadUrlAsync", ex);
             }
+        }
+
+        private static CloudStorageUrlScope MapScope(VideoProcessorStorageUrlScope scope)
+        {
+            return scope == VideoProcessorStorageUrlScope.Internal
+                ? CloudStorageUrlScope.Internal
+                : CloudStorageUrlScope.Public;
         }
 
         private static string CreateContainerName(string orgId)
