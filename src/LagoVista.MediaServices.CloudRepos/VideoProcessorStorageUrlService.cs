@@ -23,7 +23,12 @@ namespace LagoVista.MediaServices.CloudRepos
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<InvokeResult<VideoProcessorStorageDestination>> CreateWriteDestinationAsync(string orgId, string storageReferenceName, string contentType, CloudStorageUrlScope scope = CloudStorageUrlScope.Public, CancellationToken cancellationToken = default)
+        public Task<InvokeResult<VideoProcessorStorageDestination>> CreateWriteDestinationAsync(string orgId, string storageReferenceName, string contentType, CancellationToken cancellationToken = default)
+        {
+            return CreateWriteDestinationAsync(orgId, storageReferenceName, contentType, CloudStorageUrlScope.Public, cancellationToken);
+        }
+
+        public async Task<InvokeResult<VideoProcessorStorageDestination>> CreateWriteDestinationAsync(string orgId, string storageReferenceName, string contentType, CloudStorageUrlScope scope, CancellationToken cancellationToken = default)
         {
             var validationResult = ValidateRequest(orgId, storageReferenceName);
             if (!validationResult.Successful)
@@ -55,7 +60,12 @@ namespace LagoVista.MediaServices.CloudRepos
             }
         }
 
-        public async Task<InvokeResult<string>> CreateReadUrlAsync(string orgId, string storageReferenceName, CloudStorageUrlScope scope = CloudStorageUrlScope.Public, CancellationToken cancellationToken = default)
+        public Task<InvokeResult<string>> CreateReadUrlAsync(string orgId, string storageReferenceName, CancellationToken cancellationToken = default)
+        {
+            return CreateReadUrlAsync(orgId, storageReferenceName, CloudStorageUrlScope.Public, cancellationToken);
+        }
+
+        public async Task<InvokeResult<string>> CreateReadUrlAsync(string orgId, string storageReferenceName, CloudStorageUrlScope scope, CancellationToken cancellationToken = default)
         {
             var validationResult = ValidateRequest(orgId, storageReferenceName);
             if (!validationResult.Successful)
