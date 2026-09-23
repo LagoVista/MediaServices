@@ -173,7 +173,12 @@ namespace LagoVista.MediaServices.CloudRepos
             return this.DeleteDocumentAsync(id);
         }
 
-        public async Task<InvokeResult<string>> GetMediaReadUrlAsync(string blobReferenceName, string org, System.Threading.CancellationToken cancellationToken = default)
+        public Task<InvokeResult<string>> GetMediaReadUrlAsync(string blobReferenceName, string org, System.Threading.CancellationToken cancellationToken = default)
+        {
+            return GetMediaReadUrlAsync(blobReferenceName, org, VideoProcessorStorageUrlScope.Public, cancellationToken);
+        }
+
+        public async Task<InvokeResult<string>> GetMediaReadUrlAsync(string blobReferenceName, string org, VideoProcessorStorageUrlScope scope, System.Threading.CancellationToken cancellationToken = default)
         {
             if (String.IsNullOrWhiteSpace(blobReferenceName))
                 return InvokeResult<string>.FromError("A media storage reference name is required.");
@@ -186,7 +191,8 @@ namespace LagoVista.MediaServices.CloudRepos
             var result = await _fileStorage.CreateReadUrlAsync(
                 GetStorageContainerName(org),
                 blobReferenceName,
-                TimeSpan.FromHours(1));
+                TimeSpan.FromHours(1),
+                scope == VideoProcessorStorageUrlScope.Internal ? CloudStorageUrlScope.Internal : CloudStorageUrlScope.Public);
 
             if (!result.Successful)
                 return InvokeResult<string>.FromInvokeResult(result.ToInvokeResult());
