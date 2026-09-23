@@ -61,7 +61,7 @@ namespace LagoVista.MediaServices.CloudRepos
                 if (!writeResult.Successful)
                     return InvokeResult<VideoProcessorStoredRequest>.FromInvokeResult(writeResult.ToInvokeResult());
 
-                var readUrlResult = await _fileStorage.CreateReadUrlAsync(containerName, storageReferenceName, RequestUrlLifetime);
+                var readUrlResult = await _fileStorage.CreateReadUrlAsync(containerName, storageReferenceName, RequestUrlLifetime, CloudStorageUrlScope.Internal);
                 if (!readUrlResult.Successful)
                     return InvokeResult<VideoProcessorStoredRequest>.FromInvokeResult(readUrlResult.ToInvokeResult());
 
