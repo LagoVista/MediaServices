@@ -155,9 +155,11 @@ namespace LagoVista.MediaServices.Services
                 return InvokeResult.FromError("Video processor attempt ID is required.");
             }
 
-            if (!Uri.TryCreate(request.RequestUrl, UriKind.Absolute, out var requestUri) || !String.Equals(requestUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            if (!Uri.TryCreate(request.RequestUrl, UriKind.Absolute, out var requestUri) ||
+                (!String.Equals(requestUri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) &&
+                 !String.Equals(requestUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)))
             {
-                return InvokeResult.FromError("Video processor request URL must be an absolute HTTPS URL.");
+                return InvokeResult.FromError("Video processor request URL must be an absolute HTTP or HTTPS URL.");
             }
 
             return InvokeResult.Success;
