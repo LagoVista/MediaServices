@@ -25,7 +25,7 @@ namespace LagoVista.MediaServices.CloudRepos
 
         public Task<InvokeResult<VideoProcessorStorageDestination>> CreateWriteDestinationAsync(string orgId, string storageReferenceName, string contentType, CancellationToken cancellationToken = default)
         {
-            return CreateWriteDestinationAsync(orgId, storageReferenceName, contentType, CloudStorageUrlScope.Public, cancellationToken);
+            return CreateWriteDestinationAsync(orgId, storageReferenceName, contentType, VideoProcessorStorageUrlScope.Public, cancellationToken);
         }
 
         public async Task<InvokeResult<VideoProcessorStorageDestination>> CreateWriteDestinationAsync(string orgId, string storageReferenceName, string contentType, VideoProcessorStorageUrlScope scope, CancellationToken cancellationToken = default)
@@ -62,7 +62,7 @@ namespace LagoVista.MediaServices.CloudRepos
 
         public Task<InvokeResult<string>> CreateReadUrlAsync(string orgId, string storageReferenceName, CancellationToken cancellationToken = default)
         {
-            return CreateReadUrlAsync(orgId, storageReferenceName, CloudStorageUrlScope.Public, cancellationToken);
+            return CreateReadUrlAsync(orgId, storageReferenceName, VideoProcessorStorageUrlScope.Public, cancellationToken);
         }
 
         public async Task<InvokeResult<string>> CreateReadUrlAsync(string orgId, string storageReferenceName, VideoProcessorStorageUrlScope scope, CancellationToken cancellationToken = default)
