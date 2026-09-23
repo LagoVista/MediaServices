@@ -23,7 +23,7 @@ namespace LagoVista.MediaServices.CloudRepos
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<InvokeResult<VideoProcessorStorageDestination>> CreateWriteDestinationAsync(string orgId, string storageReferenceName, string contentType, CancellationToken cancellationToken = default)
+        public async Task<InvokeResult<VideoProcessorStorageDestination>> CreateWriteDestinationAsync(string orgId, string storageReferenceName, string contentType, CloudStorageUrlScope scope = CloudStorageUrlScope.Public, CancellationToken cancellationToken = default)
         {
             var validationResult = ValidateRequest(orgId, storageReferenceName);
             if (!validationResult.Successful)
@@ -36,7 +36,7 @@ namespace LagoVista.MediaServices.CloudRepos
 
             try
             {
-                var result = await _fileStorage.CreateWriteUrlAsync(CreateContainerName(orgId), storageReferenceName, contentType, WriteUrlLifetime);
+                var result = await _fileStorage.CreateWriteUrlAsync(CreateContainerName(orgId), storageReferenceName, contentType, WriteUrlLifetime, scope);
                 if (!result.Successful)
                     return InvokeResult<VideoProcessorStorageDestination>.FromInvokeResult(result.ToInvokeResult());
 
@@ -55,7 +55,7 @@ namespace LagoVista.MediaServices.CloudRepos
             }
         }
 
-        public async Task<InvokeResult<string>> CreateReadUrlAsync(string orgId, string storageReferenceName, CancellationToken cancellationToken = default)
+        public async Task<InvokeResult<string>> CreateReadUrlAsync(string orgId, string storageReferenceName, CloudStorageUrlScope scope = CloudStorageUrlScope.Public, CancellationToken cancellationToken = default)
         {
             var validationResult = ValidateRequest(orgId, storageReferenceName);
             if (!validationResult.Successful)
@@ -65,7 +65,7 @@ namespace LagoVista.MediaServices.CloudRepos
 
             try
             {
-                var result = await _fileStorage.CreateReadUrlAsync(CreateContainerName(orgId), storageReferenceName, ReadUrlLifetime);
+                var result = await _fileStorage.CreateReadUrlAsync(CreateContainerName(orgId), storageReferenceName, ReadUrlLifetime, scope);
                 if (!result.Successful)
                     return InvokeResult<string>.FromInvokeResult(result.ToInvokeResult());
 
