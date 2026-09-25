@@ -741,8 +741,8 @@ namespace LagoVista.MediaServices.Managers
             response.Timings.AddRange(mediaItem.Timings);
             response.Timings.Add(new ResultTiming() { Key = "GetMediaResourceRecord", Ms = stopWatch.Elapsed.TotalMilliseconds });
             response.AiResponseId = revision.ResponseId;
-            response.ContentType = revision.MimeType;
-            response.FileName = revision.FileName;
+            response.ContentType = String.IsNullOrWhiteSpace(revision.MimeType) ? resource.MimeType : revision.MimeType;
+            response.FileName = String.IsNullOrWhiteSpace(revision.FileName) ? resource.FileName : revision.FileName;
             response.ImageBytes = mediaItem.Result;
 
             return response;
