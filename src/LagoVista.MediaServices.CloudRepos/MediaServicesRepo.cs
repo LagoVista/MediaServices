@@ -116,7 +116,10 @@ namespace LagoVista.MediaServices.CloudRepos
                     {
                         CreatedBy = record.CreatedBy,
                         CreationDate = timeStamp,
+                        FileName = record.FileName,
+                        MimeType = record.MimeType,
                         ContentSize = record.ContentSize,
+                        ContentSha256 = record.ContentSha256,
                         Height = record.Height,
                         Name = $"Revision 1",
                         Width = record.Width,
@@ -150,7 +153,10 @@ namespace LagoVista.MediaServices.CloudRepos
                     {
                         CreatedBy = record.CreatedBy,
                         CreationDate = timeStamp,
+                        FileName = record.FileName,
+                        MimeType = record.MimeType,
                         ContentSize = record.ContentSize,
+                        ContentSha256 = record.ContentSha256,
                         Height = record.Height,
                         Name = $"Revision 1",
                         Width = record.Width,

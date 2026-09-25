@@ -278,6 +278,8 @@ namespace LagoVista.MediaServices.Managers
 
             pendingRevision.StorageReferenceName = videoOutput.StorageReferenceName;
             pendingRevision.ThumbnailStorageReferenceName = thumbnailOutput.StorageReferenceName;
+            pendingRevision.ContentSize = videoOutput.SizeBytes.Value;
+            pendingRevision.ContentSha256 = videoOutput.Sha256;
             pendingRevision.Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Ready);
 
             mediaResource.CurrentRevision = pendingRevision.Id;

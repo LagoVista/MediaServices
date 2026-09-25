@@ -151,6 +151,8 @@ namespace LagoVista.MediaServices.Managers
             }
 
             var newBuffer = ScaleImage(mediaItem.Result, width, height, fileType);
+            var newFileName = $"{fileName}.{fileType}";
+
             // this will generate a new storage reference name.
             resource.SetContentType(fileType);
             resource.LastUpdatedDate = UtcTimestamp.Now;
@@ -163,7 +165,10 @@ namespace LagoVista.MediaServices.Managers
                 CreatedBy = user,
                 Name = $"Revision {resource.History.Count + 1}",
                 CreationDate = resource.LastUpdatedDate,
-                ContentSize = resource.ContentSize,
+                FileName = newFileName,
+                MimeType = resource.MimeType,
+                ContentSize = newBuffer.LongLength,
+                ContentSha256 = ComputeSha256(newBuffer),
                 Width = width,
                 Height = height,
                 Notes = $"Resized from {originalWidth}x{originalHeight} to {width}x{height}",
@@ -174,8 +179,7 @@ namespace LagoVista.MediaServices.Managers
 
             await _mediaRepo.AddMediaAsync(newBuffer, org.Id, history.StorageReferenceName, resource.MimeType);
 
-            var fi = new FileInfo(resource.FileName);
-            resource.FileName = $"{fileName}.{fileType}";
+            resource.FileName = newFileName;
             resource.Width = width;
             resource.Height = height;
 
@@ -775,13 +779,17 @@ namespace LagoVista.MediaServices.Managers
                     CreatedBy = user,
                     Name = $"Revision {mediaResource.History.Count + 1}",
                     CreationDate = mediaResource.LastUpdatedDate,
-                    ContentSize = mediaResource.ContentSize,
+                    FileName = mediaResource.FileName,
+                    MimeType = mediaResource.MimeType,
+                    ContentSize = response.Result.LongLength,
+                    ContentSha256 = ComputeSha256(response.Result),
                     OriginalPrompt = request.Text,
                     Notes = $"Updated Audio",
                     TextGenerationRequest = request,
                 };
 
                 mediaResource.History.Insert(0, history);
+                mediaResource.CurrentRevision = history.Id;
 
                 await _mediaRepo.AddMediaAsync(response.Result, org.Id, mediaResource.GetCurrentStorageReferenceName(), mediaResource.MimeType);
                 await _mediaRepo.UpdateMediaResourceRecordAsync(mediaResource);
@@ -831,13 +839,17 @@ namespace LagoVista.MediaServices.Managers
                     CreatedBy = user,
                     Name = $"Revision {mediaResource.History.Count + 1}",
                     CreationDate = mediaResource.LastUpdatedDate,
-                    ContentSize = mediaResource.ContentSize,
+                    FileName = mediaResource.FileName,
+                    MimeType = mediaResource.MimeType,
+                    ContentSize = response.Result.LongLength,
+                    ContentSha256 = ComputeSha256(response.Result),
                     OriginalPrompt = request.Text,
                     Notes = $"Generated Audio",
                     TextGenerationRequest = request,
                 };
 
                 mediaResource.History.Add(history);
+                mediaResource.CurrentRevision = history.Id;
 
                 await _mediaRepo.AddMediaAsync(response.Result, org.Id, mediaResource.GetCurrentStorageReferenceName(), mediaResource.MimeType);
                 await _mediaRepo.AddMediaResourceRecordAsync(mediaResource);
@@ -868,13 +880,17 @@ namespace LagoVista.MediaServices.Managers
                     CreatedBy = user,
                     Name = $"Revision {resource.History.Count + 1}",
                     CreationDate = resource.LastUpdatedDate,
-                    ContentSize = resource.ContentSize,
+                    FileName = resource.FileName,
+                    MimeType = resource.MimeType,
+                    ContentSize = response.Result.LongLength,
+                    ContentSha256 = ComputeSha256(response.Result),
                     OriginalPrompt = request.Text,
                     Notes = $"Updated Audio",
                     TextGenerationRequest = request,
                 };
 
                 resource.History.Insert(0, history);
+                resource.CurrentRevision = history.Id;
 
                 await _mediaRepo.AddMediaAsync(response.Result, org.Id, resource.GetCurrentStorageReferenceName(), resource.MimeType);
 
