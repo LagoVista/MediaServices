@@ -2,7 +2,7 @@
 
 ## Status
 
-**READY TO START NOW**
+**IMPLEMENTED — PR HANDOFF; STABLE BUILD PROOF REQUIRES MERGE TO MASTER**
 
 Campaigns Session 034 proved that Instagram organic publishing requires Meta to fetch immutable execution media from a publicly reachable URL. Session 028/MediaServices Session 027 provide immutable revision identity and bytes, but no provider-neutral short-lived external-read lease.
 
@@ -161,31 +161,111 @@ One of these must be true:
 
 Successful completion unblocks the Campaigns execution-media resolver from adding an optional external-read path for Instagram-style pull-media providers.
 
-## Completion Report
+## Completion Report## Completion Report
 
 ### Summary
-_TODO_
+Implemented a provider-neutral external-read lease for one exact immutable media revision.
+
+The implementation reuses the existing provider-neutral storage read-URL primitive rather than adding a MediaServices proxy route. Issuance stays in MediaServicesManager, where the active organization and normal media read authorization are verified before any external URL is created.
 
 ### Final external-read contract
-_TODO_
+Added ImmutableExternalMediaReadLease with:
+
+- Url
+- ValidUntilUtc
+- MediaResourceId
+- RevisionId
+- FileName
+- ContentType
+- ContentLength
+- ContentSha256
+- RevocationSupported
+
+Added:
+
+- IMediaServicesManager.CreateImmutableExternalMediaReadLeaseAsync(...)
+- authenticated POST /api/media/resource/{id}/revision/{revisionid}/external-read-lease
+- optional lifetimeMinutes query parameter
+
+Default lifetime is 30 minutes. Maximum lifetime is 60 minutes.
+
+The public DTO exposes no SeaweedFS, S3, Azure, bucket, container, or storage-reference vocabulary.
 
 ### Authorization / tenant isolation
-_TODO_
+Lease issuance:
+
+1. validates resource and revision identifiers;
+2. loads the media resource;
+3. rejects active-organization mismatch before URL generation;
+4. invokes the existing AuthorizeAsync(..., Read, ...) path;
+5. resolves the requested revision from history;
+6. generates a URL only for that revision's immutable storage reference.
+
+Cross-organization callers cannot generate a lease.
 
 ### Storage implementation
-_TODO_
+IMediaServicesRepo already exposed provider-neutral read-URL generation backed by ICloudFileStorageClient.CreateReadUrlAsync.
+
+The session adds a lifetime-aware overload:
+
+GetMediaReadUrlAsync(blobReferenceName, org, lifetime, ...)
+
+The existing public/internal scope overloads remain intact. MediaServicesRepo centralizes the implementation and enforces a maximum one-hour URL lifetime.
+
+No storage-provider details are added to the manager or public lease contract.
 
 ### Exact-revision / integrity proof
-_TODO_
+Lease issuance uses the explicitly requested MediaResourceHistory entry and that entry's StorageReferenceName, filename, MIME type, content size, and SHA-256 identity.
+
+Tests deliberately move CurrentRevision to another revision and verify the lease still targets the originally requested revision. No current/latest lookup participates in lease resolution.
+
+The existing immutable byte-read tests remain in the same suite and continue to cover size/hash verification of immutable bytes.
 
 ### Expiry / retry semantics
-_TODO_
+- default lease lifetime: 30 minutes;
+- maximum lease lifetime: 60 minutes;
+- invalid zero/negative/greater-than-maximum lifetimes are rejected;
+- storage-backed URL expiry remains authoritative;
+- MediaServices returns its expected ValidUntilUtc;
+- revocation is not supported; leases are expiry-only;
+- retries regenerate a fresh URL from the same immutable resource/revision reference;
+- returned URLs must be absolute HTTPS URLs.
 
 ### Tests added
-_TODO_
+Added focused coverage proving:
+
+- exact requested revision is leased even after CurrentRevision changes;
+- revision-authoritative filename/MIME/length/hash are returned;
+- cross-organization issuance is rejected before URL creation;
+- missing revision does not create a URL;
+- retries produce a fresh URL for the same immutable reference;
+- lifetime bounds are enforced;
+- non-HTTPS URLs are rejected;
+- the public DTO contains no storage-provider vocabulary.
+
+The existing immutable revision byte-read tests remain green in the same test project.
 
 ### Build proof
-_TODO_
+Implementation source commit:
+
+- 68cd3b43b7e6f9aee022545cf5813880faf53e3e
+
+Focused edit-workspace validation:
+
+- Build Server operation ebe4694b16b84cac8ffb6889932cd674
+- command: dotnet test Tests/LagoVista.MediaServices.MediaTests/LagoVista.MediaServices.MediaTests.csproj --no-restore
+- result: succeeded
+
+Authoritative stable build_repository for the feature-branch source commit was correctly rejected because that commit is not reachable from MediaServices:master.
+
+A build attempt using nuviot/platform:feature/campaign-execution-foundation produced Build Server proof id c420a11eca3840da94cf045f8df12b08 and correctly failed PLAT005 because LagoVista/MediaServices is not enrolled in that workstream manifest.
+
+No unrelated workstream was expanded and no package was published.
+
+The final stable exact-commit Build Server proof must therefore be run after this PR is merged to master, using the resulting master commit.
 
 ### Campaigns / Instagram resume impact
+Once merged and stable-build-proven, Campaigns can request a fresh, short-lived HTTPS URL for an exact immutable media revision during provider execution/retry without persisting the URL or learning storage implementation details.
+
+This supplies the missing provider-neutral pull-media capability identified by Campaigns Session 034.### Campaigns / Instagram resume impact
 _TODO_
