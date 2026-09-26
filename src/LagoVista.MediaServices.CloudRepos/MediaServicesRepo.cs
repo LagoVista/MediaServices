@@ -181,10 +181,20 @@ namespace LagoVista.MediaServices.CloudRepos
 
         public Task<InvokeResult<string>> GetMediaReadUrlAsync(string blobReferenceName, string org, System.Threading.CancellationToken cancellationToken = default)
         {
-            return GetMediaReadUrlAsync(blobReferenceName, org, VideoProcessorStorageUrlScope.Public, cancellationToken);
+            return GetMediaReadUrlCoreAsync(blobReferenceName, org, TimeSpan.FromHours(1), VideoProcessorStorageUrlScope.Public, cancellationToken);
         }
 
-        public async Task<InvokeResult<string>> GetMediaReadUrlAsync(string blobReferenceName, string org, VideoProcessorStorageUrlScope scope, System.Threading.CancellationToken cancellationToken = default)
+        public Task<InvokeResult<string>> GetMediaReadUrlAsync(string blobReferenceName, string org, TimeSpan lifetime, System.Threading.CancellationToken cancellationToken = default)
+        {
+            return GetMediaReadUrlCoreAsync(blobReferenceName, org, lifetime, VideoProcessorStorageUrlScope.Public, cancellationToken);
+        }
+
+        public Task<InvokeResult<string>> GetMediaReadUrlAsync(string blobReferenceName, string org, VideoProcessorStorageUrlScope scope, System.Threading.CancellationToken cancellationToken = default)
+        {
+            return GetMediaReadUrlCoreAsync(blobReferenceName, org, TimeSpan.FromHours(1), scope, cancellationToken);
+        }
+
+        private async Task<InvokeResult<string>> GetMediaReadUrlCoreAsync(string blobReferenceName, string org, TimeSpan lifetime, VideoProcessorStorageUrlScope scope, System.Threading.CancellationToken cancellationToken)
         {
             if (String.IsNullOrWhiteSpace(blobReferenceName))
                 return InvokeResult<string>.FromError("A media storage reference name is required.");
@@ -192,12 +202,15 @@ namespace LagoVista.MediaServices.CloudRepos
             if (String.IsNullOrWhiteSpace(org))
                 return InvokeResult<string>.FromError("An organization ID is required.");
 
+            if (lifetime <= TimeSpan.Zero || lifetime > TimeSpan.FromHours(1))
+                return InvokeResult<string>.FromError("Media read URL lifetime must be greater than zero and no more than one hour.");
+
             cancellationToken.ThrowIfCancellationRequested();
 
             var result = await _fileStorage.CreateReadUrlAsync(
                 GetStorageContainerName(org),
                 blobReferenceName,
-                TimeSpan.FromHours(1),
+                lifetime,
                 scope == VideoProcessorStorageUrlScope.Internal ? CloudStorageUrlScope.Internal : CloudStorageUrlScope.Public);
 
             if (!result.Successful)

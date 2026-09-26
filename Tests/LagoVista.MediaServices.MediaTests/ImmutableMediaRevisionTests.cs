@@ -277,5 +277,121 @@ namespace LagoVista.MediaServices.MediaTests
             Assert.AreEqual("video/mp4", result.ContentType);
             CollectionAssert.AreEqual(bytes, result.ImageBytes);
         }
+        [TestMethod]
+        public async Task ExternalReadLeaseUsesExactRevisionIdentityAndMetadata()
+        {
+            var bytes = new byte[] { 1, 2, 3 };
+            var resource = CreateResource(bytes);
+            resource.CurrentRevision = "revision-2";
+            resource.History.Add(new MediaResourceHistory
+            {
+                Id = "revision-2",
+                StorageReferenceName = "revision-2.media",
+                FileName = "new-current.mp4",
+                MimeType = "video/mp4"
+            });
+
+            var repo = new Mock<IMediaServicesRepo>();
+            repo.Setup(item => item.GetMediaResourceRecordAsync(MediaId)).ReturnsAsync(resource);
+            repo.Setup(item => item.GetMediaReadUrlAsync("revision-1.media", Org.Id, It.IsAny<TimeSpan>(), default))
+                .ReturnsAsync(InvokeResult<string>.Create("https://media.example.test/revision-1?sig=one"));
+
+            var before = DateTime.UtcNow;
+            var result = await CreateManager(repo).CreateImmutableExternalMediaReadLeaseAsync(MediaId, "revision-1", Org, User);
+
+            Assert.IsTrue(result.Successful);
+            Assert.AreEqual(MediaId, result.Result.MediaResourceId);
+            Assert.AreEqual("revision-1", result.Result.RevisionId);
+            Assert.AreEqual("historical.pdf", result.Result.FileName);
+            Assert.AreEqual("application/pdf", result.Result.ContentType);
+            Assert.AreEqual(bytes.LongLength, result.Result.ContentLength);
+            Assert.AreEqual(ComputeSha256(bytes), result.Result.ContentSha256);
+            Assert.IsFalse(result.Result.RevocationSupported);
+            Assert.IsTrue(result.Result.ValidUntilUtc >= before.AddMinutes(29));
+            Assert.IsTrue(result.Result.ValidUntilUtc <= DateTime.UtcNow.AddMinutes(31));
+            repo.Verify(item => item.GetMediaReadUrlAsync("revision-1.media", Org.Id, TimeSpan.FromMinutes(30), default), Times.Once);
+            repo.Verify(item => item.GetMediaReadUrlAsync("revision-2.media", It.IsAny<string>(), It.IsAny<TimeSpan>(), default), Times.Never);
+        }
+
+        [TestMethod]
+        public async Task ExternalReadLeaseRejectsCrossOrganizationBeforeUrlCreation()
+        {
+            var resource = CreateResource(new byte[] { 1, 2, 3 });
+            var repo = new Mock<IMediaServicesRepo>();
+            repo.Setup(item => item.GetMediaResourceRecordAsync(MediaId)).ReturnsAsync(resource);
+
+            var result = await CreateManager(repo).CreateImmutableExternalMediaReadLeaseAsync(MediaId, "revision-1", OtherOrg, User);
+
+            Assert.IsFalse(result.Successful);
+            StringAssert.Contains(result.ErrorMessage, "active organization");
+            repo.Verify(item => item.GetMediaReadUrlAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>(), default), Times.Never);
+        }
+
+        [TestMethod]
+        public async Task ExternalReadLeaseMissingRevisionDoesNotCreateUrl()
+        {
+            var resource = CreateResource(new byte[] { 1, 2, 3 });
+            var repo = new Mock<IMediaServicesRepo>();
+            repo.Setup(item => item.GetMediaResourceRecordAsync(MediaId)).ReturnsAsync(resource);
+
+            var result = await CreateManager(repo).CreateImmutableExternalMediaReadLeaseAsync(MediaId, "missing", Org, User);
+
+            Assert.IsFalse(result.Successful);
+            StringAssert.Contains(result.ErrorMessage, "Could not find media revision");
+            repo.Verify(item => item.GetMediaReadUrlAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan>(), default), Times.Never);
+        }
+
+        [TestMethod]
+        public async Task ExternalReadLeaseRetryRegeneratesUrlForSameImmutableReference()
+        {
+            var resource = CreateResource(new byte[] { 1, 2, 3 });
+            var repo = new Mock<IMediaServicesRepo>();
+            repo.Setup(item => item.GetMediaResourceRecordAsync(MediaId)).ReturnsAsync(resource);
+            repo.SetupSequence(item => item.GetMediaReadUrlAsync("revision-1.media", Org.Id, TimeSpan.FromMinutes(15), default))
+                .ReturnsAsync(InvokeResult<string>.Create("https://media.example.test/revision-1?sig=one"))
+                .ReturnsAsync(InvokeResult<string>.Create("https://media.example.test/revision-1?sig=two"));
+
+            var manager = CreateManager(repo);
+            var first = await manager.CreateImmutableExternalMediaReadLeaseAsync(MediaId, "revision-1", Org, User, 15);
+            var second = await manager.CreateImmutableExternalMediaReadLeaseAsync(MediaId, "revision-1", Org, User, 15);
+
+            Assert.IsTrue(first.Successful);
+            Assert.IsTrue(second.Successful);
+            Assert.AreNotEqual(first.Result.Url, second.Result.Url);
+            Assert.AreEqual(first.Result.MediaResourceId, second.Result.MediaResourceId);
+            Assert.AreEqual(first.Result.RevisionId, second.Result.RevisionId);
+            repo.Verify(item => item.GetMediaReadUrlAsync("revision-1.media", Org.Id, TimeSpan.FromMinutes(15), default), Times.Exactly(2));
+        }
+
+        [TestMethod]
+        public async Task ExternalReadLeaseEnforcesLifetimeBoundsAndHttps()
+        {
+            var resource = CreateResource(new byte[] { 1, 2, 3 });
+            var repo = new Mock<IMediaServicesRepo>();
+            repo.Setup(item => item.GetMediaResourceRecordAsync(MediaId)).ReturnsAsync(resource);
+            repo.Setup(item => item.GetMediaReadUrlAsync("revision-1.media", Org.Id, TimeSpan.FromMinutes(60), default))
+                .ReturnsAsync(InvokeResult<string>.Create("http://media.example.test/revision-1"));
+
+            var tooLong = await CreateManager(repo).CreateImmutableExternalMediaReadLeaseAsync(MediaId, "revision-1", Org, User, 61);
+            Assert.IsFalse(tooLong.Successful);
+
+            var insecure = await CreateManager(repo).CreateImmutableExternalMediaReadLeaseAsync(MediaId, "revision-1", Org, User, 60);
+            Assert.IsFalse(insecure.Successful);
+            StringAssert.Contains(insecure.ErrorMessage, "HTTPS");
+        }
+
+        [TestMethod]
+        public void ExternalReadLeaseContractDoesNotExposeStorageProviderVocabulary()
+        {
+            var propertyNames = typeof(ImmutableExternalMediaReadLease).GetProperties();
+            foreach (var property in propertyNames)
+            {
+                Assert.IsFalse(property.Name.Contains("Storage", StringComparison.OrdinalIgnoreCase));
+                Assert.IsFalse(property.Name.Contains("Seaweed", StringComparison.OrdinalIgnoreCase));
+                Assert.IsFalse(property.Name.Contains("Azure", StringComparison.OrdinalIgnoreCase));
+                Assert.IsFalse(property.Name.Contains("S3", StringComparison.OrdinalIgnoreCase));
+            }
+        }
+
     }
 }

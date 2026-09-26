@@ -359,6 +359,13 @@ namespace LagoVista.MediaServices.Rest.Controllers
         }
 
 
+        [HttpPost("/api/media/resource/{id}/revision/{revisionid}/external-read-lease")]
+        public Task<InvokeResult<ImmutableExternalMediaReadLease>> CreateImmutableExternalMediaReadLease(string id, string revisionid, [FromQuery] int? lifetimeMinutes = null)
+        {
+            return _mediaServicesManager.CreateImmutableExternalMediaReadLeaseAsync(id, revisionid, OrgEntityHeader, UserEntityHeader, lifetimeMinutes);
+        }
+
+
         [HttpGet("/api/media/resource/{id}/download/{revisionid}")]
         public async Task<IActionResult> DownloadMediaRevision(string id, string revisionid)
         {
