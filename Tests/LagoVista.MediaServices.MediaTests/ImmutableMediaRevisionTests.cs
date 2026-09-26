@@ -12,6 +12,7 @@ using Moq;
 using System;
 using System.IO;
 using System.Security.Cryptography;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace LagoVista.MediaServices.MediaTests
@@ -277,5 +278,163 @@ namespace LagoVista.MediaServices.MediaTests
             Assert.AreEqual("video/mp4", result.ContentType);
             CollectionAssert.AreEqual(bytes, result.ImageBytes);
         }
+        [TestMethod]
+        public async Task ImmutableReadLeaseTargetsSelectedRevisionAndReturnsAuthoritativeMetadata()
+        {
+            var bytes = new byte[] { 1, 2, 3, 4 };
+            var resource = CreateResource(bytes);
+            resource.CurrentRevision = "some-new-current-revision";
+
+            var repo = new Mock<IMediaServicesRepo>();
+            repo.Setup(item => item.GetMediaResourceRecordAsync(MediaId)).ReturnsAsync(resource);
+            repo.Setup(item => item.GetMediaReadUrlAsync(
+                    "revision-1.media",
+                    Org.Id,
+                    TimeSpan.FromMinutes(60),
+                    VideoProcessorStorageUrlScope.Public,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(InvokeResult<string>.Create("https://media.example.test/revision-1.media?signature=one"));
+
+            var before = DateTime.UtcNow;
+            var result = await CreateManager(repo).CreateImmutableMediaReadLeaseAsync(MediaId, "revision-1", Org, User);
+            var after = DateTime.UtcNow;
+
+            Assert.IsTrue(result.Successful);
+            Assert.AreEqual(MediaId, result.Result.MediaResourceId);
+            Assert.AreEqual("revision-1", result.Result.RevisionId);
+            Assert.AreEqual("historical.pdf", result.Result.FileName);
+            Assert.AreEqual("application/pdf", result.Result.ContentType);
+            Assert.AreEqual(bytes.LongLength, result.Result.ContentLength);
+            Assert.AreEqual(ComputeSha256(bytes), result.Result.ContentSha256);
+            Assert.IsTrue(result.Result.Url.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
+            Assert.IsTrue(result.Result.ValidUntilUtc >= before.AddMinutes(60));
+            Assert.IsTrue(result.Result.ValidUntilUtc <= after.AddMinutes(60).AddSeconds(1));
+
+            repo.Verify(item => item.GetMediaReadUrlAsync(
+                "revision-1.media",
+                Org.Id,
+                TimeSpan.FromMinutes(60),
+                VideoProcessorStorageUrlScope.Public,
+                It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [TestMethod]
+        public async Task ImmutableReadLeaseRejectsCrossOrganizationBeforeUrlCreation()
+        {
+            var resource = CreateResource(new byte[] { 1, 2, 3 });
+            var repo = new Mock<IMediaServicesRepo>();
+            repo.Setup(item => item.GetMediaResourceRecordAsync(MediaId)).ReturnsAsync(resource);
+
+            var result = await CreateManager(repo).CreateImmutableMediaReadLeaseAsync(MediaId, "revision-1", OtherOrg, User);
+
+            Assert.IsFalse(result.Successful);
+            StringAssert.Contains(result.ErrorMessage, "active organization");
+            repo.Verify(item => item.GetMediaReadUrlAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<TimeSpan>(),
+                It.IsAny<VideoProcessorStorageUrlScope>(),
+                It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [TestMethod]
+        public async Task ImmutableReadLeaseRejectsMissingRevisionBeforeUrlCreation()
+        {
+            var resource = CreateResource(new byte[] { 1, 2, 3 });
+            var repo = new Mock<IMediaServicesRepo>();
+            repo.Setup(item => item.GetMediaResourceRecordAsync(MediaId)).ReturnsAsync(resource);
+
+            var result = await CreateManager(repo).CreateImmutableMediaReadLeaseAsync(MediaId, "missing", Org, User);
+
+            Assert.IsFalse(result.Successful);
+            StringAssert.Contains(result.ErrorMessage, "Could not find media revision");
+            repo.Verify(item => item.GetMediaReadUrlAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<TimeSpan>(),
+                It.IsAny<VideoProcessorStorageUrlScope>(),
+                It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [TestMethod]
+        public async Task ImmutableReadLeaseLifetimeIsBounded()
+        {
+            var resource = CreateResource(new byte[] { 1, 2, 3 });
+            var repo = new Mock<IMediaServicesRepo>();
+            repo.Setup(item => item.GetMediaResourceRecordAsync(MediaId)).ReturnsAsync(resource);
+
+            var tooLong = await CreateManager(repo).CreateImmutableMediaReadLeaseAsync(MediaId, "revision-1", Org, User, 121);
+            var invalid = await CreateManager(repo).CreateImmutableMediaReadLeaseAsync(MediaId, "revision-1", Org, User, 0);
+
+            Assert.IsFalse(tooLong.Successful);
+            Assert.IsFalse(invalid.Successful);
+            StringAssert.Contains(tooLong.ErrorMessage, "between 1 and 120 minutes");
+            repo.Verify(item => item.GetMediaReadUrlAsync(
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<TimeSpan>(),
+                It.IsAny<VideoProcessorStorageUrlScope>(),
+                It.IsAny<CancellationToken>()), Times.Never);
+        }
+
+        [TestMethod]
+        public async Task ImmutableReadLeaseRetryRegeneratesUrlForSameRevision()
+        {
+            var resource = CreateResource(new byte[] { 1, 2, 3 });
+            var repo = new Mock<IMediaServicesRepo>();
+            repo.Setup(item => item.GetMediaResourceRecordAsync(MediaId)).ReturnsAsync(resource);
+            repo.SetupSequence(item => item.GetMediaReadUrlAsync(
+                    "revision-1.media",
+                    Org.Id,
+                    TimeSpan.FromMinutes(30),
+                    VideoProcessorStorageUrlScope.Public,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(InvokeResult<string>.Create("https://media.example.test/revision-1.media?signature=one"))
+                .ReturnsAsync(InvokeResult<string>.Create("https://media.example.test/revision-1.media?signature=two"));
+
+            var manager = CreateManager(repo);
+            var first = await manager.CreateImmutableMediaReadLeaseAsync(MediaId, "revision-1", Org, User, 30);
+            var second = await manager.CreateImmutableMediaReadLeaseAsync(MediaId, "revision-1", Org, User, 30);
+
+            Assert.IsTrue(first.Successful);
+            Assert.IsTrue(second.Successful);
+            Assert.AreEqual(first.Result.MediaResourceId, second.Result.MediaResourceId);
+            Assert.AreEqual(first.Result.RevisionId, second.Result.RevisionId);
+            Assert.AreNotEqual(first.Result.Url, second.Result.Url);
+        }
+
+        [TestMethod]
+        public async Task ImmutableReadLeaseRejectsNonHttpsExternalUrl()
+        {
+            var resource = CreateResource(new byte[] { 1, 2, 3 });
+            var repo = new Mock<IMediaServicesRepo>();
+            repo.Setup(item => item.GetMediaResourceRecordAsync(MediaId)).ReturnsAsync(resource);
+            repo.Setup(item => item.GetMediaReadUrlAsync(
+                    "revision-1.media",
+                    Org.Id,
+                    TimeSpan.FromMinutes(60),
+                    VideoProcessorStorageUrlScope.Public,
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(InvokeResult<string>.Create("http://media.example.test/revision-1.media?signature=one"));
+
+            var result = await CreateManager(repo).CreateImmutableMediaReadLeaseAsync(MediaId, "revision-1", Org, User);
+
+            Assert.IsFalse(result.Successful);
+            StringAssert.Contains(result.ErrorMessage, "HTTPS");
+        }
+
+        [TestMethod]
+        public void ImmutableReadLeaseContractDoesNotExposeStorageProviderVocabulary()
+        {
+            var propertyNames = String.Join(",", typeof(ImmutableMediaReadLease).GetProperties().Select(property => property.Name)).ToLowerInvariant();
+
+            Assert.IsFalse(propertyNames.Contains("storage"));
+            Assert.IsFalse(propertyNames.Contains("blob"));
+            Assert.IsFalse(propertyNames.Contains("bucket"));
+            Assert.IsFalse(propertyNames.Contains("seaweed"));
+            Assert.IsFalse(propertyNames.Contains("azure"));
+            Assert.IsFalse(propertyNames.Contains("s3"));
+        }
+
     }
 }
