@@ -17,10 +17,10 @@
     <dependencies>
       <group targetFramework="net9.0">
         <dependency id="KubernetesClient" version="19.0.2" />
-        <dependency id="LagoVista.CloudStorage" version="7.0.54" />
+        <dependency id="LagoVista.CloudStorage" version="7.0.56-ws-c-08dd53b6" />
         <dependency id="LagoVista.Core.Configuration" version="7.0.12" />
-        <dependency id="LagoVista.MediaServices" version="7.0.21" />
-        <dependency id="LagoVista.UserAdmin" version="7.0.11" />
+        <dependency id="LagoVista.MediaServices" version="7.0.23-ws-c-74da3f92" />
+        <dependency id="LagoVista.UserAdmin" version="7.0.11-ws-c-dd43eb74" />
       </group>
     </dependencies>
   </metadata>

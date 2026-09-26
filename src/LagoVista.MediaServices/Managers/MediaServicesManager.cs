@@ -709,6 +709,70 @@ namespace LagoVista.MediaServices.Managers
             });
         }
 
+        private const int DefaultImmutableReadLeaseMinutes = 60;
+        private const int MaximumImmutableReadLeaseMinutes = 120;
+
+        public async Task<InvokeResult<ImmutableMediaReadLease>> CreateImmutableMediaReadLeaseAsync(string id, string revisionId, EntityHeader org, EntityHeader user, int? lifetimeMinutes = null)
+        {
+            if (String.IsNullOrWhiteSpace(id))
+                return InvokeResult<ImmutableMediaReadLease>.FromError("A media resource ID is required.");
+
+            if (String.IsNullOrWhiteSpace(revisionId))
+                return InvokeResult<ImmutableMediaReadLease>.FromError("A media revision ID is required.");
+
+            var requestedLifetimeMinutes = lifetimeMinutes ?? DefaultImmutableReadLeaseMinutes;
+            if (requestedLifetimeMinutes <= 0 || requestedLifetimeMinutes > MaximumImmutableReadLeaseMinutes)
+                return InvokeResult<ImmutableMediaReadLease>.FromError($"Immutable media read lease lifetime must be between 1 and {MaximumImmutableReadLeaseMinutes} minutes.");
+
+            var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
+            if (resource == null)
+                return InvokeResult<ImmutableMediaReadLease>.FromError($"Could not find media resource '{id}'.");
+
+            if (org == null || String.IsNullOrWhiteSpace(org.Id) ||
+                resource.OwnerOrganization == null ||
+                !String.Equals(resource.OwnerOrganization.Id, org.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                return InvokeResult<ImmutableMediaReadLease>.FromError("The media resource does not belong to the active organization.");
+            }
+
+            await AuthorizeAsync(resource, AuthorizeActions.Read, user, org);
+
+            var revision = resource.History?.FirstOrDefault(rev => rev.Id == revisionId);
+            if (revision == null)
+                return InvokeResult<ImmutableMediaReadLease>.FromError($"Could not find media revision '{revisionId}' on resource '{id}'.");
+
+            if (String.IsNullOrWhiteSpace(revision.StorageReferenceName))
+                return InvokeResult<ImmutableMediaReadLease>.FromError($"Media revision '{revisionId}' does not have a storage reference.");
+
+            var lifetime = TimeSpan.FromMinutes(requestedLifetimeMinutes);
+            var urlResult = await _mediaRepo.GetMediaReadUrlAsync(
+                revision.StorageReferenceName,
+                org.Id,
+                lifetime,
+                VideoProcessorStorageUrlScope.Public);
+
+            if (!urlResult.Successful)
+                return InvokeResult<ImmutableMediaReadLease>.FromInvokeResult(urlResult.ToInvokeResult());
+
+            if (!Uri.TryCreate(urlResult.Result, UriKind.Absolute, out var readUri) ||
+                !String.Equals(readUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            {
+                return InvokeResult<ImmutableMediaReadLease>.FromError("Immutable media read lease did not produce a valid external HTTPS URL.");
+            }
+
+            return InvokeResult<ImmutableMediaReadLease>.Create(new ImmutableMediaReadLease
+            {
+                Url = urlResult.Result,
+                ValidUntilUtc = DateTime.UtcNow.Add(lifetime),
+                MediaResourceId = resource.Id,
+                RevisionId = revision.Id,
+                FileName = revision.FileName,
+                ContentType = revision.MimeType,
+                ContentLength = revision.ContentSize,
+                ContentSha256 = revision.ContentSha256
+            });
+        }
+
         public async Task<MediaItemResponse> GetMediaRevisionAsync(string id, string revisionId, EntityHeader org, EntityHeader user)
         {
             var response = new MediaItemResponse();
