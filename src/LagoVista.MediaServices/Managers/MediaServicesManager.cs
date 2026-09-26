@@ -37,6 +37,8 @@ namespace LagoVista.MediaServices.Managers
         ITextToSpeechService _textSpeechService;
         IAppConfig _appConfig;
         ICategoryManager _categoryManager;
+        private static readonly TimeSpan DefaultExternalReadLeaseLifetime = TimeSpan.FromMinutes(30);
+        private static readonly TimeSpan MaximumExternalReadLeaseLifetime = TimeSpan.FromHours(1);
 
         public MediaServicesManager(IMediaServicesRepo mediaRepo, ICategoryManager categoryManager, IMediaLibraryRepo libraryRepo,ITextToSpeechService textToSpeechService, IAdminLogger logger, IAppConfig appConfig, IDependencyManager depmanager, ISecurity security) :
             base(logger, appConfig, depmanager, security)
@@ -706,6 +708,63 @@ namespace LagoVista.MediaServices.Managers
                 ContentBytes = bytes,
                 ContentSizeVerified = revision.ContentSize.HasValue,
                 ContentSha256Verified = !String.IsNullOrWhiteSpace(revision.ContentSha256)
+            });
+        }
+
+        public async Task<InvokeResult<ImmutableExternalMediaReadLease>> CreateImmutableExternalMediaReadLeaseAsync(string id, string revisionId, EntityHeader org, EntityHeader user, int? lifetimeMinutes = null)
+        {
+            if (String.IsNullOrWhiteSpace(id))
+                return InvokeResult<ImmutableExternalMediaReadLease>.FromError("A media resource ID is required.");
+
+            if (String.IsNullOrWhiteSpace(revisionId))
+                return InvokeResult<ImmutableExternalMediaReadLease>.FromError("A media revision ID is required.");
+
+            var lifetime = lifetimeMinutes.HasValue ? TimeSpan.FromMinutes(lifetimeMinutes.Value) : DefaultExternalReadLeaseLifetime;
+            if (lifetime <= TimeSpan.Zero || lifetime > MaximumExternalReadLeaseLifetime)
+                return InvokeResult<ImmutableExternalMediaReadLease>.FromError("External media read lease lifetime must be greater than zero and no more than 60 minutes.");
+
+            var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
+            if (resource == null)
+                return InvokeResult<ImmutableExternalMediaReadLease>.FromError($"Could not find media resource '{id}'.");
+
+            if (org == null || String.IsNullOrWhiteSpace(org.Id) ||
+                resource.OwnerOrganization == null ||
+                !String.Equals(resource.OwnerOrganization.Id, org.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                return InvokeResult<ImmutableExternalMediaReadLease>.FromError("The media resource does not belong to the active organization.");
+            }
+
+            await AuthorizeAsync(resource, AuthorizeActions.Read, user, org);
+
+            var revision = resource.History?.FirstOrDefault(rev => rev.Id == revisionId);
+            if (revision == null)
+                return InvokeResult<ImmutableExternalMediaReadLease>.FromError($"Could not find media revision '{revisionId}' on resource '{id}'.");
+
+            if (String.IsNullOrWhiteSpace(revision.StorageReferenceName))
+                return InvokeResult<ImmutableExternalMediaReadLease>.FromError($"Media revision '{revisionId}' does not have a storage reference.");
+
+            var issuedAtUtc = DateTime.UtcNow;
+            var readUrl = await _mediaRepo.GetMediaReadUrlAsync(revision.StorageReferenceName, org.Id, lifetime);
+            if (!readUrl.Successful)
+                return InvokeResult<ImmutableExternalMediaReadLease>.FromInvokeResult(readUrl.ToInvokeResult());
+
+            if (!Uri.TryCreate(readUrl.Result, UriKind.Absolute, out var externalUri) ||
+                !String.Equals(externalUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            {
+                return InvokeResult<ImmutableExternalMediaReadLease>.FromError("External media read lease did not produce a valid HTTPS URL.");
+            }
+
+            return InvokeResult<ImmutableExternalMediaReadLease>.Create(new ImmutableExternalMediaReadLease
+            {
+                Url = externalUri.ToString(),
+                ValidUntilUtc = issuedAtUtc.Add(lifetime),
+                MediaResourceId = resource.Id,
+                RevisionId = revision.Id,
+                FileName = revision.FileName,
+                ContentType = revision.MimeType,
+                ContentLength = revision.ContentSize,
+                ContentSha256 = revision.ContentSha256,
+                RevocationSupported = false
             });
         }
 
