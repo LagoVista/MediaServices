@@ -24,6 +24,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using static LagoVista.Core.Models.AuthorizeResult;
 
@@ -105,6 +106,15 @@ namespace LagoVista.MediaServices.Managers
             }
         }
 
+        private static string ComputeSha256(byte[] bytes)
+        {
+            using (var sha256 = SHA256.Create())
+            {
+                return BitConverter.ToString(sha256.ComputeHash(bytes)).Replace("-", String.Empty).ToLowerInvariant();
+            }
+        }
+
+
         public async Task<InvokeResult<MediaResource>> ResizeImageAsync(string id, string fileName, int width, int height, string fileType, EntityHeader org, EntityHeader user)
         {
             if(String.IsNullOrEmpty(fileType))
@@ -141,6 +151,8 @@ namespace LagoVista.MediaServices.Managers
             }
 
             var newBuffer = ScaleImage(mediaItem.Result, width, height, fileType);
+            var newFileName = $"{fileName}.{fileType}";
+
             // this will generate a new storage reference name.
             resource.SetContentType(fileType);
             resource.LastUpdatedDate = UtcTimestamp.Now;
@@ -153,7 +165,10 @@ namespace LagoVista.MediaServices.Managers
                 CreatedBy = user,
                 Name = $"Revision {resource.History.Count + 1}",
                 CreationDate = resource.LastUpdatedDate,
-                ContentSize = resource.ContentSize,
+                FileName = newFileName,
+                MimeType = resource.MimeType,
+                ContentSize = newBuffer.LongLength,
+                ContentSha256 = ComputeSha256(newBuffer),
                 Width = width,
                 Height = height,
                 Notes = $"Resized from {originalWidth}x{originalHeight} to {width}x{height}",
@@ -164,8 +179,7 @@ namespace LagoVista.MediaServices.Managers
 
             await _mediaRepo.AddMediaAsync(newBuffer, org.Id, history.StorageReferenceName, resource.MimeType);
 
-            var fi = new FileInfo(resource.FileName);
-            resource.FileName = $"{fileName}.{fileType}";
+            resource.FileName = newFileName;
             resource.Width = width;
             resource.Height = height;
 
@@ -353,7 +367,10 @@ namespace LagoVista.MediaServices.Managers
                 CreatedBy = user,
                 Name = "Revision 1",
                 CreationDate = mediaResource.LastUpdatedDate,
-                ContentSize = mediaResource.ContentSize,
+                FileName = mediaResource.FileName,
+                MimeType = mediaResource.MimeType,
+                ContentSize = bytes.LongLength,
+                ContentSha256 = ComputeSha256(bytes),
                 Width = mediaResource.Width,
                 Height = mediaResource.Height,
                 ImageGenerationRequest = imageGenerationRequest?.CreateSnapshot(),
@@ -427,7 +444,10 @@ namespace LagoVista.MediaServices.Managers
                 ResponseId = responseId,
                 CreatedBy = user,
                 CreationDate = mediaResource.LastUpdatedDate,
-                ContentSize = mediaResource.ContentSize,
+                FileName = mediaResource.FileName,
+                MimeType = mediaResource.MimeType,
+                ContentSize = bytes.LongLength,
+                ContentSha256 = ComputeSha256(bytes),
                 Name = $"Revision {mediaResource.History.Count + 1}",
                 Width = mediaResource.Width,
                 Height = mediaResource.Height,
@@ -631,6 +651,64 @@ namespace LagoVista.MediaServices.Managers
         }
 
 
+        public async Task<InvokeResult<ImmutableMediaRevision>> GetImmutableMediaRevisionAsync(string id, string revisionId, EntityHeader org, EntityHeader user)
+        {
+            if (String.IsNullOrWhiteSpace(id))
+                return InvokeResult<ImmutableMediaRevision>.FromError("A media resource ID is required.");
+
+            if (String.IsNullOrWhiteSpace(revisionId))
+                return InvokeResult<ImmutableMediaRevision>.FromError("A media revision ID is required.");
+
+            var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
+            if (resource == null)
+                return InvokeResult<ImmutableMediaRevision>.FromError($"Could not find media resource '{id}'.");
+
+            if (org == null || String.IsNullOrWhiteSpace(org.Id) ||
+                resource.OwnerOrganization == null ||
+                !String.Equals(resource.OwnerOrganization.Id, org.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                return InvokeResult<ImmutableMediaRevision>.FromError("The media resource does not belong to the active organization.");
+            }
+
+            await AuthorizeAsync(resource, AuthorizeActions.Read, user, org);
+
+            var revision = resource.History?.FirstOrDefault(rev => rev.Id == revisionId);
+            if (revision == null)
+                return InvokeResult<ImmutableMediaRevision>.FromError($"Could not find media revision '{revisionId}' on resource '{id}'.");
+
+            if (String.IsNullOrWhiteSpace(revision.StorageReferenceName))
+                return InvokeResult<ImmutableMediaRevision>.FromError($"Media revision '{revisionId}' does not have a storage reference.");
+
+            var mediaItem = await _mediaRepo.GetMediaAsync(revision.StorageReferenceName, org.Id);
+            if (!mediaItem.Successful)
+                return InvokeResult<ImmutableMediaRevision>.FromInvokeResult(mediaItem.ToInvokeResult());
+
+            var bytes = mediaItem.Result ?? Array.Empty<byte>();
+
+            if (revision.ContentSize.HasValue && revision.ContentSize.Value != bytes.LongLength)
+                return InvokeResult<ImmutableMediaRevision>.FromError($"Media revision '{revisionId}' failed content-size verification.");
+
+            if (!String.IsNullOrWhiteSpace(revision.ContentSha256))
+            {
+                var actualSha256 = ComputeSha256(bytes);
+                if (!String.Equals(revision.ContentSha256, actualSha256, StringComparison.OrdinalIgnoreCase))
+                    return InvokeResult<ImmutableMediaRevision>.FromError($"Media revision '{revisionId}' failed SHA-256 verification.");
+            }
+
+            return InvokeResult<ImmutableMediaRevision>.Create(new ImmutableMediaRevision
+            {
+                MediaResourceId = resource.Id,
+                RevisionId = revision.Id,
+                FileName = revision.FileName,
+                ContentType = revision.MimeType,
+                ContentSize = revision.ContentSize,
+                ContentSha256 = revision.ContentSha256,
+                ContentBytes = bytes,
+                ContentSizeVerified = revision.ContentSize.HasValue,
+                ContentSha256Verified = !String.IsNullOrWhiteSpace(revision.ContentSha256)
+            });
+        }
+
         public async Task<MediaItemResponse> GetMediaRevisionAsync(string id, string revisionId, EntityHeader org, EntityHeader user)
         {
             var response = new MediaItemResponse();
@@ -643,25 +721,28 @@ namespace LagoVista.MediaServices.Managers
                 Console.WriteLine($"ERROR: Could not find media record formediaid: {id}");
                 throw new RecordNotFoundException(nameof(MediaResource), id);
             }
+
             response.Timings.Add(new ResultTiming() { Key = "GetMediaResourceRecord", Ms = stopWatch.Elapsed.TotalMilliseconds });
             stopWatch.Restart();
 
-            var revision = resource.History.FirstOrDefault(rev=> rev.Id == revisionId); 
-
             await AuthorizeAsync(resource, AuthorizeActions.Read, user, org);
-     
+
+            var revision = resource.History?.FirstOrDefault(rev => rev.Id == revisionId);
+            if (revision == null)
+                throw new RecordNotFoundException(nameof(MediaResourceHistory), revisionId);
+
             var mediaItem = await _mediaRepo.GetMediaAsync(revision.StorageReferenceName, org.Id);
             if (!mediaItem.Successful)
             {
-                Console.WriteLine($"ERROR: Could not find media/image for orgid: {org.Id} - mediaid: {resource.StorageReferenceName}");
-                throw new RecordNotFoundException("Media File Contents", resource.GetCurrentStorageReferenceName());
+                Console.WriteLine($"ERROR: Could not find media/image for orgid: {org.Id} - revisionid: {revisionId}");
+                throw new RecordNotFoundException("Media File Contents", revision.StorageReferenceName);
             }
+
             response.Timings.AddRange(mediaItem.Timings);
             response.Timings.Add(new ResultTiming() { Key = "GetMediaResourceRecord", Ms = stopWatch.Elapsed.TotalMilliseconds });
-
             response.AiResponseId = revision.ResponseId;
-            response.ContentType = resource.MimeType;
-            response.FileName = resource.FileName;
+            response.ContentType = String.IsNullOrWhiteSpace(revision.MimeType) ? resource.MimeType : revision.MimeType;
+            response.FileName = String.IsNullOrWhiteSpace(revision.FileName) ? resource.FileName : revision.FileName;
             response.ImageBytes = mediaItem.Result;
 
             return response;
@@ -698,13 +779,17 @@ namespace LagoVista.MediaServices.Managers
                     CreatedBy = user,
                     Name = $"Revision {mediaResource.History.Count + 1}",
                     CreationDate = mediaResource.LastUpdatedDate,
-                    ContentSize = mediaResource.ContentSize,
+                    FileName = mediaResource.FileName,
+                    MimeType = mediaResource.MimeType,
+                    ContentSize = response.Result.LongLength,
+                    ContentSha256 = ComputeSha256(response.Result),
                     OriginalPrompt = request.Text,
                     Notes = $"Updated Audio",
                     TextGenerationRequest = request,
                 };
 
                 mediaResource.History.Insert(0, history);
+                mediaResource.CurrentRevision = history.Id;
 
                 await _mediaRepo.AddMediaAsync(response.Result, org.Id, mediaResource.GetCurrentStorageReferenceName(), mediaResource.MimeType);
                 await _mediaRepo.UpdateMediaResourceRecordAsync(mediaResource);
@@ -754,13 +839,17 @@ namespace LagoVista.MediaServices.Managers
                     CreatedBy = user,
                     Name = $"Revision {mediaResource.History.Count + 1}",
                     CreationDate = mediaResource.LastUpdatedDate,
-                    ContentSize = mediaResource.ContentSize,
+                    FileName = mediaResource.FileName,
+                    MimeType = mediaResource.MimeType,
+                    ContentSize = response.Result.LongLength,
+                    ContentSha256 = ComputeSha256(response.Result),
                     OriginalPrompt = request.Text,
                     Notes = $"Generated Audio",
                     TextGenerationRequest = request,
                 };
 
                 mediaResource.History.Add(history);
+                mediaResource.CurrentRevision = history.Id;
 
                 await _mediaRepo.AddMediaAsync(response.Result, org.Id, mediaResource.GetCurrentStorageReferenceName(), mediaResource.MimeType);
                 await _mediaRepo.AddMediaResourceRecordAsync(mediaResource);
@@ -791,13 +880,17 @@ namespace LagoVista.MediaServices.Managers
                     CreatedBy = user,
                     Name = $"Revision {resource.History.Count + 1}",
                     CreationDate = resource.LastUpdatedDate,
-                    ContentSize = resource.ContentSize,
+                    FileName = resource.FileName,
+                    MimeType = resource.MimeType,
+                    ContentSize = response.Result.LongLength,
+                    ContentSha256 = ComputeSha256(response.Result),
                     OriginalPrompt = request.Text,
                     Notes = $"Updated Audio",
                     TextGenerationRequest = request,
                 };
 
                 resource.History.Insert(0, history);
+                resource.CurrentRevision = history.Id;
 
                 await _mediaRepo.AddMediaAsync(response.Result, org.Id, resource.GetCurrentStorageReferenceName(), resource.MimeType);
 

@@ -821,6 +821,8 @@ namespace LagoVista.MediaServices.Managers
                 if (pendingRevision != null)
                 {
                     pendingRevision.StorageReferenceName = String.IsNullOrWhiteSpace(videoOutput.StorageReferenceName) ? pendingRevision.StorageReferenceName : videoOutput.StorageReferenceName;
+                    pendingRevision.ContentSize = videoOutput.SizeBytes ?? pendingRevision.ContentSize;
+                    pendingRevision.ContentSha256 = String.IsNullOrWhiteSpace(videoOutput.Sha256) ? pendingRevision.ContentSha256 : videoOutput.Sha256;
                 }
             }
 
