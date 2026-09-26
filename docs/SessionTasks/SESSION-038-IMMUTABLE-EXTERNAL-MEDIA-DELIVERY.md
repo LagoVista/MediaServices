@@ -2,7 +2,7 @@
 
 ## Status
 
-**READY TO START NOW**
+**IMPLEMENTED — READY FOR REVIEW**
 
 Campaigns Session 034 proved that Instagram organic publishing requires Meta to fetch immutable execution media from a publicly reachable URL. Session 028/MediaServices Session 027 provide immutable revision identity and bytes, but no provider-neutral short-lived external-read lease.
 
@@ -164,28 +164,45 @@ Successful completion unblocks the Campaigns execution-media resolver from addin
 ## Completion Report
 
 ### Summary
-_TODO_
+Implemented a provider-neutral short-lived external-read lease for one exact immutable media revision. Lease issuance reuses the existing cloud-storage read-URL abstraction, performs tenant/authorization checks before URL creation, binds the lease to the selected immutable revision storage reference, and returns revision-authoritative metadata without exposing storage-provider vocabulary.
 
 ### Final external-read contract
-_TODO_
+- `ImmutableMediaReadLeaseRequest` accepts an optional `LifetimeMinutes`.
+- `ImmutableMediaReadLease` returns URL, ValidUntilUtc, MediaResourceId, RevisionId, FileName, ContentType, ContentLength, and ContentSha256.
+- Manager entry point: `CreateImmutableMediaReadLeaseAsync(...)`.
+- REST entry point: `POST /api/media/resource/{id}/revision/{revisionid}/external-read-lease`.
 
 ### Authorization / tenant isolation
-_TODO_
+Lease issuance loads the media resource, rejects an active-organization mismatch before URL creation, preserves the existing `AuthorizeActions.Read` authorization path, then resolves the requested revision by immutable revision id. Missing resources, missing revisions, and missing revision storage references fail before an external URL is created.
 
 ### Storage implementation
-_TODO_
+No SeaweedFS/Azure/S3 concepts were added to the public MediaServices contract. The implementation extends the existing provider-neutral `IMediaServicesRepo.GetMediaReadUrlAsync(...)` capability with an explicit lifetime and requests a public read-only URL for the exact selected revision storage reference. Returned URLs must be absolute HTTPS URLs.
 
 ### Exact-revision / integrity proof
-_TODO_
+Lease creation resolves `resource.History` by the requested revision id and passes that revision's `StorageReferenceName` to storage. It never resolves through `CurrentRevision`, so later authoring/current-revision changes do not retarget an issued or regenerated lease. File name, MIME type, content length, and SHA-256 are copied from the selected revision metadata.
 
 ### Expiry / retry semantics
-_TODO_
+- Default lifetime: 60 minutes.
+- Maximum lifetime: 120 minutes.
+- Minimum lifetime: 1 minute.
+- Expiry is enforced by the storage-provider signed read URL.
+- Revocation is expiry-only; no durable lease state is persisted.
+- Callers regenerate a fresh URL from the same immutable media resource id + revision id during retry.
 
 ### Tests added
-_TODO_
+Focused tests cover authorized exact-revision lease issuance, cross-organization rejection before URL creation, missing revision rejection before URL creation, exact-revision targeting when `CurrentRevision` has moved, public read-only URL scope, bounded/default lifetime, HTTPS-only external URL enforcement, revision metadata identity, retry regeneration for the same immutable reference, and storage-provider vocabulary absence from the public DTO.
+
+The authoritative Build Server compiled `LagoVista.MediaServices.MediaTests` successfully as part of the repository build. A separate focused `dotnet test --filter ImmutableMediaRevisionTests` execution was not available through the current Build Server workflow, and the local fallback runner could not reach GitHub from its isolated environment. This is the one remaining verification item before final merge.
 
 ### Build proof
-_TODO_
+- Build Server proof id: `abe7be04d3bc4f38a967daafe9bd8234`
+- Source commit: `74da3f92207e2c05f5aaf14c9f3452aa157e0f09`
+- Build-normalized proof commit: `b8e49c4...`
+- Platform workstream: `feature/campaign-execution-foundation`
+- Source branch: `session-038-immutable-external-media-delivery`
+- Result: succeeded, 0 warnings, 0 errors.
+- Workstream packages: `7.0.23-ws-c-74da3f92`.
+- No stable release was published.
 
 ### Campaigns / Instagram resume impact
-_TODO_
+Campaigns can now request a fresh short-lived HTTPS read URL for an exact immutable media revision without persisting the URL and without knowing the underlying storage provider. This provides the MediaServices-side primitive needed for Instagram/Meta-style pull-media execution.
