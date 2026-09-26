@@ -2,7 +2,7 @@
 
 ## Status
 
-**IMPLEMENTED — READY FOR REVIEW**
+**COMPLETE — GREEN BUILD + FOCUSED TEST PROOF; READY TO MERGE**
 
 Campaigns Session 034 proved that Instagram organic publishing requires Meta to fetch immutable execution media from a publicly reachable URL. Session 028/MediaServices Session 027 provide immutable revision identity and bytes, but no provider-neutral short-lived external-read lease.
 
@@ -192,7 +192,7 @@ Lease creation resolves `resource.History` by the requested revision id and pass
 ### Tests added
 Focused tests cover authorized exact-revision lease issuance, cross-organization rejection before URL creation, missing revision rejection before URL creation, exact-revision targeting when `CurrentRevision` has moved, public read-only URL scope, bounded/default lifetime, HTTPS-only external URL enforcement, revision metadata identity, retry regeneration for the same immutable reference, and storage-provider vocabulary absence from the public DTO.
 
-The authoritative Build Server compiled `LagoVista.MediaServices.MediaTests` successfully as part of the repository build. A separate focused `dotnet test --filter ImmutableMediaRevisionTests` execution was not available through the current Build Server workflow, and the local fallback runner could not reach GitHub from its isolated environment. This is the one remaining verification item before final merge.
+The authoritative Build Server compiled `LagoVista.MediaServices.MediaTests` successfully as part of the repository build. After the Build Server gained first-class exact-commit .NET test proof, focused proof `7314394a34e544c0877265ab5207701d` ran the actual PR head `d6d48f0cef13bba26dbcfc0bd4788e2121b2cbde` under `feature/campaign-execution-foundation` with filter `FullyQualifiedName~ImmutableMediaRevisionTests`. Result: **17/17 passed** in 1.5590s, including exact-revision targeting, cross-organization rejection before URL creation, missing-revision rejection, bounded lifetime, retry regeneration, HTTPS enforcement, legacy immutable-read compatibility, and provider-vocabulary absence.
 
 ### Build proof
 - Build Server proof id: `abe7be04d3bc4f38a967daafe9bd8234`
@@ -202,6 +202,8 @@ The authoritative Build Server compiled `LagoVista.MediaServices.MediaTests` suc
 - Source branch: `session-038-immutable-external-media-delivery`
 - Result: succeeded, 0 warnings, 0 errors.
 - Workstream packages: `7.0.23-ws-c-74da3f92`.
+- Focused test proof: `7314394a34e544c0877265ab5207701d` — 17/17 passed at PR head `d6d48f0cef13bba26dbcfc0bd4788e2121b2cbde`.
+- Lower-layer storage sanity check confirms S3-style public URLs are presigned GETs with requested expiry, while Azure SAS URLs carry Read-only permission and explicit expiry.
 - No stable release was published.
 
 ### Campaigns / Instagram resume impact
