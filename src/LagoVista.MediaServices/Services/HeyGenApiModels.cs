@@ -244,8 +244,8 @@ namespace LagoVista.MediaServices.Services
         [JsonProperty("text")]
         public string Text { get; set; }
 
-        [JsonProperty("locale")]
-        public string Locale { get; set; }
+        [JsonProperty("language")]
+        public string Language { get; set; }
     }
 
     internal sealed class HeyGenSpeechPreviewResponse

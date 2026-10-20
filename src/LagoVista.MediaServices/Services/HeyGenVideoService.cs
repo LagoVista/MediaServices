@@ -664,7 +664,7 @@ namespace LagoVista.MediaServices.Services
             {
                 VoiceId = request.VoiceId,
                 Text = request.Text,
-                Locale = request.Locale
+                Language = string.IsNullOrWhiteSpace(request.Locale) ? null : request.Locale.Split('-')[0].Split('_')[0].ToLowerInvariant()
             };
 
             var requestJson = JsonConvert.SerializeObject(apiRequest, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
