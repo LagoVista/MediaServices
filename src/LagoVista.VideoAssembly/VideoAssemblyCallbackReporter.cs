@@ -71,7 +71,7 @@ namespace LagoVista.VideoAssembly
         {
             return _request.ExecutionOptions?.Operation == VideoAssemblyOperation.Publish
                 ? _request.VimeoUpload?.MediaResourceId
-                : _request.AzureVideoDestination?.MediaResourceId;
+                : _request.VideoDestination?.MediaResourceId;
         }
 
         public Task SendStartedAsync()

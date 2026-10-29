@@ -425,7 +425,7 @@ namespace LagoVista.MediaServices.Managers
 
         private static bool IsUploadStage(string stage)
         {
-            return String.Equals(stage, VideoAssemblyStage.UploadingToAzure.ToString(), StringComparison.OrdinalIgnoreCase)
+            return String.Equals(stage, VideoAssemblyStage.UploadingToObjectStorage.ToString(), StringComparison.OrdinalIgnoreCase)
                 || String.Equals(stage, VideoAssemblyStage.UploadingThumbnail.ToString(), StringComparison.OrdinalIgnoreCase)
                 || String.Equals(stage, VideoAssemblyStage.UploadingToVimeo.ToString(), StringComparison.OrdinalIgnoreCase);
         }

@@ -72,7 +72,7 @@ namespace LagoVista.VideoAssembly
                     for (var index = 0; index < request.Blocks.Count; index++) ValidateBlock(request.Blocks[index], index, request.Limits, errors);
                 }
 
-                if (executionOptions.UploadToAzure) ValidateAzureDestination(request.AzureVideoDestination, errors);
+                if (executionOptions.UploadToObjectStorage) ValidateObjectStorageDestination(request.VideoDestination, errors);
                 if (executionOptions.GenerateThumbnail) ValidateThumbnail(request.Thumbnail, errors);
             }
             else if (executionOptions.Operation == VideoAssemblyOperation.Publish)
@@ -89,7 +89,7 @@ namespace LagoVista.VideoAssembly
                 }
 
                 if (!executionOptions.UploadToVimeo) errors.Add("UploadToVimeo must be enabled for a publish operation.");
-                if (executionOptions.UploadToAzure) errors.Add("UploadToAzure must be disabled for a publish operation.");
+                if (executionOptions.UploadToObjectStorage) errors.Add("UploadToObjectStorage must be disabled for a publish operation.");
                 if (executionOptions.GenerateThumbnail) errors.Add("GenerateThumbnail must be disabled for a publish operation.");
             }
             else
@@ -177,19 +177,19 @@ namespace LagoVista.VideoAssembly
             if (label.FadeOutSeconds < 0) errors.Add($"{prefix}.FadeOutSeconds cannot be negative.");
         }
 
-        private static void ValidateAzureDestination(VideoMediaImportDestination destination, List<string> errors)
+        private static void ValidateObjectStorageDestination(VideoMediaImportDestination destination, List<string> errors)
         {
             if (destination == null)
             {
-                errors.Add("AzureVideoDestination is required when UploadToAzure is enabled.");
+                errors.Add("VideoDestination is required when UploadToObjectStorage is enabled.");
                 return;
             }
 
-            if (String.IsNullOrWhiteSpace(destination.MediaResourceId)) errors.Add("AzureVideoDestination.MediaResourceId is required.");
-            ValidateUrl(errors, destination.UploadUrl, "AzureVideoDestination.UploadUrl");
-            if (String.IsNullOrWhiteSpace(destination.StorageReferenceName)) errors.Add("AzureVideoDestination.StorageReferenceName is required.");
-            if (String.IsNullOrWhiteSpace(destination.FileName)) errors.Add("AzureVideoDestination.FileName is required.");
-            if (String.IsNullOrWhiteSpace(destination.ContentType)) errors.Add("AzureVideoDestination.ContentType is required.");
+            if (String.IsNullOrWhiteSpace(destination.MediaResourceId)) errors.Add("VideoDestination.MediaResourceId is required.");
+            ValidateUrl(errors, destination.UploadUrl, "VideoDestination.UploadUrl");
+            if (String.IsNullOrWhiteSpace(destination.StorageReferenceName)) errors.Add("VideoDestination.StorageReferenceName is required.");
+            if (String.IsNullOrWhiteSpace(destination.FileName)) errors.Add("VideoDestination.FileName is required.");
+            if (String.IsNullOrWhiteSpace(destination.ContentType)) errors.Add("VideoDestination.ContentType is required.");
         }
 
         private static void ValidateThumbnail(VideoMediaImportThumbnail thumbnail, List<string> errors)

@@ -236,7 +236,7 @@ namespace LagoVista.MediaServices.Managers
                         Loop = composition.LoopBackgroundAudio
                     },
                 Blocks = blocksResult.Result,
-                AzureVideoDestination = new VideoMediaImportDestination
+                VideoDestination = new VideoMediaImportDestination
                 {
                     MediaResourceId = outputMediaResource.Id,
                     UploadUrl = videoDestinationResult.Result.UploadUrl,
@@ -264,7 +264,7 @@ namespace LagoVista.MediaServices.Managers
                 },
                 ExecutionOptions = new VideoAssemblyExecutionOptions
                 {
-                    UploadToAzure = true,
+                    UploadToObjectStorage = true,
                     GenerateThumbnail = true,
                     UploadToVimeo = false,
                     SendCallbacks = true
@@ -428,13 +428,13 @@ namespace LagoVista.MediaServices.Managers
                 composition.Status?.Value != VideoCompositionStatus.Failed &&
                 composition.Status?.Value != VideoCompositionStatus.Cancelled &&
                 composition.Status?.Value != VideoCompositionStatus.Completed) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The video composition must be completed before it can be published to Vimeo.");
-            if (composition.OutputMediaResource == null || String.IsNullOrWhiteSpace(composition.OutputMediaResource.Id)) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The video composition does not have an Azure output media resource.");
+            if (composition.OutputMediaResource == null || String.IsNullOrWhiteSpace(composition.OutputMediaResource.Id)) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The video composition does not have an object storage output media resource.");
 
             cancellationToken.ThrowIfCancellationRequested();
 
             var azureMediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(composition.OutputMediaResource.Id, org, user);
-            if (azureMediaResource == null) return InvokeResult<VideoAssemblyPreparationResult>.FromError($"Could not find Azure output media resource '{composition.OutputMediaResource.Id}'.");
-            if (azureMediaResource.Status?.Value != MediaResourceStatus.Ready) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The Azure output media resource is not ready for Vimeo publishing.");
+            if (azureMediaResource == null) return InvokeResult<VideoAssemblyPreparationResult>.FromError($"Could not find object storage output media resource '{composition.OutputMediaResource.Id}'.");
+            if (azureMediaResource.Status?.Value != MediaResourceStatus.Ready) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The object storage output media resource is not ready for Vimeo publishing.");
 
             var sourceResult = await _mediaSourceResolver.ResolveAsync(azureMediaResource, org.Id, cancellationToken);
             if (!sourceResult.Successful) return sourceResult.ToInvokeResult<VideoAssemblyPreparationResult>();
@@ -545,7 +545,7 @@ namespace LagoVista.MediaServices.Managers
                 ExecutionOptions = new VideoAssemblyExecutionOptions
                 {
                     Operation = VideoAssemblyOperation.Publish,
-                    UploadToAzure = false,
+                    UploadToObjectStorage = false,
                     GenerateThumbnail = false,
                     UploadToVimeo = true,
                     SendCallbacks = true
@@ -611,7 +611,7 @@ namespace LagoVista.MediaServices.Managers
             await _videoCompositionRepo.UpdateVideoCompositionAsync(composition);
             await PublishVideoCompositionUpdatedAsync(composition);
 
-            _adminLogger.Trace($"{this.Tag()} [VIMEO PUBLISH PREPARE COMPLETED] CompositionId={composition.Id}, AzureMediaResourceId={azureMediaResource.Id}, VimeoMediaResourceId={publishedMediaResource.Id}, RequestId={requestId}, AttemptId={attemptId}");
+            _adminLogger.Trace($"{this.Tag()} [VIMEO PUBLISH PREPARE COMPLETED] CompositionId={composition.Id}, StorageMediaResourceId={azureMediaResource.Id}, VimeoMediaResourceId={publishedMediaResource.Id}, RequestId={requestId}, AttemptId={attemptId}");
 
             return InvokeResult<VideoAssemblyPreparationResult>.Create(new VideoAssemblyPreparationResult
             {
