@@ -41,8 +41,9 @@ namespace LagoVista.VideoAssembly.Contracts
         RenderingLabels,
         NormalizingMedia,
         Encoding,
-        UploadingToAzure,
-        GeneratingThumbnail,
+        UploadingToObjectStorage,
+        UploadingToAzure = UploadingToObjectStorage, // Legacy stage value.
+        GeneratingThumbnail = 7,
         UploadingThumbnail,
         UploadingToVimeo,
         Completed,
@@ -94,7 +95,9 @@ namespace LagoVista.VideoAssembly.Contracts
         public VideoAssemblySource PublishedVideoSource { get; set; }
         public VideoAssemblyAudio BackgroundAudio { get; set; }
         public List<VideoAssemblyBlock> Blocks { get; set; } = new List<VideoAssemblyBlock>();
-        public VideoMediaImportDestination AzureVideoDestination { get; set; }
+        public VideoMediaImportDestination AzureVideoDestination { get; set; } // Legacy JSON field.
+        [System.Text.Json.Serialization.JsonIgnore]
+        public VideoMediaImportDestination VideoDestination { get => AzureVideoDestination; set => AzureVideoDestination = value; }
         public VideoMediaImportThumbnail Thumbnail { get; set; } = new VideoMediaImportThumbnail();
         public VideoAssemblyVimeoUpload VimeoUpload { get; set; }
         public VideoAssemblyCallbackSettings Callback { get; set; }
@@ -323,7 +326,9 @@ namespace LagoVista.VideoAssembly.Contracts
     public sealed class VideoAssemblyExecutionOptions
     {
         public VideoAssemblyOperation Operation { get; set; } = VideoAssemblyOperation.Assemble;
-        public bool UploadToAzure { get; set; } = true;
+        public bool UploadToAzure { get; set; } = true; // Legacy JSON field.
+        [System.Text.Json.Serialization.JsonIgnore]
+        public bool UploadToObjectStorage { get => UploadToAzure; set => UploadToAzure = value; }
         public bool GenerateThumbnail { get; set; } = true;
         public bool UploadToVimeo { get; set; }
         public bool SendCallbacks { get; set; } = true;

@@ -99,27 +99,27 @@ namespace LagoVista.VideoAssembly
                 string vimeoVideoUri = null;
                 string vimeoVideoId = null;
 
-                if (request.ExecutionOptions?.UploadToAzure == true)
+                if (request.ExecutionOptions?.UploadToObjectStorage == true)
                 {
-                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingToAzure, PercentComplete = 0, Message = "Uploading assembled video to object storage.", BytesCompleted = 0, BytesTotal = outputInspection.SizeBytes });
+                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingToObjectStorage, PercentComplete = 0, Message = "Uploading assembled video to object storage.", BytesCompleted = 0, BytesTotal = outputInspection.SizeBytes });
                     var videoUploadProgress = new InlineProgress<SignedUrlUploadProgress>(upload => progress?.Report(new VideoAssemblyProgress
                     {
                         OrganizationId = request.OrganizationId,
-                        Stage = VideoAssemblyStage.UploadingToAzure,
+                        Stage = VideoAssemblyStage.UploadingToObjectStorage,
                         PercentComplete = upload.PercentComplete,
                         Message = "Uploading assembled video to object storage.",
                         BytesCompleted = upload.BytesCompleted,
                         BytesTotal = upload.BytesTotal
                     }));
-                    await _signedUrlUploader.UploadAsync(workspace.OutputPath, request.AzureVideoDestination, executionTimeout.Token, videoUploadProgress);
+                    await _signedUrlUploader.UploadAsync(workspace.OutputPath, request.VideoDestination, executionTimeout.Token, videoUploadProgress);
 
                     outputs.Add(new VideoProcessorOutputArtifact
                     {
                         Type = VideoProcessorOutputArtifactType.Video,
-                        MediaResourceId = request.AzureVideoDestination.MediaResourceId,
-                        StorageReferenceName = request.AzureVideoDestination.StorageReferenceName,
-                        FileName = request.AzureVideoDestination.FileName,
-                        ContentType = request.AzureVideoDestination.ContentType,
+                        MediaResourceId = request.VideoDestination.MediaResourceId,
+                        StorageReferenceName = request.VideoDestination.StorageReferenceName,
+                        FileName = request.VideoDestination.FileName,
+                        ContentType = request.VideoDestination.ContentType,
                         SizeBytes = outputInspection.SizeBytes,
                         DurationSeconds = outputDurationSeconds,
                         Width = outputInspection.Width,
@@ -127,7 +127,7 @@ namespace LagoVista.VideoAssembly
                         Sha256 = sha256
                     });
 
-                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingToAzure, PercentComplete = 100, Message = "Assembled video uploaded to object storage.", BytesCompleted = outputInspection.SizeBytes, BytesTotal = outputInspection.SizeBytes });
+                    progress?.Report(new VideoAssemblyProgress { OrganizationId = request.OrganizationId, Stage = VideoAssemblyStage.UploadingToObjectStorage, PercentComplete = 100, Message = "Assembled video uploaded to object storage.", BytesCompleted = outputInspection.SizeBytes, BytesTotal = outputInspection.SizeBytes });
                 }
 
                 if (request.ExecutionOptions?.GenerateThumbnail == true)
