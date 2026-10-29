@@ -15,6 +15,7 @@ namespace LagoVista.VideoAssembly
         private Task _pendingCallback = Task.CompletedTask;
         private Task _pendingNotification = Task.CompletedTask;
         private VideoAssemblyStage? _lastReportedStage;
+        private int _lastCallbackProgressBucket = -1;
         private long _sequence;
 
         public VideoAssemblyCallbackReporter(VideoAssemblyRequest request, VideoProcessorCallbackClient callbackClient, VideoProcessorNotificationPublisher notificationPublisher, CancellationToken cancellationToken)
@@ -50,8 +51,14 @@ namespace LagoVista.VideoAssembly
                 _pendingNotification = _pendingNotification.ContinueWith(_ => _notificationPublisher.TryPublishAsync(_request.OrganizationId, progress.Message, notificationProgress, _cancellationToken), CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
 
                 if (_request.ExecutionOptions?.SendCallbacks != true) return;
-                if (_lastReportedStage == progress.Stage) return;
+
+                var stageChanged = _lastReportedStage != progress.Stage;
+                var uploadProgress = progress.BytesTotal.GetValueOrDefault() > 0 && progress.PercentComplete.HasValue;
+                var progressBucket = uploadProgress ? Math.Clamp(progress.PercentComplete.Value, 0, 100) / 10 : -1;
+                if (!stageChanged && (!uploadProgress || progressBucket <= _lastCallbackProgressBucket)) return;
+
                 _lastReportedStage = progress.Stage;
+                _lastCallbackProgressBucket = progressBucket;
                 var callback = CreateCallback(VideoAssemblyCallbackType.Progress, progress.Stage, progress.Message);
                 callback.PercentComplete = progress.PercentComplete;
                 callback.BytesCompleted = progress.BytesCompleted;

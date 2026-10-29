@@ -19,6 +19,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.Http" />
+    <PackageReference Include="LagoVista.CloudStorage" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LagoVista.VideoAssembly\LagoVista.VideoAssembly.csproj" />

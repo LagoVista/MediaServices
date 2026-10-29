@@ -1,4 +1,7 @@
 using LagoVista.VideoAssembly.Contracts;
+using LagoVista.CloudStorage.Interfaces.ConnectionSettings;
+using Minio;
+using Minio.DataModel.Args;
 using System;
 using System.IO;
 using System.Net.Http;
@@ -11,10 +14,13 @@ namespace LagoVista.VideoAssembly
     public sealed class SignedUrlUploader
     {
         private readonly HttpClient _httpClient;
+        private readonly IS3ObjectStorageConnectionSettings _s3Settings;
+        private const long MultipartThreshold = 8L * 1024 * 1024;
 
-        public SignedUrlUploader(HttpClient httpClient)
+        public SignedUrlUploader(HttpClient httpClient, IServiceProvider services)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            _s3Settings = services?.GetService(typeof(IS3ObjectStorageConnectionSettings)) as IS3ObjectStorageConnectionSettings;
         }
 
         public async Task<long> UploadAsync(string filePath, VideoMediaImportDestination destination, CancellationToken cancellationToken = default, IProgress<SignedUrlUploadProgress> progress = null)
@@ -25,6 +31,13 @@ namespace LagoVista.VideoAssembly
             if (String.IsNullOrWhiteSpace(destination.UploadUrl)) throw new InvalidOperationException("The signed upload URL is required.");
 
             var fileInfo = new FileInfo(filePath);
+            if (fileInfo.Length >= MultipartThreshold)
+            {
+                if (_s3Settings == null)
+                    throw new InvalidOperationException("S3ObjectStorage settings are required for multipart video uploads. Supply configuration through the worker ConfigMap and Secret.");
+                return await UploadS3Async(filePath, destination, fileInfo.Length, cancellationToken, progress);
+            }
+
             var uploadUri = new Uri(destination.UploadUrl);
             var safeDestination = uploadUri.GetLeftPart(UriPartial.Path);
 
@@ -60,6 +73,47 @@ namespace LagoVista.VideoAssembly
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"[OBJECT STORAGE UPLOAD FAILED] Destination={safeDestination}, BytesRead={progressStream.BytesRead}/{fileInfo.Length}, Exception={ex}");
+                throw;
+            }
+        }
+
+        private async Task<long> UploadS3Async(string filePath, VideoMediaImportDestination destination, long fileLength, CancellationToken cancellationToken, IProgress<SignedUrlUploadProgress> progress)
+        {
+            // The hosting service already supplies the canonical S3 bucket/object path in its signed URL.
+            // Reuse that identity while authenticating directly with the worker's scoped S3 credentials.
+            var uri = new Uri(destination.UploadUrl);
+            var path = Uri.UnescapeDataString(uri.AbsolutePath.TrimStart('/'));
+            var separator = path.IndexOf('/');
+            if (separator <= 0 || separator == path.Length - 1)
+                throw new InvalidOperationException("S3 upload destination must contain a bucket and object key.");
+            var bucket = path.Substring(0, separator);
+            var objectKey = path.Substring(separator + 1);
+            var client = new MinioClient()
+                .WithEndpoint(_s3Settings.Host, _s3Settings.Port)
+                .WithCredentials(_s3Settings.AccessKey, _s3Settings.SecretKey)
+                .WithSSL(_s3Settings.UseTls)
+                .Build();
+
+            Console.WriteLine($"[S3 MULTIPART UPLOAD START] Bucket={bucket}, Key={objectKey}, Bytes={fileLength}.");
+            progress?.Report(new SignedUrlUploadProgress { BytesCompleted = 0, BytesTotal = fileLength, PercentComplete = 0 });
+            try
+            {
+                using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read, 131072, FileOptions.Asynchronous | FileOptions.SequentialScan);
+                using var progressStream = new ProgressReadStream(fileStream, fileLength, progress);
+                var args = new PutObjectArgs()
+                    .WithBucket(bucket)
+                    .WithObject(objectKey)
+                    .WithStreamData(progressStream)
+                    .WithObjectSize(fileLength)
+                    .WithContentType(String.IsNullOrWhiteSpace(destination.ContentType) ? "application/octet-stream" : destination.ContentType);
+                await client.PutObjectAsync(args, cancellationToken);
+                progress?.Report(new SignedUrlUploadProgress { BytesCompleted = fileLength, BytesTotal = fileLength, PercentComplete = 100 });
+                Console.WriteLine($"[S3 MULTIPART UPLOAD COMPLETE] Bucket={bucket}, Key={objectKey}, Bytes={fileLength}.");
+                return fileLength;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[S3 MULTIPART UPLOAD FAILED] Bucket={bucket}, Key={objectKey}, Exception={ex}");
                 throw;
             }
         }

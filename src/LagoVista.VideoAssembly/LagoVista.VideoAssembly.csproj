@@ -4,6 +4,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="RabbitMQ.Client" />
+    <PackageReference Include="Minio" />
+    <PackageReference Include="LagoVista.CloudStorage" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LagoVista.VideoAssembly.Contracts\LagoVista.VideoAssembly.Contracts.csproj" />
