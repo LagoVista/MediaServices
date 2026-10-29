@@ -266,7 +266,7 @@ namespace LagoVista.VideoAssembly.Contracts
     public sealed class VideoMediaImportLimits
     {
         public long MaxSourceFileBytes { get; set; } = 4294967296;
-        public int MaxExecutionMinutes { get; set; } = 30;
+        public int MaxExecutionMinutes { get; set; } = 60;
     }
 
     public sealed class VideoMediaImportExecutionOptions
@@ -318,7 +318,7 @@ namespace LagoVista.VideoAssembly.Contracts
         public long MaxTotalInputBytes { get; set; } = 4294967296;
         public long MaxOutputFileBytes { get; set; } = 4294967296;
         public int MaxOutputDurationSeconds { get; set; } = 600;
-        public int MaxExecutionMinutes { get; set; } = 30;
+        public int MaxExecutionMinutes { get; set; } = 60;
         public int MaxBlocks { get; set; } = 50;
         public int MaxLabelsPerBlock { get; set; } = 20;
     }
