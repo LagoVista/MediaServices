@@ -12,6 +12,7 @@
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.13" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="9.0.13" />
     <PackageVersion Include="RabbitMQ.Client" Version="7.2.1" />
+    <PackageVersion Include="System.Text.Json" Version="9.0.13" />
     <PackageVersion Include="Minio" Version="7.0.0" />
     <PackageVersion Include="SixLabors.ImageSharp" Version="2.1.11" />
   </ItemGroup>
