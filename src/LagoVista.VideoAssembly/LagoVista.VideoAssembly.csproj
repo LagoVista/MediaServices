@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="RabbitMQ.Client" />
+    <PackageReference Include="Minio" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LagoVista.VideoAssembly.Contracts\LagoVista.VideoAssembly.Contracts.csproj" />

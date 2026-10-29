@@ -1,4 +1,6 @@
 using LagoVista.VideoAssembly;
+using LagoVista.CloudStorage.Interfaces.ConnectionSettings;
+using LagoVista.CloudStorage.Storage.ConnectionSettings;
 using LagoVista.VideoAssembly.Contracts;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -34,6 +36,9 @@ namespace LagoVista.VideoAssembly.Worker
             var notificationSettings = builder.Configuration.GetSection("RabbitNotifications").Get<VideoProcessorNotificationSettings>() ?? new VideoProcessorNotificationSettings();
 
             builder.Services.AddSingleton(options);
+            var s3Section = builder.Configuration.GetSection(S3ObjectStorageConnectionSettings.SectionName);
+            if (!String.IsNullOrWhiteSpace(s3Section["Host"]))
+                builder.Services.AddSingleton<IS3ObjectStorageConnectionSettings>(new S3ObjectStorageConnectionSettings(builder.Configuration));
             builder.Services.AddSingleton(notificationSettings);
             builder.Services.AddSingleton<VideoProcessorNotificationPublisher>();
             builder.Services.AddSingleton<VideoAssemblyRequestValidator>();
