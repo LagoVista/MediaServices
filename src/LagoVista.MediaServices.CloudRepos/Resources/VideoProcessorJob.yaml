@@ -46,6 +46,10 @@ spec:
                 name: video-processor-bootstrap
             - secretRef:
                 name: video-processor-remote-config-secrets
+            - configMapRef:
+                name: video-processor-s3-config
+            - secretRef:
+                name: video-processor-s3-secrets
           resources:
             requests:
               cpu: 500m
