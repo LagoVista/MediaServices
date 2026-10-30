@@ -10,6 +10,7 @@ using LagoVista.MediaServices.Services;
 using LagoVista.UserAdmin.Interfaces.Repos.Orgs;
 using LagoVista.UserAdmin.Models.Orgs;
 using LagoVista.VideoAssembly.Contracts;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -24,6 +25,7 @@ namespace LagoVista.MediaServices.Managers
     public class VideoAssemblyRequestManager : IVideoAssemblyRequestManager
     {
         private readonly IVideoCompositionRepo _videoCompositionRepo;
+        private readonly IVideoCompositionBlockTemplateManager _blockTemplateManager;
         private readonly IMediaServicesManager _mediaServicesManager;
         private readonly IVideoAssemblyMediaSourceResolver _mediaSourceResolver;
         private readonly IVideoProcessorStorageUrlService _videoProcessorStorageUrlService;
@@ -42,9 +44,10 @@ namespace LagoVista.MediaServices.Managers
         public VideoAssemblyRequestManager(IVideoCompositionRepo videoCompositionRepo, IMediaServicesManager mediaServicesManager, IVideoAssemblyMediaSourceResolver mediaSourceResolver, 
             IVideoProcessorStorageUrlService videoProcessorStorageUrlService, IVideoProcessorRequestStore videoProcessorRequestStore, IVideoProcessorCallbackRegistrationStore videoProcessorCallbackRegistrationStore, 
             IVideoProcessorLauncher videoProcessorLauncher, IVimeoVideoService vimeoVideoService, IOrganizationLoaderRepo organizationLoaderRepo, ISecureStorage secureStorage, 
-            IMediaLibraryRepo mediaLibraryRepo, ICacheProvider cacheProvider, ICoreAppServices coreAppServices)
+            IMediaLibraryRepo mediaLibraryRepo, ICacheProvider cacheProvider, IVideoCompositionBlockTemplateManager blockTemplateManager, ICoreAppServices coreAppServices)
         {
             _videoCompositionRepo = videoCompositionRepo ?? throw new ArgumentNullException(nameof(videoCompositionRepo));
+            _blockTemplateManager = blockTemplateManager ?? throw new ArgumentNullException(nameof(blockTemplateManager));
             _mediaServicesManager = mediaServicesManager ?? throw new ArgumentNullException(nameof(mediaServicesManager));
             _mediaSourceResolver = mediaSourceResolver ?? throw new ArgumentNullException(nameof(mediaSourceResolver));
             _videoProcessorStorageUrlService = videoProcessorStorageUrlService ?? throw new ArgumentNullException(nameof(videoProcessorStorageUrlService));
@@ -100,7 +103,14 @@ namespace LagoVista.MediaServices.Managers
             cancellationToken.ThrowIfCancellationRequested();
 
             _adminLogger.Trace($"{this.Tag()} [ASSEMBLY COMPOSITION VALIDATED] CompositionId={composition.Id}, BlockCount={composition.Blocks.Count}, CurrentStatus={composition.Status?.Value}");
-            composition.CurrentInputSha256 = composition.CalculateCurrentInputSha256();
+            var effectiveComposition = JsonConvert.DeserializeObject<VideoComposition>(JsonConvert.SerializeObject(composition));
+            var resolveResult = await ResolveReferencedBlocksAsync(effectiveComposition, org, user, cancellationToken);
+            if (!resolveResult.Successful)
+            {
+                return InvokeResult<VideoAssemblyPreparationResult>.FromError(resolveResult.Errors[0].Message);
+            }
+
+            composition.CurrentInputSha256 = effectiveComposition.CalculateCurrentInputSha256();
             composition.ExecutionInputSha256 = composition.CurrentInputSha256;
             composition.SetStatus(VideoCompositionStatus.Preparing);
             composition.AssemblyState = composition.AssemblyState ?? new VideoCompositionAssemblyState();
@@ -113,7 +123,7 @@ namespace LagoVista.MediaServices.Managers
             await _videoCompositionRepo.UpdateVideoCompositionAsync(composition);
 
             _adminLogger.Trace($"{this.Tag()} [ASSEMBLY BLOCK RESOLUTION STARTED] CompositionId={composition.Id}, BlockCount={composition.Blocks.Count}");
-            var blocksResult = await CreateAssemblyBlocksAsync(composition, org, user, cancellationToken);
+            var blocksResult = await CreateAssemblyBlocksAsync(effectiveComposition, org, user, cancellationToken);
             if (!blocksResult.Successful)
             {
                 return await ApplyPreparationFailureAsync(composition, blocksResult.Errors[0].Message);
@@ -697,6 +707,43 @@ namespace LagoVista.MediaServices.Managers
                 VideoUri = videoUri,
                 VideoId = videoId
             });
+        }
+
+        private async Task<InvokeResult> ResolveReferencedBlocksAsync(VideoComposition composition, EntityHeader org, EntityHeader user, CancellationToken cancellationToken)
+        {
+            var resolvedBlocks = new List<VideoCompositionBlock>();
+            foreach (var block in composition.Blocks)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (block.SourceBlockTemplate == null || String.IsNullOrWhiteSpace(block.SourceBlockTemplate.Id))
+                {
+                    resolvedBlocks.Add(block);
+                    continue;
+                }
+
+                var template = await _blockTemplateManager.GetVideoCompositionBlockTemplateAsync(block.SourceBlockTemplate.Id, org, user);
+                if (template == null || template.IsDeleted == true || !template.IsActive || template.Block == null)
+                {
+                    return InvokeResult.FromError($"Referenced block template '{block.SourceBlockTemplate.Id}' is unavailable for block '{block.Key}'.");
+                }
+
+                var resolved = JsonConvert.DeserializeObject<VideoCompositionBlock>(JsonConvert.SerializeObject(template.Block));
+                resolved.Id = block.Id;
+                resolved.Key = block.Key;
+                resolved.SortOrder = block.SortOrder;
+                resolved.SourceBlockTemplate = block.SourceBlockTemplate;
+                var validation = new ValidationResult();
+                resolved.Validate(validation);
+                if (!validation.Successful)
+                {
+                    return InvokeResult.FromError($"Referenced block template '{template.Name}' is invalid.");
+                }
+
+                resolvedBlocks.Add(resolved);
+            }
+
+            composition.Blocks = resolvedBlocks;
+            return InvokeResult.Success;
         }
 
         private async Task<InvokeResult<List<VideoAssemblyBlock>>> CreateAssemblyBlocksAsync(VideoComposition composition, EntityHeader org, EntityHeader user, CancellationToken cancellationToken)
