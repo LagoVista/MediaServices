@@ -504,6 +504,7 @@ namespace LagoVista.MediaServices.Models
             {
                 content.AppendLine("block");
                 content.AppendLine($"id={NormalizeHashValue(block.Id)}");
+                content.AppendLine($"sourceBlockTemplateId={NormalizeHashValue(block.SourceBlockTemplate?.Id)}");
                 content.AppendLine($"key={NormalizeHashValue(block.Key)}");
                 content.AppendLine($"sortOrder={block.SortOrder.ToString(CultureInfo.InvariantCulture)}");
                 content.AppendLine($"type={block.Type}");
@@ -665,6 +666,11 @@ namespace LagoVista.MediaServices.Models
             {
                 block.Validate(result);
 
+                if (block.SourceBlockTemplate != null && !String.IsNullOrWhiteSpace(block.SourceBlockTemplate.Id))
+                {
+                    continue;
+                }
+
                 var hasSource = block.MediaResource != null && !String.IsNullOrWhiteSpace(block.MediaResource.Id);
                 var hasBlockBackground = block.BackgroundMediaResource != null && !String.IsNullOrWhiteSpace(block.BackgroundMediaResource.Id);
                 var hasCompositionBackground = BackgroundMediaResource != null && !String.IsNullOrWhiteSpace(BackgroundMediaResource.Id);
@@ -739,6 +745,9 @@ namespace LagoVista.MediaServices.Models
         }
 
         public string Id { get; set; }
+
+        // Null for a standalone copied block; set for a live block-template reference.
+        public EntityHeader SourceBlockTemplate { get; set; }
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoCompositionBlock_Key, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources), IsRequired: true, IsUserEditable: true)]
         public string Key { get; set; }
@@ -849,6 +858,11 @@ namespace LagoVista.MediaServices.Models
             if (String.IsNullOrWhiteSpace(Key))
             {
                 result.AddUserError("Every video composition block must have a key.");
+            }
+
+            if (SourceBlockTemplate != null && !String.IsNullOrWhiteSpace(SourceBlockTemplate.Id))
+            {
+                return; // Resolved template content is validated during assembly preparation.
             }
 
             if (Role != VideoCompositionBlockRole.Content && (MediaResource == null || String.IsNullOrWhiteSpace(MediaResource.Id)))
