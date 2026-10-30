@@ -16,6 +16,8 @@ namespace LagoVista.VideoAssembly
         private Task _pendingNotification = Task.CompletedTask;
         private VideoAssemblyStage? _lastReportedStage;
         private int _lastCallbackProgressBucket = -1;
+        private string _lastNormalizationBlock;
+        private int _lastNormalizationBucket = -1;
         private long _sequence;
 
         public VideoAssemblyCallbackReporter(VideoAssemblyRequest request, VideoProcessorCallbackClient callbackClient, VideoProcessorNotificationPublisher notificationPublisher, CancellationToken cancellationToken)
@@ -33,6 +35,17 @@ namespace LagoVista.VideoAssembly
 
             lock (_syncRoot)
             {
+                if (progress.Stage == VideoAssemblyStage.NormalizingMedia)
+                {
+                    // One live notification per 5% milestone per block (plus 100%).
+                    var block = progress.Message?.Split(new[] { " - " }, StringSplitOptions.None)[0] ?? String.Empty;
+                    var percent = Math.Clamp(progress.PercentComplete.GetValueOrDefault(), 0, 100);
+                    var bucket = percent / 5;
+                    if (block == _lastNormalizationBlock && bucket <= _lastNormalizationBucket) return;
+                    _lastNormalizationBlock = block;
+                    _lastNormalizationBucket = bucket;
+                }
+
                 var notificationProgress = new VideoProcessorLiveProgress
                 {
                     JobType = VideoProcessorJobType.VideoAssembly,
