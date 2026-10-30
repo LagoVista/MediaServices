@@ -146,7 +146,7 @@ namespace LagoVista.MediaServices.Managers
         public async Task<DetailResponse<VideoCompositionBlock>> CreateBlockReferenceFromTemplateAsync(string templateId, EntityHeader org, EntityHeader user)
         {
             var template = await GetVideoCompositionBlockTemplateAsync(templateId, org, user);
-            if (template == null || template.IsDeleted || !template.IsActive)
+            if (template == null || template.IsDeleted == true || !template.IsActive)
             {
                 throw new InvalidOperationException($"Video composition block template '{templateId}' is unavailable.");
             }
