@@ -17,5 +17,6 @@ namespace LagoVista.MediaServices.Interfaces
         Task<bool> QueryKeyInUseAsync(string key, EntityHeader org);
         Task<DetailResponse<VideoCompositionBlockTemplate>> CreateTemplateFromBlockAsync(CreateVideoCompositionBlockTemplateRequest request, EntityHeader org, EntityHeader user);
         Task<DetailResponse<VideoCompositionBlock>> CreateBlockFromTemplateAsync(string templateId, EntityHeader org, EntityHeader user);
+        Task<DetailResponse<VideoCompositionBlock>> CreateBlockReferenceFromTemplateAsync(string templateId, EntityHeader org, EntityHeader user);
     }
 }
