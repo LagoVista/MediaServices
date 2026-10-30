@@ -143,6 +143,22 @@ namespace LagoVista.MediaServices.Managers
             return DetailResponse<VideoCompositionBlock>.Create(block);
         }
 
+        public async Task<DetailResponse<VideoCompositionBlock>> CreateBlockReferenceFromTemplateAsync(string templateId, EntityHeader org, EntityHeader user)
+        {
+            var template = await GetVideoCompositionBlockTemplateAsync(templateId, org, user);
+            if (template == null || template.IsDeleted || !template.IsActive)
+            {
+                throw new InvalidOperationException($"Video composition block template '{templateId}' is unavailable.");
+            }
+
+            var block = new VideoCompositionBlock
+            {
+                Key = "block" + Guid.NewGuid().ToId().Value.Substring(0, 6).ToLowerInvariant(),
+                SourceBlockTemplate = template.ToEntityHeader()
+            };
+            return DetailResponse<VideoCompositionBlock>.Create(block);
+        }
+
         private static void NormalizeTemplate(VideoCompositionBlockTemplate template)
         {
             if (template == null) throw new ArgumentNullException(nameof(template));
