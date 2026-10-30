@@ -80,7 +80,10 @@ namespace LagoVista.VideoAssembly
                     if (totalInputBytes > request.Limits.MaxTotalInputBytes) throw new InvalidOperationException($"Total input size of {totalInputBytes} bytes exceeds the limit of {request.Limits.MaxTotalInputBytes} bytes.");
                 }
 
-                foreach (var segment in segments) await NormalizeAsync(request.OrganizationId, segment, progress, executionTimeout.Token);
+                for (var index = 0; index < segments.Count; index++)
+                {
+                    await NormalizeAsync(request.OrganizationId, segments[index], index + 1, segments.Count, progress, executionTimeout.Token);
+                }
                 await ConcatenateAsync(request.OrganizationId, segments, workspace, progress, executionTimeout.Token);
 
                 if (!String.IsNullOrWhiteSpace(compositionBackgroundAudioPath))
@@ -413,12 +416,13 @@ namespace LagoVista.VideoAssembly
             };
         }
 
-        private async Task NormalizeAsync(string organizationId, VideoAssemblySegment segment, IProgress<VideoAssemblyProgress> progress, CancellationToken cancellationToken)
+        private async Task NormalizeAsync(string organizationId, VideoAssemblySegment segment, int blockNumber, int blockCount, IProgress<VideoAssemblyProgress> progress, CancellationToken cancellationToken)
         {
-            progress?.Report(new VideoAssemblyProgress { OrganizationId = organizationId, Stage = VideoAssemblyStage.NormalizingMedia, Message = $"Normalizing block '{segment.Block.Key}'.", TotalDurationSeconds = (int)Math.Ceiling(segment.DurationSeconds) });
-            var processResult = await _processRunner.RunAsync(_options.FfmpegPath, BuildNormalizeArguments(segment), line => ReportFfmpegProgress(organizationId, line, segment, progress), cancellationToken: cancellationToken);
+            progress?.Report(new VideoAssemblyProgress { OrganizationId = organizationId, Stage = VideoAssemblyStage.NormalizingMedia, PercentComplete = 0, Message = $"Block {blockNumber} of {blockCount} - 0% done", TotalDurationSeconds = (int)Math.Ceiling(segment.DurationSeconds) });
+            var processResult = await _processRunner.RunAsync(_options.FfmpegPath, BuildNormalizeArguments(segment), line => ReportFfmpegProgress(organizationId, line, segment, blockNumber, blockCount, progress), cancellationToken: cancellationToken);
             if (processResult.ExitCode != 0) throw new InvalidOperationException($"FFmpeg failed while normalizing block '{segment.Block.Key}'. {processResult.StandardError}");
             if (!File.Exists(segment.NormalizedPath)) throw new InvalidOperationException($"FFmpeg did not create normalized block '{segment.Block.Key}'.");
+            progress?.Report(new VideoAssemblyProgress { OrganizationId = organizationId, Stage = VideoAssemblyStage.NormalizingMedia, PercentComplete = 100, Message = $"Block {blockNumber} of {blockCount} - 100% done", TotalDurationSeconds = (int)Math.Ceiling(segment.DurationSeconds) });
         }
 
         private async Task ConcatenateAsync(string organizationId, IReadOnlyList<VideoAssemblySegment> segments, VideoAssemblyWorkspace workspace, IProgress<VideoAssemblyProgress> progress, CancellationToken cancellationToken)
@@ -684,14 +688,14 @@ namespace LagoVista.VideoAssembly
             return String.Join(",", filters);
         }
 
-        private static void ReportFfmpegProgress(string organizationId, string line, VideoAssemblySegment segment, IProgress<VideoAssemblyProgress> progress)
+        private static void ReportFfmpegProgress(string organizationId, string line, VideoAssemblySegment segment, int blockNumber, int blockCount, IProgress<VideoAssemblyProgress> progress)
         {
             if (!line.StartsWith("out_time_ms=", StringComparison.OrdinalIgnoreCase)) return;
             if (!Int64.TryParse(line.Substring("out_time_ms=".Length), NumberStyles.Integer, CultureInfo.InvariantCulture, out var microseconds)) return;
 
             var processedSeconds = (int)Math.Max(0, microseconds / 1000000L);
             var totalSeconds = (int)Math.Max(1, Math.Ceiling(segment.DurationSeconds));
-            progress?.Report(new VideoAssemblyProgress { OrganizationId = organizationId, Stage = VideoAssemblyStage.NormalizingMedia, PercentComplete = Math.Min(100, processedSeconds * 100 / totalSeconds), Message = $"Normalizing block '{segment.Block.Key}'.", ProcessedDurationSeconds = processedSeconds, TotalDurationSeconds = totalSeconds });
+            progress?.Report(new VideoAssemblyProgress { OrganizationId = organizationId, Stage = VideoAssemblyStage.NormalizingMedia, PercentComplete = Math.Min(100, processedSeconds * 100 / totalSeconds), Message = $"Block {blockNumber} of {blockCount} - {Math.Min(100, processedSeconds * 100 / totalSeconds)}% done", ProcessedDurationSeconds = processedSeconds, TotalDurationSeconds = totalSeconds });
         }
 
         private static string EscapeFilterPath(string path)
