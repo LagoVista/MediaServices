@@ -5,6 +5,8 @@
 using LagoVista.Core.Models.UIMetaData;
 using LagoVista.Core.Validation;
 using LagoVista.IoT.Logging.Loggers;
+using LagoVista.IoT.Web.Common.Attributes;
+using Microsoft.AspNetCore.Authorization;
 using LagoVista.IoT.Web.Common.Controllers;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
@@ -41,6 +43,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// Medial Library - Add
         /// </summary>
         /// <param name="medialibrary"></param>
+        [McpEndpoint("media-libraries-create", Description = "Create a media library for the current organization.")]
+        [Authorize]
         [HttpPost("/api/media/library")]
         public Task<InvokeResult> AddMediaLibraryAsync([FromBody] MediaLibrary medialibrary)
         {
@@ -52,6 +56,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// </summary>
         /// <param name="medialibrary"></param>
         /// <returns></returns>
+        [McpEndpoint("media-libraries-update", Description = "Update a media library.")]
+        [Authorize]
         [HttpPut("/api/media/library")]
         public Task<InvokeResult> UpdateMediaLibraryAsync([FromBody] MediaLibrary medialibrary)
         {
@@ -63,6 +69,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// Medial Library - Get for Current Org
         /// </summary>
         /// <returns></returns>
+        [McpEndpoint("media-libraries-list", Description = "List media libraries accessible to the current organization.")]
+        [Authorize]
         [HttpGet("/api/media/libraries")]
         public Task<ListResponse<MediaLibrarySummary>> GetMediaLibrarysForOrg()
         {
@@ -84,6 +92,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
+        [McpEndpoint("media-libraries-in-use", Description = "Check whether a media library is referenced by dependent records.")]
+        [Authorize]
         [HttpGet("/api/media/library/{id}/inuse")]
         public Task<DependentObjectCheckResult> InUseCheck(String id)
         {
@@ -95,6 +105,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
+        [McpEndpoint("media-libraries-get", Description = "Get a media library by id using existing organization authorization.")]
+        [Authorize]
         [HttpGet("/api/media/library/{id}")]
         public async Task<DetailResponse<MediaLibrary>> GetMediaLibrary(String id)
         {
@@ -107,6 +119,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// Medial Library - Key In Use
         /// </summary>
         /// <returns></returns>
+        [McpEndpoint("media-libraries-key-in-use", Description = "Check whether a media library key is in use.")]
+        [Authorize]
         [HttpGet("/api/media/library/{key}/keyinuse")]
         public Task<bool> GetMediaLibraryKeyInUseAsync(String key)
         {
@@ -117,6 +131,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// Medial Library - Delete
         /// </summary>
         /// <returns></returns>
+        [McpEndpoint("media-libraries-delete", Description = "Delete a media library by id.")]
+        [Authorize]
         [HttpDelete("/api/media/library/{id}")]
         public Task<InvokeResult> DeleteMediaLibraryAsync(string id)
         {
@@ -127,6 +143,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
         ///  Medial Library - Create New
         /// </summary>
         /// <returns></returns>
+        [McpEndpoint("media-libraries-factory", Description = "Create an unsaved media library template.")]
+        [Authorize]
         [HttpGet("/api/media/library/factory")]
         public DetailResponse<MediaLibrary> CreateMediaLibrary()
         {
