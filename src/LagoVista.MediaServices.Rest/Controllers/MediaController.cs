@@ -10,6 +10,7 @@ using LagoVista.Core;
 using LagoVista.Core.Validation;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using LagoVista.IoT.Web.Common.Attributes;
 using LagoVista.IoT.Web.Common.Controllers;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.IoT.Logging.Loggers;
@@ -51,6 +52,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
         ///  Meida Resources - Create new record.
         /// </summary>
         /// <returns></returns>
+        [McpEndpoint("media-resources-factory", Description = "Create an unsaved media resource template for the current organization.")]
+        [Authorize]
         [HttpGet("/api/media/resource/factory")]
         public DetailResponse<MediaResource> CreateDeviceResource()
         {
@@ -61,6 +64,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return response;
         }
 
+        [McpEndpoint("media-resources-factory-for-library", Description = "Create an unsaved media resource template for a selected media library.")]
+        [Authorize]
         [HttpGet("/api/media/library/{libraryid}/resource/factory")]
         public async Task<DetailResponse<MediaResource>> CreateDeviceResource(string libraryid)
         {
@@ -93,6 +98,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// </summary>
         /// <param name="resource"></param>
         /// <returns></returns>
+        [McpEndpoint("media-resources-create", Description = "Create a media resource record in the current organization.")]
+        [Authorize]
         [HttpPost("/api/media/resource")]
         public Task<InvokeResult<MediaResourceSummary>> AddMediaResourceRecordAsync([FromBody] MediaResource resource)
         {
@@ -104,6 +111,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
+        [McpEndpoint("media-resources-get", Description = "Get a media resource record by id using existing organization authorization.")]
+        [Authorize]
         [HttpGet("/api/media/resource/{id}")]
         public async Task<DetailResponse<MediaResource>> GetMediaResource(string id)
         {
@@ -116,6 +125,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
+        [McpEndpoint("media-resources-delete", Description = "Delete a media resource record by id.")]
+        [Authorize]
         [HttpDelete("/api/media/resource/{id}")]
         public Task<InvokeResult> DeleteMediaResource(string id)
         {
@@ -127,6 +138,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// </summary>
         /// <param name="resource"></param>
         /// <returns></returns>
+        [McpEndpoint("media-resources-update", Description = "Update an existing media resource record.")]
+        [Authorize]
         [HttpPut("/api/media/resource")]
         public Task<InvokeResult<MediaResourceSummary>> UpdateMediaResourceRecordAsync([FromBody] MediaResource resource)
         {
@@ -178,6 +191,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// Media Resources - Get resources for library.
         /// </summary>
         /// <returns></returns>
+        [McpEndpoint("media-resources-list-for-library", Description = "List media resources in a media library.")]
+        [Authorize]
         [HttpGet("/api/media/library/{libraryid}/resources")]
         public async Task<ListResponse<MediaResourceSummary>> GetResourceForLibraryAsync(string libraryid)
         {
@@ -191,12 +206,16 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// Media Resources - Get resources for librarys.
         /// </summary>
         /// <returns></returns>
+        [McpEndpoint("media-resources-list-for-media-type", Description = "List media resources by media type key.")]
+        [Authorize]
         [HttpGet("/api/media/mediatype/key/{mediatypekey}/resources")]
         public Task<ListResponse<MediaResourceSummary>> GetForMediaTypeKey(string mediatypekey)
         {
             return _mediaServicesManager.GetResourcesForMediaTypeKeyLibrary(mediatypekey, OrgEntityHeader.Id, GetListRequestFromHeader(), UserEntityHeader);
         }
 
+        [McpEndpoint("media-resources-list", Description = "List media resource summaries for the current organization.")]
+        [Authorize]
         [HttpGet("/api/media/resources")]
         public Task<ListResponse<MediaResourceSummary>> GetAllMediaResources()
         {
