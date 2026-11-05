@@ -52,7 +52,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         ///  Meida Resources - Create new record.
         /// </summary>
         /// <returns></returns>
-        [McpEndpoint("media-resources-factory", Description = "Create an unsaved media resource template for the current organization.")]
+        [McpEndpoint("media-resources-factory", Description = "Create an unsaved media resource template for the current organization.", FamilyId = "media")]
         [Authorize]
         [HttpGet("/api/media/resource/factory")]
         public DetailResponse<MediaResource> CreateDeviceResource()
@@ -64,7 +64,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return response;
         }
 
-        [McpEndpoint("media-resources-factory-for-library", Description = "Create an unsaved media resource template for a selected media library.")]
+        [McpEndpoint("media-resources-factory-for-library", Description = "Create an unsaved media resource template for a selected media library.", FamilyId = "media")]
         [Authorize]
         [HttpGet("/api/media/library/{libraryid}/resource/factory")]
         public async Task<DetailResponse<MediaResource>> CreateDeviceResource(string libraryid)
@@ -98,7 +98,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// </summary>
         /// <param name="resource"></param>
         /// <returns></returns>
-        [McpEndpoint("media-resources-create", Description = "Create a media resource record in the current organization.")]
+        [McpEndpoint("media-resources-create", Description = "Create a media resource record in the current organization.", FamilyId = "media")]
         [Authorize]
         [HttpPost("/api/media/resource")]
         public Task<InvokeResult<MediaResourceSummary>> AddMediaResourceRecordAsync([FromBody] MediaResource resource)
@@ -111,7 +111,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        [McpEndpoint("media-resources-get", Description = "Get a media resource record by id using existing organization authorization.")]
+        [McpEndpoint("media-resources-get", Description = "Get a media resource record by id using existing organization authorization.", FamilyId = "media")]
         [Authorize]
         [HttpGet("/api/media/resource/{id}")]
         public async Task<DetailResponse<MediaResource>> GetMediaResource(string id)
@@ -125,7 +125,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        [McpEndpoint("media-resources-delete", Description = "Delete a media resource record by id.")]
+        [McpEndpoint("media-resources-delete", Description = "Delete a media resource record by id.", FamilyId = "media")]
         [Authorize]
         [HttpDelete("/api/media/resource/{id}")]
         public Task<InvokeResult> DeleteMediaResource(string id)
@@ -138,7 +138,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// </summary>
         /// <param name="resource"></param>
         /// <returns></returns>
-        [McpEndpoint("media-resources-update", Description = "Update an existing media resource record.")]
+        [McpEndpoint("media-resources-update", Description = "Update an existing media resource record.", FamilyId = "media")]
         [Authorize]
         [HttpPut("/api/media/resource")]
         public Task<InvokeResult<MediaResourceSummary>> UpdateMediaResourceRecordAsync([FromBody] MediaResource resource)
@@ -191,7 +191,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// Media Resources - Get resources for library.
         /// </summary>
         /// <returns></returns>
-        [McpEndpoint("media-resources-list-for-library", Description = "List media resources in a media library.")]
+        [McpEndpoint("media-resources-list-for-library", Description = "List media resources in a media library.", FamilyId = "media")]
         [Authorize]
         [HttpGet("/api/media/library/{libraryid}/resources")]
         public async Task<ListResponse<MediaResourceSummary>> GetResourceForLibraryAsync(string libraryid)
@@ -206,7 +206,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// Media Resources - Get resources for librarys.
         /// </summary>
         /// <returns></returns>
-        [McpEndpoint("media-resources-list-for-media-type", Description = "List media resources by media type key.")]
+        [McpEndpoint("media-resources-list-for-media-type", Description = "List media resources by media type key.", FamilyId = "media")]
         [Authorize]
         [HttpGet("/api/media/mediatype/key/{mediatypekey}/resources")]
         public Task<ListResponse<MediaResourceSummary>> GetForMediaTypeKey(string mediatypekey)
@@ -214,7 +214,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return _mediaServicesManager.GetResourcesForMediaTypeKeyLibrary(mediatypekey, OrgEntityHeader.Id, GetListRequestFromHeader(), UserEntityHeader);
         }
 
-        [McpEndpoint("media-resources-list", Description = "List media resource summaries for the current organization.")]
+        [McpEndpoint("media-resources-list", Description = "List media resource summaries for the current organization.", FamilyId = "media")]
         [Authorize]
         [HttpGet("/api/media/resources")]
         public Task<ListResponse<MediaResourceSummary>> GetAllMediaResources()
