@@ -32,7 +32,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
             _mediaLibraryRepo = mediaLibraryRepo ?? throw new ArgumentNullException(nameof(mediaLibraryRepo));
         }
 
-        [McpEndpoint("video-composition-factory", Description = "Create an unsaved video composition template.")]
+        [McpEndpoint("video-composition-factory", Description = "Create an unsaved video composition template.", FamilyId = "media")]
         [Authorize]
         [HttpGet("/api/media/videocomposition/factory")]
         public async Task<DetailResponse<VideoComposition>> CreateVideoCompositionAsync()
@@ -49,7 +49,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return form;
         }
 
-        [McpEndpoint("video-composition-block-factory", Description = "Create an unsaved video composition block template.")]
+        [McpEndpoint("video-composition-block-factory", Description = "Create an unsaved video composition block template.", FamilyId = "media")]
         [Authorize]
         [HttpGet("/api/media/videocomposition/block/factory")]
         public DetailResponse<VideoCompositionBlock> CreateVideoCompositionBlock()
@@ -64,7 +64,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
             });
         }
 
-        [McpEndpoint("video-composition-label-factory", Description = "Create an unsaved video composition text label template.")]
+        [McpEndpoint("video-composition-label-factory", Description = "Create an unsaved video composition text label template.", FamilyId = "media")]
         [Authorize]
         [HttpGet("/api/media/videocomposition/label/factory")]
         public DetailResponse<VideoCompositionTextLabel> CreateVideoCompositionTextLabel()
@@ -77,7 +77,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
             });
         }
 
-        [McpEndpoint("video-composition-get", Description = "Get a video composition by id.")]
+        [McpEndpoint("video-composition-get", Description = "Get a video composition by id.", FamilyId = "media")]
         [Authorize]
         [HttpGet("/api/media/videocomposition/{id}")]
         public async Task<DetailResponse<VideoComposition>> GetVideoCompositionAsync(string id)
@@ -86,7 +86,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return DetailResponse<VideoComposition>.Create(composition);
         }
 
-        [McpEndpoint("video-composition-list", Description = "List video compositions for the current organization.")]
+        [McpEndpoint("video-composition-list", Description = "List video compositions for the current organization.", FamilyId = "media")]
         [Authorize]
         [HttpGet("/api/media/videocompositions")]
         public Task<ListResponse<VideoCompositionSummary>> GetVideoCompositionsAsync()
@@ -94,7 +94,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return _manager.GetVideoCompositionsForOrgAsync(OrgEntityHeader, UserEntityHeader, GetListRequestFromHeader());
         }
 
-        [McpEndpoint("video-composition-key-in-use", Description = "Check whether a video composition key is in use.")]
+        [McpEndpoint("video-composition-key-in-use", Description = "Check whether a video composition key is in use.", FamilyId = "media")]
         [Authorize]
         [HttpGet("/api/media/videocomposition/{key}/keyinuse")]
         public Task<bool> GetVideoCompositionKeyInUseAsync(string key)
@@ -102,7 +102,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return _manager.QueryKeyInUseAsync(key, OrgEntityHeader);
         }
 
-        [McpEndpoint("video-composition-create", Description = "Create a video composition for the current organization.")]
+        [McpEndpoint("video-composition-create", Description = "Create a video composition for the current organization.", FamilyId = "media")]
         [Authorize]
         [HttpPost("/api/media/videocomposition")]
         public Task<InvokeResult> AddVideoCompositionAsync([FromBody] VideoComposition composition)
@@ -110,7 +110,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return _manager.AddVideoCompositionAsync(composition, OrgEntityHeader, UserEntityHeader);
         }
 
-        [McpEndpoint("video-composition-update", Description = "Update a video composition.")]
+        [McpEndpoint("video-composition-update", Description = "Update a video composition.", FamilyId = "media")]
         [Authorize]
         [HttpPut("/api/media/videocomposition")]
         public Task<InvokeResult> UpdateVideoCompositionAsync([FromBody] VideoComposition composition)
@@ -140,7 +140,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return Ok(result.Result);
         }
 
-        [McpEndpoint("video-composition-delete", Description = "Delete a video composition by id.")]
+        [McpEndpoint("video-composition-delete", Description = "Delete a video composition by id.", FamilyId = "media")]
         [Authorize]
         [HttpDelete("/api/media/videocomposition/{id}")]
         public Task<InvokeResult> DeleteVideoCompositionAsync(string id)
