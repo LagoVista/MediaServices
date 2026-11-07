@@ -228,10 +228,6 @@ namespace LagoVista.MediaServices.CloudRepos
                 new ResultTiming() { Key = "GetS3Object", Ms = ms }
             };
 
-            _logger.Trace(
-                $"[MediaServicesRepo_GetMediaAsync] Downloaded media from S3: {blobReferenceName} in {ms} ms",
-                ms.ToString().ToKVP("totalMs"));
-
             return InvokeResult<byte[]>.Create(result.Result, timings);
         }
 
