@@ -51,7 +51,7 @@ namespace LagoVista.MediaServices.Managers
         {
             var downloaded = await DownloadAsync(file, client);
             if (!downloaded.Successful)
-                return InvokeResult<ChatGptFileProbeResult>.FromInvokeResult(downloaded);
+                return InvokeResult<ChatGptFileProbeResult>.FromInvokeResult(downloaded.ToInvokeResult());
 
             var image = downloaded.Result;
             return InvokeResult<ChatGptFileProbeResult>.Create(new ChatGptFileProbeResult
