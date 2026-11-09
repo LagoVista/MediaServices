@@ -455,7 +455,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         {
             var downloaded = await ChatGptFileProbe.DownloadAsync(file);
             if (!downloaded.Successful)
-                return InvokeResult<MediaResource>.FromInvokeResult(downloaded);
+                return InvokeResult<MediaResource>.FromInvokeResult(downloaded.ToInvokeResult());
 
             var image = downloaded.Result;
             using (var stream = new MemoryStream(image.Bytes, writable: false))
