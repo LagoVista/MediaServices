@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="LagoVista.UserAdmin" />
+    <PackageReference Include="LagoVista.CloudStorage" />
     <PackageReference Include="Microsoft.Extensions.Http" />
     <PackageReference Include="SixLabors.ImageSharp" />
   </ItemGroup>
