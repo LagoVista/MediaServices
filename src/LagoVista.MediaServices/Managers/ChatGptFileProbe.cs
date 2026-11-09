@@ -53,8 +53,9 @@ namespace LagoVista.MediaServices.Managers
                 uri.Scheme != Uri.UriSchemeHttps || !String.IsNullOrEmpty(uri.UserInfo) || uri.Port != 443)
                 return InvokeResult<ChatGptFileProbeResult>.FromError(
                     "ChatGPT native file reference has an invalid HTTPS download URL.");
-            if (!TrustedDomains.Any(domain => uri.Host.Equals(domain, StringComparison.OrdinalIgnoreCase) ||
-                uri.Host.EndsWith("." + domain, StringComparison.OrdinalIgnoreCase)))
+            if (!String.Equals(uri.Host, "oaisdmntprcentralus.blob.core.windows.net", StringComparison.OrdinalIgnoreCase) &&
+                !TrustedDomains.Any(domain => uri.Host.Equals(domain, StringComparison.OrdinalIgnoreCase) ||
+                    uri.Host.EndsWith("." + domain, StringComparison.OrdinalIgnoreCase)))
                 return InvokeResult<ChatGptFileProbeResult>.FromError(
                     "ChatGPT file host is not allowlisted: " + uri.Host + ".");
 
