@@ -12,7 +12,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
     [McpServerResourceType]
     public static class MediaGalleryWidgetResource
     {
-        public const string ResourceUri = "ui://media/gallery/v1.html";
+        public const string ResourceUri = "ui://media/gallery/v2.html";
         public const string AppMimeType = "text/html;profile=mcp-app";
 
         [McpServerResource(UriTemplate = ResourceUri, Name = "APTIX Media Preview", MimeType = AppMimeType)]
@@ -32,6 +32,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                         {
                             ["resourceDomains"] = new JsonArray(
                                 "https://apptrex.ai",
+                                "https://storage-dev.nuviot.com",
                                 "https://api-dev.nuviot.com",
                                 "https://api.nuviot.com"),
                             ["connectDomains"] = new JsonArray()
@@ -71,15 +72,14 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
               <main class="shell">
                 <header class="header">
                   <div><div class="eyebrow">MCP Apps / MediaServices</div><div class="title">APTIX Media Preview</div></div>
-                  <div class="eyebrow">DEV · v1</div>
+                  <div class="eyebrow">DEV · v2</div>
                 </header>
                 <div class="frame">
-                  <img id="preview" alt="Selected Media Resource preview"
-                    src="https://apptrex.ai/api/media/resource/AA2C78499D0140A5A9CE4B7581EF9691/A673E8BC91484C4ABF339329686689D3/download">
+                  <img id="preview" alt="Selected Media Resource preview" hidden>
                 </div>
-                <div id="status" class="status">Checking direct image rendering from apptrex.ai…</div>
+                <div id="status" class="status">Connecting to ChatGPT MCP Apps host…</div>
                 <footer class="footer">
-                  <span id="filename">CSP proof image</span>
+                  <span id="filename">No image selected</span>
                   <span id="dimensions">Image bytes stay in your browser</span>
                 </footer>
               </main>
@@ -95,6 +95,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                     status.className = 'status ' + (ok === true ? 'good' : ok === false ? 'bad' : '');
                   };
                   img.addEventListener('load', () => {
+                    img.hidden = false;
                     loaded = true;
                     dimensions.textContent = img.naturalWidth + ' × ' + img.naturalHeight + ' · direct browser image';
                     setStatus('Image loaded. The widget CSP permits this image host.', true);
@@ -122,6 +123,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                       if (target.protocol !== 'https:') return;
                       filename.textContent = lease.fileName || lease.FileName || 'Media Resource';
                       loaded = false;
+                      img.hidden = false;
                       setStatus('Loading signed revision directly in your browser…');
                       img.src = target.href;
                     } catch (_) { setStatus('Invalid preview URL.', false); }
@@ -131,14 +133,18 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                     const data = event.data;
                     if (data.method === 'ui/notifications/tool-result') receive(data.params);
                     if (data.id === 1 && data.result) {
+                      setStatus('Connected. Waiting for MediaServices revision URL…');
                       window.parent.postMessage({ jsonrpc: '2.0', method: 'ui/notifications/initialized' }, '*');
+                    } else if (data.id === 1 && data.error) {
+                      setStatus('MCP Apps initialization rejected: ' + (data.error.message || 'unknown error'), false);
                     }
                   });
                   if (window.openai && window.openai.toolOutput) receive(window.openai.toolOutput);
                   window.parent.postMessage({
                     jsonrpc: '2.0', id: 1, method: 'ui/initialize',
                     params: { protocolVersion: '2026-01-26',
-                      clientInfo: { name: 'aptix-media-preview', version: '1.0.0' },
+                      capabilities: {},
+                      clientInfo: { name: 'aptix-media-preview', version: '1.0.1' },
                       appCapabilities: {} }
                   }, '*');
                 })();
