@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Http;
 using LagoVista.IoT.Web.Common.Attributes;
 using LagoVista.IoT.Web.Common.Controllers;
 using LagoVista.MediaServices.Interfaces;
+using LagoVista.MediaServices.Managers;
 using LagoVista.IoT.Logging.Loggers;
 using LagoVista.UserAdmin.Models.Users;
 using Microsoft.AspNetCore.Identity;
@@ -423,6 +424,21 @@ namespace LagoVista.MediaServices.Rest.Controllers
             }
 
             return File(ms, response.ContentType, response.FileName);
+        }
+
+        /// <summary>
+        /// Read-only ChatGPT native file-parameter transport probe.
+        /// ChatGPT supplies the hosted reference; the server downloads and hashes the image.
+        /// No Media Resource or persisted file is created.
+        /// </summary>
+        [McpEndpoint("media-import-chatgpt-file",
+            Description = "Test ChatGPT native file transfer: supply a generated or attached image as the file argument. The server reads the temporary hosted file and returns byte count, SHA-256 and detected image type. No Media Resource is created.",
+            FamilyId = "media", FileParams = new[] { "file" })]
+        [Authorize]
+        [HttpPost("/api/media/chatgpt/file-probe")]
+        public Task<InvokeResult<ChatGptFileProbeResult>> ProbeChatGptFile([FromBody] ChatGptFileReference file)
+        {
+            return ChatGptFileProbe.ProbeAsync(file);
         }
 
         [McpEndpoint("media-image-assembly-create", Description = "Create a temporary blank PNG canvas in cloud storage, returning its assembly ID.", FamilyId = "media")]
