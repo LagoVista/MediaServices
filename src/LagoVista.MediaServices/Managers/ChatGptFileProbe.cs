@@ -30,67 +30,97 @@ namespace LagoVista.MediaServices.Managers
             Timeout = TimeSpan.FromSeconds(40)
         };
 
+        /// <summary>
+        /// Native file transfer payload kept inside MediaServices, never returned to the model.
+        /// </summary>
+        public sealed class DownloadedImage
+        {
+            public byte[] Bytes { get; set; }
+            public string FileName { get; set; }
+            public string FileId { get; set; }
+            public string ContentType { get; set; }
+            public string Sha256Hex { get; set; }
+        }
+
         public static Task<InvokeResult<ChatGptFileProbeResult>> ProbeAsync(ChatGptFileReference file) =>
             ProbeAsync(file, SharedClient);
 
-        // The supplied HttpClient lets tests exercise the real streaming path without a network call.
+        // The injected client lets tests exercise the actual download path without external access.
         public static async Task<InvokeResult<ChatGptFileProbeResult>> ProbeAsync(
             ChatGptFileReference file, HttpClient client)
         {
-            // Diagnostic detail must never expose the signed URL or its query string.
-            // Distinguish a non-hydrated ChatGPT file token from an actual HTTPS URL
-            // that was rejected by our safety allowlist.
+            var downloaded = await DownloadAsync(file, client);
+            if (!downloaded.Successful)
+                return InvokeResult<ChatGptFileProbeResult>.FromInvokeResult(downloaded);
+
+            var image = downloaded.Result;
+            return InvokeResult<ChatGptFileProbeResult>.Create(new ChatGptFileProbeResult
+            {
+                FileId = image.FileId,
+                FileName = image.FileName,
+                ContentSize = image.Bytes.LongLength,
+                ContentSha256 = image.Sha256Hex,
+                DetectedMimeType = image.ContentType
+            });
+        }
+
+        public static Task<InvokeResult<DownloadedImage>> DownloadAsync(ChatGptFileReference file) =>
+            DownloadAsync(file, SharedClient);
+
+        public static async Task<InvokeResult<DownloadedImage>> DownloadAsync(
+            ChatGptFileReference file, HttpClient client)
+        {
+            // Never emit a signed URL or its query string in diagnostics.
             if (file == null)
-                return InvokeResult<ChatGptFileProbeResult>.FromError(
+                return InvokeResult<DownloadedImage>.FromError(
                     "ChatGPT did not supply a structured native file reference.");
             if (String.IsNullOrWhiteSpace(file.FileId))
-                return InvokeResult<ChatGptFileProbeResult>.FromError(
+                return InvokeResult<DownloadedImage>.FromError(
                     "ChatGPT native file reference is missing file_id.");
             if (String.IsNullOrWhiteSpace(file.DownloadUrl))
-                return InvokeResult<ChatGptFileProbeResult>.FromError(
+                return InvokeResult<DownloadedImage>.FromError(
                     "ChatGPT native file reference is missing download_url.");
             if (!Uri.TryCreate(file.DownloadUrl, UriKind.Absolute, out var uri) ||
                 uri.Scheme != Uri.UriSchemeHttps || !String.IsNullOrEmpty(uri.UserInfo) || uri.Port != 443)
-                return InvokeResult<ChatGptFileProbeResult>.FromError(
+                return InvokeResult<DownloadedImage>.FromError(
                     "ChatGPT native file reference has an invalid HTTPS download URL.");
             if (!String.Equals(uri.Host, "oaisdmntprcentralus.blob.core.windows.net", StringComparison.OrdinalIgnoreCase) &&
                 !TrustedDomains.Any(domain => uri.Host.Equals(domain, StringComparison.OrdinalIgnoreCase) ||
                     uri.Host.EndsWith("." + domain, StringComparison.OrdinalIgnoreCase)))
-                return InvokeResult<ChatGptFileProbeResult>.FromError(
+                return InvokeResult<DownloadedImage>.FromError(
                     "ChatGPT file host is not allowlisted: " + uri.Host + ".");
-
             if (client == null)
-                return InvokeResult<ChatGptFileProbeResult>.FromError("The HTTP client is unavailable.");
+                return InvokeResult<DownloadedImage>.FromError("The HTTP client is unavailable.");
 
             try
             {
                 using (var request = new HttpRequestMessage(HttpMethod.Get, uri))
                 using (var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead))
                 {
-                    // Never follow redirects to another origin: the URL is a temporary credential.
+                    // The signed URL must not redirect to a different origin.
                     if (response.StatusCode != HttpStatusCode.OK)
-                        return InvokeResult<ChatGptFileProbeResult>.FromError(
+                        return InvokeResult<DownloadedImage>.FromError(
                             "The hosted file could not be retrieved (HTTP " + (int)response.StatusCode + ").");
-
                     if (response.Content.Headers.ContentLength > MaxBytes)
-                        return InvokeResult<ChatGptFileProbeResult>.FromError(
-                            "The hosted file exceeds the 20 MiB probe limit.");
+                        return InvokeResult<DownloadedImage>.FromError(
+                            "The hosted file exceeds the 20 MiB limit.");
 
                     using (var stream = await response.Content.ReadAsStreamAsync())
+                    using (var output = new MemoryStream())
                     using (var sha = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
                     {
                         var buffer = new byte[81920];
                         var signature = new byte[12];
                         var signatureLength = 0;
-                        long size = 0;
+                        long total = 0;
                         int read;
 
                         while ((read = await stream.ReadAsync(buffer, 0, buffer.Length)) > 0)
                         {
-                            size += read;
-                            if (size > MaxBytes)
-                                return InvokeResult<ChatGptFileProbeResult>.FromError(
-                                    "The hosted file exceeds the 20 MiB probe limit.");
+                            total += read;
+                            if (total > MaxBytes)
+                                return InvokeResult<DownloadedImage>.FromError(
+                                    "The hosted file exceeds the 20 MiB limit.");
 
                             if (signatureLength < signature.Length)
                             {
@@ -100,35 +130,44 @@ namespace LagoVista.MediaServices.Managers
                             }
 
                             sha.AppendData(buffer, 0, read);
+                            output.Write(buffer, 0, read);
                         }
 
-                        var type = DetectImageType(signature, signatureLength);
-                        if (type == null)
-                            return InvokeResult<ChatGptFileProbeResult>.FromError(
+                        var contentType = DetectImageType(signature, signatureLength);
+                        if (contentType == null)
+                            return InvokeResult<DownloadedImage>.FromError(
                                 "The hosted file is not a supported PNG, JPEG or WebP image.");
 
-                        return InvokeResult<ChatGptFileProbeResult>.Create(new ChatGptFileProbeResult
+                        var extension = contentType == "image/png" ? ".png" :
+                            contentType == "image/jpeg" ? ".jpg" : ".webp";
+                        var fileName = Path.GetFileName(file.FileName);
+                        if (String.IsNullOrWhiteSpace(fileName))
+                            fileName = "chatgpt-image" + extension;
+                        else if (String.IsNullOrWhiteSpace(Path.GetExtension(fileName)))
+                            fileName += extension;
+
+                        return InvokeResult<DownloadedImage>.Create(new DownloadedImage
                         {
+                            Bytes = output.ToArray(),
                             FileId = file.FileId,
-                            FileName = file.FileName,
-                            ContentSize = size,
-                            ContentSha256 = BitConverter.ToString(sha.GetHashAndReset()).Replace("-", "").ToLowerInvariant(),
-                            DetectedMimeType = type
+                            FileName = fileName,
+                            ContentType = contentType,
+                            Sha256Hex = BitConverter.ToString(sha.GetHashAndReset()).Replace("-", "").ToLowerInvariant()
                         });
                     }
                 }
             }
             catch (HttpRequestException)
             {
-                return InvokeResult<ChatGptFileProbeResult>.FromError("Failed to retrieve the ChatGPT hosted file.");
+                return InvokeResult<DownloadedImage>.FromError("Failed to retrieve the ChatGPT hosted file.");
             }
             catch (TaskCanceledException)
             {
-                return InvokeResult<ChatGptFileProbeResult>.FromError("ChatGPT hosted file retrieval timed out.");
+                return InvokeResult<DownloadedImage>.FromError("ChatGPT hosted file retrieval timed out.");
             }
             catch (IOException)
             {
-                return InvokeResult<ChatGptFileProbeResult>.FromError("Failed while reading the ChatGPT hosted file.");
+                return InvokeResult<DownloadedImage>.FromError("Failed while reading the ChatGPT hosted file.");
             }
         }
 
