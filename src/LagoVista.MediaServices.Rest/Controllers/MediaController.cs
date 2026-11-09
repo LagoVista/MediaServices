@@ -229,6 +229,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// <param name="id">unique id of the resource.</param>
         /// <param name="file">file to be uploaded.</param>
         /// <returns></returns>
+        [McpEndpoint("media-resource-image-upload", Description = "Upload media bytes to a resource; the returned populated record can be saved separately.", FamilyId = "media")]
+        [Authorize]
         [HttpPost("/api/media/resources/{id}")]
         public async Task<InvokeResult<MediaResource>> UploadMediaAsync(string id, IFormFile file, [FromForm] string name = null, [FromForm] string mediaLibraryId = null, bool saveresource = false)
         {
@@ -249,6 +251,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// <param name="id">unique id of the resource.</param>
         /// <param name="file">file to be uploaded.</param>
         /// <returns></returns>
+        [McpEndpoint("media-resource-image-revise", Description = "Upload a revision to an existing media resource; save returned complete record to persist revision metadata.", FamilyId = "media")]
+        [Authorize]
         [HttpPut("/api/media/resources/{id}")]
         public async Task<InvokeResult<MediaResource>> AddMediaRevision(string id, IFormFile file)
         {
@@ -392,6 +396,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
                 request?.LifetimeMinutes);
         }
 
+        [McpEndpoint("media-resource-image-download", Description = "Download an authorized media resource revision as image content.", FamilyId = "media")]
+        [Authorize]
         [HttpGet("/api/media/resource/{id}/download/{revisionid}")]
         public async Task<IActionResult> DownloadMediaRevision(string id, string revisionid)
         {
