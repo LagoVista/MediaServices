@@ -648,6 +648,29 @@ namespace LagoVista.MediaServices.Managers
             };
         }
 
+        public async Task<MediaItemResponse> GetPublicThumbnailAsync(string orgId, string id)
+        {
+            var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
+            if (resource == null || resource.OwnerOrganization?.Id != orgId || !resource.IsPublic)
+                throw new RecordNotFoundException(nameof(MediaResource), id);
+
+            var thumbnailName = resource.GetCurrentRevision()?.ThumbnailStorageReferenceName
+                ?? resource.ThumbnailStorageReferenceName;
+            if (String.IsNullOrWhiteSpace(thumbnailName))
+                throw new RecordNotFoundException("Media Thumbnail", id);
+
+            var thumbnail = await _mediaRepo.GetMediaAsync(thumbnailName, orgId);
+            if (!thumbnail.Successful)
+                throw new RecordNotFoundException("Media Thumbnail Contents", thumbnailName);
+
+            return new MediaItemResponse
+            {
+                ImageBytes = thumbnail.Result,
+                ContentType = "image/webp",
+                FileName = $"{resource.Id}-thumbnail.webp"
+            };
+        }
+
         public async Task<MediaItemResponse> GetPublicResourceRecordAsync(string orgId, string id, string lastModified = null)
         {
             var response = new MediaItemResponse();
