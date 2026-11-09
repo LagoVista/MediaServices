@@ -284,7 +284,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                     const selected=options.some(x=>x.id===data.initialLibraryId)
                       ? data.initialLibraryId : options[0].id;
                     libraries.value=selected;
-                    if (connected) chooseLibrary(selected);
+                    if (connected && !libraryId) chooseLibrary(selected);
                   };
                   libraries.addEventListener('change',()=>{
                     // A library switch invalidates previously requested paging data.
