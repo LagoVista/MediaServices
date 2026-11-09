@@ -11,6 +11,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="LagoVista.IoT.Web.Common" />
+    <PackageReference Include="ModelContextProtocol.Core" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\LagoVista.MediaServices.Models\LagoVista.MediaServices.Models.csproj" />
