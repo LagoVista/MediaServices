@@ -375,6 +375,17 @@ namespace LagoVista.MediaServices.Rest.Controllers
         }
 
 
+        /// <summary>
+        /// Serve the current thumbnail of an explicitly public media resource.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("/api/media/resource/{orgid}/{id}/thumbnail")]
+        public async Task<IActionResult> DownloadPublicThumbnail(string orgid, string id)
+        {
+            var thumbnail = await _mediaServicesManager.GetPublicThumbnailAsync(orgid, id);
+            return File(thumbnail.ImageBytes, thumbnail.ContentType);
+        }
+
         [HttpPost("/api/sysadmin/media/resource/{id}/contents")]
         public async Task<InvokeResult> ImportMediaResourceContentsAsync(string id)
         {
