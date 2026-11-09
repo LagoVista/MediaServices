@@ -593,6 +593,101 @@ namespace LagoVista.MediaServices.Managers
             return resource;
         }
 
+
+        /// <summary>
+        /// MCP gallery browsing uses a database-paged six-item summary query, then
+        /// issues at most six short-lived read-only URLs. The API never fetches image bytes.
+        /// Audio, documents and videos without poster thumbnails produce type tiles.
+        /// </summary>
+        public async Task<InvokeResult<MediaGalleryPage>> GetMediaGalleryPageAsync(
+            string libraryId, int pageIndex, EntityHeader org, EntityHeader user)
+        {
+            if (String.IsNullOrWhiteSpace(libraryId))
+                return InvokeResult<MediaGalleryPage>.FromError("A Media Library ID is required.");
+            if (pageIndex < 1 || pageIndex > 1000)
+                return InvokeResult<MediaGalleryPage>.FromError("Gallery page must be between 1 and 1000.");
+            if (org == null || String.IsNullOrWhiteSpace(org.Id))
+                return InvokeResult<MediaGalleryPage>.FromError("Active organization is required.");
+
+            const int pageSize = 6;
+            var list = await GetMediaResourceSummariesAsync(
+                libraryId, org.Id, ListRequest.Create(pageIndex, pageSize), user);
+            if (!list.Successful)
+                return InvokeResult<MediaGalleryPage>.FromInvokeResult(list.ToInvokeResult());
+
+            var page = new MediaGalleryPage
+            {
+                LibraryId = libraryId,
+                PageIndex = pageIndex,
+                PageSize = pageSize,
+                HasMore = list.HasMoreRecords
+            };
+
+            foreach (var summary in list.Model ?? Enumerable.Empty<MediaResourceSummary>())
+            {
+                var tile = new MediaGalleryItem
+                {
+                    Id = summary.Id,
+                    Name = summary.Name,
+                    ResourceType = summary.ResourceType,
+                    MimeType = summary.MimeType,
+                    ContentSize = summary.ContentSize,
+                    Kind = MediaGalleryItem.DetectKind(
+                        summary.MimeType, summary.ResourceType, summary.IsFileUpload, summary.ExternalUrl)
+                };
+                page.Items.Add(tile);
+
+                // An audio/video/file type never causes a full media read. Video
+                // receives a poster only when a real thumbnail storage ref exists.
+                if (tile.Kind != "image" && tile.Kind != "video")
+                    continue;
+
+                // A summary deliberately excludes revision storage references. Do
+                // bounded metadata reads (at most 6), never media byte reads.
+                var resource = await _mediaRepo.TryGetMediaResourceRecordAsync(summary.Id);
+                if (resource?.OwnerOrganization == null ||
+                    !String.Equals(resource.OwnerOrganization.Id, org.Id, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                await AuthorizeAsync(resource, AuthorizeActions.Read, user, org);
+                var revision = resource.GetCurrentRevision();
+                tile.RevisionId = revision?.Id ?? resource.CurrentRevision;
+                tile.FileName = revision?.FileName ?? resource.FileName;
+                var imageMime = revision?.MimeType ?? resource.MimeType;
+                var thumbnailReference = revision?.ThumbnailStorageReferenceName ??
+                    resource.ThumbnailStorageReferenceName;
+
+                // Older uploaded images have no thumbnails. For this initial
+                // gallery, permit a bounded original-image fallback directly from
+                // storage. Never do this for video/audio or large image assets.
+                if (String.IsNullOrWhiteSpace(thumbnailReference) &&
+                    tile.Kind == "image" && resource.IsFileUpload &&
+                    MediaGalleryItem.IsBrowserImageMimeType(imageMime) &&
+                    (revision?.ContentSize ?? resource.ContentSize ?? long.MaxValue) <= 4 * 1024 * 1024)
+                {
+                    thumbnailReference = revision?.StorageReferenceName ?? resource.StorageReferenceName;
+                    tile.UsesOriginalAsPreview = !String.IsNullOrWhiteSpace(thumbnailReference);
+                }
+
+                if (String.IsNullOrWhiteSpace(thumbnailReference))
+                    continue;
+
+                var url = await _mediaRepo.GetMediaReadUrlAsync(
+                    thumbnailReference, org.Id, TimeSpan.FromMinutes(10), VideoProcessorStorageUrlScope.Public);
+                if (!url.Successful || !Uri.TryCreate(url.Result, UriKind.Absolute, out var uri) ||
+                    uri.Scheme != Uri.UriSchemeHttps)
+                    continue;
+
+                // Restrict signed URLs to our configured storage delivery origins.
+                // CSP independently enforces the same restriction inside the iframe.
+                if (String.Equals(uri.Host, "storage-dev.nuviot.com", StringComparison.OrdinalIgnoreCase) ||
+                    String.Equals(uri.Host, "storage.nuviot.com", StringComparison.OrdinalIgnoreCase))
+                    tile.PreviewUrl = url.Result;
+            }
+
+            return InvokeResult<MediaGalleryPage>.Create(page);
+        }
+
         public async Task<ListResponse<MediaResourceSummary>> GetMediaResourceSummariesAsync(string libraryId, string orgId, ListRequest listRequest, EntityHeader user)
         {
             await AuthorizeOrgAccessAsync(user, orgId, typeof(MediaResource));
