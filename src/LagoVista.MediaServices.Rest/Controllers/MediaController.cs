@@ -34,6 +34,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
     {
 
         IMediaServicesManager _mediaServicesManager;
+        IImageAssemblyManager _imageAssemblyManager;
         IMediaLibraryManager _libraryManager;
 
         /// <summary>
@@ -42,9 +43,10 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// <param name="userManager"></param>
         /// <param name="logger"></param>
         /// <param name="mediaServiceManager"></param>
-        public MediaController(UserManager<AppUser> userManager, IAdminLogger logger, IMediaLibraryManager libraryManager, IMediaServicesManager mediaServiceManager) : base(userManager, logger)
+        public MediaController(UserManager<AppUser> userManager, IAdminLogger logger, IMediaLibraryManager libraryManager, IMediaServicesManager mediaServiceManager, IImageAssemblyManager imageAssemblyManager) : base(userManager, logger)
         {
             _mediaServicesManager = mediaServiceManager;
+            _imageAssemblyManager = imageAssemblyManager;
             _libraryManager = libraryManager;
         }
 
@@ -421,6 +423,30 @@ namespace LagoVista.MediaServices.Rest.Controllers
             }
 
             return File(ms, response.ContentType, response.FileName);
+        }
+
+        [McpEndpoint("media-image-assembly-create", Description = "Create a temporary blank PNG canvas in cloud storage, returning its assembly ID.", FamilyId = "media")]
+        [Authorize]
+        [HttpPost("/api/media/image-assembly/create")]
+        public Task<InvokeResult<ImageAssemblyStatus>> CreateImageAssembly(int width, int height)
+        {
+            return _imageAssemblyManager.CreateAsync(width, height, OrgEntityHeader);
+        }
+
+        [McpEndpoint("media-image-assembly-append", Description = "Paste a base64-encoded PNG image tile at x,y on the temporary cloud-stored canvas. Maximum tile is 512 pixels per side.", FamilyId = "media")]
+        [Authorize]
+        [HttpPost("/api/media/image-assembly/{id}/append")]
+        public Task<InvokeResult<ImageAssemblyStatus>> AppendImageAssembly(string id, int x, int y, string imageData)
+        {
+            return _imageAssemblyManager.AppendAsync(id, x, y, imageData, OrgEntityHeader);
+        }
+
+        [McpEndpoint("media-image-assembly-publish", Description = "Publish a fully covered temporary canvas as a saved Media Resource with an automatic thumbnail.", FamilyId = "media")]
+        [Authorize]
+        [HttpPost("/api/media/image-assembly/{id}/publish")]
+        public Task<InvokeResult<MediaResource>> PublishImageAssembly(string id, string name, string mediaLibraryId = null, bool isPublic = false)
+        {
+            return _imageAssemblyManager.PublishAsync(id, name, mediaLibraryId, isPublic, OrgEntityHeader, UserEntityHeader);
         }
 
         [HttpPost("/api/media/resource/request")]
