@@ -310,7 +310,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                         connected=true;
                         setStatus('Connected to ChatGPT MCP Apps.');
                         if(window.openai?.toolOutput) receiveOpen(window.openai.toolOutput);
-                        if(openData) chooseLibrary(openData.initialLibraryId || openData.libraries[0]?.id);
+                        if(openData && !libraryId) chooseLibrary(openData.initialLibraryId || openData.libraries[0]?.id);
                       }
                       return;
                     }
