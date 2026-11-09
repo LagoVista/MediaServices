@@ -14,6 +14,7 @@ using LagoVista.IoT.Web.Common.Attributes;
 using LagoVista.IoT.Web.Common.Controllers;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Managers;
+using LagoVista.MediaServices.Rest.McpWidgets;
 using LagoVista.IoT.Logging.Loggers;
 using LagoVista.UserAdmin.Models.Users;
 using Microsoft.AspNetCore.Identity;
@@ -431,6 +432,22 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// ChatGPT supplies the hosted reference; the server downloads and hashes the image.
         /// No Media Resource or persisted file is created.
         /// </summary>
+        /// <summary>
+        /// Render a selected immutable Media Resource revision in a MediaServices-owned
+        /// MCP App. The browser receives a short-lived signed GET URL; image bytes do
+        /// not travel through the tool result.
+        /// </summary>
+        [McpEndpoint("media-gallery-preview",
+            Description = "Open an APTIX Media Gallery preview for an existing Media Resource revision. Shows the image in an interactive MCP widget; requires resource id and exact revision id.",
+            FamilyId = "media", WidgetResourceUri = MediaGalleryWidgetResource.ResourceUri)]
+        [Authorize]
+        [HttpGet("/api/media/gallery/preview/{id}/{revisionid}")]
+        public Task<InvokeResult<ImmutableMediaReadLease>> RenderMediaGalleryPreview(string id, string revisionid)
+        {
+            return _mediaServicesManager.CreateImmutableMediaReadLeaseAsync(
+                id, revisionid, OrgEntityHeader, UserEntityHeader, lifetimeMinutes: 10);
+        }
+
         [McpEndpoint("media-import-chatgpt-file",
             Description = "Test ChatGPT native file transfer: supply a generated or attached image as the file argument. The server reads the temporary hosted file and returns byte count, SHA-256 and detected image type. No Media Resource is created.",
             FamilyId = "media", FileParams = new[] { "file" })]
