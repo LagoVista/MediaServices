@@ -661,9 +661,9 @@ namespace LagoVista.MediaServices.Managers
                 // gallery, permit a bounded original-image fallback directly from
                 // storage. Never do this for video/audio or large image assets.
                 if (String.IsNullOrWhiteSpace(thumbnailReference) &&
-                    tile.Kind == "image" && resource.IsFileUpload &&
-                    MediaGalleryItem.IsBrowserImageMimeType(imageMime) &&
-                    (revision?.ContentSize ?? resource.ContentSize ?? long.MaxValue) <= 4 * 1024 * 1024)
+                    tile.Kind == "image" &&
+                    MediaGalleryItem.AllowsOriginalFallback(
+                        imageMime, revision?.ContentSize ?? resource.ContentSize, resource.IsFileUpload))
                 {
                     thumbnailReference = revision?.StorageReferenceName ?? resource.StorageReferenceName;
                     tile.UsesOriginalAsPreview = !String.IsNullOrWhiteSpace(thumbnailReference);
