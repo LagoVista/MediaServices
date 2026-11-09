@@ -25,6 +25,7 @@ using Microsoft.Net.Http.Headers;
 using System.Globalization;
 using LagoVista.Core.Models;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.AspNetCore.Routing.Constraints;
 
 namespace LagoVista.MediaServices.Rest.Controllers
@@ -437,6 +438,60 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// MCP App. The browser receives a short-lived signed GET URL; image bytes do
         /// not travel through the tool result.
         /// </summary>
+        /// <summary>
+        /// Open a MediaServices-owned MCP Apps library browser. Only library names
+        /// are returned to the model; the app requests six signed previews per page.
+        /// </summary>
+        [McpEndpoint("media-gallery-open",
+            Description = "Open an interactive APTIX Media Library browser. Lists accessible libraries and shows mixed media in a paged 2x3 gallery, six resources at a time. Optional libraryid starts with that library.",
+            FamilyId = "media", WidgetResourceUri = MediaGalleryBrowserWidgetResource.ResourceUri)]
+        [Authorize]
+        [HttpGet("/api/media/gallery/open")]
+        public async Task<InvokeResult<MediaGalleryOpen>> OpenMediaGallery(string libraryid = null)
+        {
+            var list = await _libraryManager.GetMediaLibrariesForOrgsAsync(
+                OrgEntityHeader.Id, ListRequest.Create(1, 100), UserEntityHeader);
+            if (!list.Successful)
+                return InvokeResult<MediaGalleryOpen>.FromInvokeResult(list.ToInvokeResult());
+
+            var libraries = (list.Model ?? Enumerable.Empty<MediaLibrarySummary>())
+                .Select(library => new MediaGalleryLibrary
+                {
+                    Id = library.Id,
+                    Name = library.Name
+                }).ToList();
+
+            var initial = libraries.FirstOrDefault(library =>
+                String.Equals(library.Id, libraryid, StringComparison.OrdinalIgnoreCase))
+                ?? libraries.FirstOrDefault();
+            return InvokeResult<MediaGalleryOpen>.Create(new MediaGalleryOpen
+            {
+                InitialLibraryId = initial?.Id,
+                Libraries = libraries
+            });
+        }
+
+        /// <summary>
+        /// Authorize the library, then fetch one server-paged batch of six media
+        /// summaries and browser-ready signed thumbnail/original-image URLs.
+        /// Never returns raw media contents or signed video/audio URLs.
+        /// </summary>
+        [McpEndpoint("media-gallery-page",
+            Description = "Fetch exactly one six-item page of a Media Library for the MCP Gallery. Returns image/video thumbnail read URLs when available, and media-type tiles for non-images. Page starts at 1.",
+            FamilyId = "media")]
+        [Authorize]
+        [HttpGet("/api/media/gallery/library/{libraryid}/page/{page}")]
+        public async Task<InvokeResult<MediaGalleryPage>> GetMediaGalleryPage(string libraryid, int page = 1)
+        {
+            var library = await _libraryManager.GetMediaLibraryAsync(
+                libraryid, OrgEntityHeader, UserEntityHeader);
+            var result = await _mediaServicesManager.GetMediaGalleryPageAsync(
+                libraryid, page, OrgEntityHeader, UserEntityHeader);
+            if (result.Successful)
+                result.Result.LibraryName = library.Name;
+            return result;
+        }
+
         [McpEndpoint("media-gallery-preview",
             Description = "Open an APTIX Media Gallery preview for an existing Media Resource revision. Shows the image in an interactive MCP widget; requires resource id and exact revision id.",
             FamilyId = "media", WidgetResourceUri = MediaGalleryWidgetResource.ResourceUri)]
