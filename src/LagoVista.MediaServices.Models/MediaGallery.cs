@@ -62,6 +62,17 @@ namespace LagoVista.MediaServices.Models
             return "file";
         }
 
+        /// <summary>
+        /// Old resources without a generated thumbnail can use a small original
+        /// directly from storage; larger originals never enter the gallery grid.
+        /// </summary>
+        public static bool AllowsOriginalFallback(string mimeType, long? contentSize, bool isFileUpload)
+        {
+            return isFileUpload && IsBrowserImageMimeType(mimeType) &&
+                   contentSize.HasValue && contentSize.Value > 0 &&
+                   contentSize.Value <= 4L * 1024 * 1024;
+        }
+
         public static bool IsBrowserImageMimeType(string mimeType)
         {
             var mime = (mimeType ?? String.Empty).Trim().ToLowerInvariant();
