@@ -56,6 +56,43 @@ namespace LagoVista.MediaServices.MediaTests
         }
 
         [TestMethod]
+        public async Task NativeFileDownloadRetainsExactImageBytes()
+        {
+            var image = new byte[] { 137, 80, 78, 71, 13, 10, 26, 10, 0, 1, 2, 3, 4, 5 };
+            using (var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(image)
+            })
+            using (var client = Client(response))
+            {
+                var result = await ChatGptFileProbe.DownloadAsync(File(), client);
+                Assert.IsTrue(result.Successful);
+                CollectionAssert.AreEqual(image, result.Result.Bytes);
+                Assert.AreEqual(Sha256(image), result.Result.Sha256Hex);
+                Assert.AreEqual("image/png", result.Result.ContentType);
+                Assert.AreEqual("image.png", result.Result.FileName);
+            }
+        }
+
+        [TestMethod]
+        public async Task NativeFileDownloadUsesDetectedTypeWhenNameMissing()
+        {
+            var image = new byte[] { 137, 80, 78, 71, 13, 10, 26, 10, 0, 1, 2, 3, 4, 5 };
+            using (var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(image)
+            })
+            using (var client = Client(response))
+            {
+                var reference = File();
+                reference.FileName = null;
+                var result = await ChatGptFileProbe.DownloadAsync(reference, client);
+                Assert.IsTrue(result.Successful);
+                Assert.AreEqual("chatgpt-image.png", result.Result.FileName);
+            }
+        }
+
+        [TestMethod]
         public async Task NonTrustedHostIsRejected()
         {
             using (var client = Client(new HttpResponseMessage(HttpStatusCode.OK)))
