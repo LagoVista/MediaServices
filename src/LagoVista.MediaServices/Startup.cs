@@ -14,6 +14,7 @@ namespace LagoVista.MediaServices
         public static void ConfigureServices(IServiceCollection services)
         {
             services.AddTransient<IMediaServicesManager, MediaServicesManager>();
+            services.AddTransient<IImageAssemblyManager, ImageAssemblyManager>();
             services.AddTransient<IMediaLibraryManager, MediaLibraryManager>();
             services.AddTransient<IMediaSearchManager, MediaSearchManager>();
             services.AddTransient<ITextToSpeechService, TextToSpeechService>();
