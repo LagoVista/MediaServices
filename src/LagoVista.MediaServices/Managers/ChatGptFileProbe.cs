@@ -37,15 +37,26 @@ namespace LagoVista.MediaServices.Managers
         public static async Task<InvokeResult<ChatGptFileProbeResult>> ProbeAsync(
             ChatGptFileReference file, HttpClient client)
         {
-            if (file == null || String.IsNullOrWhiteSpace(file.FileId) ||
-                !Uri.TryCreate(file.DownloadUrl, UriKind.Absolute, out var uri) ||
-                uri.Scheme != Uri.UriSchemeHttps ||
-                !String.IsNullOrEmpty(uri.UserInfo) ||
-                uri.Port != 443 ||
-                !TrustedDomains.Any(domain => uri.Host.Equals(domain, StringComparison.OrdinalIgnoreCase) ||
-                    uri.Host.EndsWith("." + domain, StringComparison.OrdinalIgnoreCase)))
+            // Diagnostic detail must never expose the signed URL or its query string.
+            // Distinguish a non-hydrated ChatGPT file token from an actual HTTPS URL
+            // that was rejected by our safety allowlist.
+            if (file == null)
                 return InvokeResult<ChatGptFileProbeResult>.FromError(
-                    "A valid ChatGPT hosted file reference with an HTTPS download URL is required.");
+                    "ChatGPT did not supply a structured native file reference.");
+            if (String.IsNullOrWhiteSpace(file.FileId))
+                return InvokeResult<ChatGptFileProbeResult>.FromError(
+                    "ChatGPT native file reference is missing file_id.");
+            if (String.IsNullOrWhiteSpace(file.DownloadUrl))
+                return InvokeResult<ChatGptFileProbeResult>.FromError(
+                    "ChatGPT native file reference is missing download_url.");
+            if (!Uri.TryCreate(file.DownloadUrl, UriKind.Absolute, out var uri) ||
+                uri.Scheme != Uri.UriSchemeHttps || !String.IsNullOrEmpty(uri.UserInfo) || uri.Port != 443)
+                return InvokeResult<ChatGptFileProbeResult>.FromError(
+                    "ChatGPT native file reference has an invalid HTTPS download URL.");
+            if (!TrustedDomains.Any(domain => uri.Host.Equals(domain, StringComparison.OrdinalIgnoreCase) ||
+                uri.Host.EndsWith("." + domain, StringComparison.OrdinalIgnoreCase)))
+                return InvokeResult<ChatGptFileProbeResult>.FromError(
+                    "ChatGPT file host is not allowlisted: " + uri.Host + ".");
 
             if (client == null)
                 return InvokeResult<ChatGptFileProbeResult>.FromError("The HTTP client is unavailable.");
