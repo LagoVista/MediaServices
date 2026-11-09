@@ -244,6 +244,43 @@ namespace LagoVista.MediaServices.Managers
             return category;
         }
 
+        /// <summary>
+        /// Store a proportionate preview alongside an uploaded still image.
+        /// </summary>
+        private async Task AddStillImageThumbnailAsync(MediaResource resource, MediaResourceHistory revision,
+            byte[] original, EntityHeader org)
+        {
+            if (String.IsNullOrWhiteSpace(resource.MimeType) ||
+                !resource.MimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase) ||
+                resource.MimeType.Equals("image/gif", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            using (var image = Image.Load(original))
+            {
+                resource.Width = image.Width;
+                resource.Height = image.Height;
+                revision.Width = image.Width;
+                revision.Height = image.Height;
+                var width = Math.Min(480, image.Width);
+                var height = Math.Max(1, (int)Math.Round(image.Height * (double)width / image.Width));
+                if (width != image.Width)
+                    image.Mutate(x => x.Resize(width, height));
+
+                using (var output = new MemoryStream())
+                {
+                    image.Save(output, new WebpEncoder());
+                    var thumbnailName = $"{Guid.NewGuid().ToId()}.webp";
+                    var result = await _mediaRepo.AddMediaAsync(output.ToArray(), org.Id, thumbnailName, "image/webp");
+                    if (result.Successful)
+                    {
+                        revision.ThumbnailStorageReferenceName = thumbnailName;
+                        resource.ThumbnailStorageReferenceName = thumbnailName;
+                        resource.ThumbnailUrl = $"/api/media/resource/{org.Id}/{resource.Id}/thumbnail";
+                    }
+                }
+            }
+        }
+
         public async Task<InvokeResult<MediaResource>> AddResourceMediaAsync(String id, Stream stream, string fileName, string contentType, EntityHeader org, EntityHeader user, bool saveResourceRecord = false, bool isPublic = false, 
             string license = "", string url = "", string responseId = "", string originalPrompt = "", string revisedPrompt = "", string entityTypeName = "", string entityFieldName = "", string size = "", string resourceName = "", ImageGenerationRequest imageGenerationRequest = null, string mediaLibraryId = "")
         {
@@ -382,6 +419,7 @@ namespace LagoVista.MediaServices.Managers
             var result = await _mediaRepo.AddMediaAsync(bytes, org.Id, mediaResource.StorageReferenceName, contentType);
             if (result.Successful)
             {
+                await AddStillImageThumbnailAsync(mediaResource, history, bytes, org);
                 if (saveResourceRecord)
                     await _mediaRepo.AddOrUpdateMediaResourceAsync(mediaResource);
 
@@ -461,7 +499,8 @@ namespace LagoVista.MediaServices.Managers
             var result = await _mediaRepo.AddMediaAsync(bytes, org.Id, mediaResource.StorageReferenceName, contentType);
             if(result.Successful)
             {
-                if(saveResourceRecord)
+                await AddStillImageThumbnailAsync(mediaResource, history, bytes, org);
+                if (saveResourceRecord)
                 {
                     await _mediaRepo.UpdateMediaResourceRecordAsync(mediaResource);
                 }
