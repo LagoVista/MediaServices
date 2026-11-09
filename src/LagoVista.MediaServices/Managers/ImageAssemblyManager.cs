@@ -160,7 +160,11 @@ namespace LagoVista.MediaServices.Managers
                         if (canvas.Width != state.Width || canvas.Height != state.Height)
                             return InvokeResult<ImageAssemblyStatus>.FromError("Stored canvas dimensions do not match the assembly.");
 
-                        canvas.Mutate(ctx => ctx.DrawImage(tile, new Point(x, y), 1f));
+                        // Copy pixel values, rather than alpha-compositing, so a retry
+                        // can replace opaque pixels with transparent ones exactly.
+                        for (var row = 0; row < tile.Height; row++)
+                            for (var col = 0; col < tile.Width; col++)
+                                canvas[x + col, y + row] = tile[col, row];
                         using (var output = new MemoryStream())
                         {
                             canvas.SaveAsPng(output);
