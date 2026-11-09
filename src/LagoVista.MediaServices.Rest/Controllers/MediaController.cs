@@ -441,6 +441,34 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return ChatGptFileProbe.ProbeAsync(file);
         }
 
+        /// <summary>
+        /// Import a ChatGPT-hosted PNG, JPEG or WebP directly into a new Media Resource.
+        /// ChatGPT supplies the short-lived file reference through native MCP file parameters.
+        /// </summary>
+        [McpEndpoint("media-import-chatgpt-image",
+            Description = "Create and save a new Media Resource from a ChatGPT-generated or attached image via native file transfer. Pass a ChatGPT file as the file argument, an optional resource name and Media Library ID. Returns the saved resource with revision and digest metadata; each call creates a new resource.",
+            FamilyId = "media", FileParams = new[] { "file" })]
+        [Authorize]
+        [HttpPost("/api/media/chatgpt/image-import")]
+        public async Task<InvokeResult<MediaResource>> ImportChatGptImage(
+            [FromBody] ChatGptFileReference file, string name = null, string mediaLibraryId = null, bool isPublic = false)
+        {
+            var downloaded = await ChatGptFileProbe.DownloadAsync(file);
+            if (!downloaded.Successful)
+                return InvokeResult<MediaResource>.FromInvokeResult(downloaded);
+
+            var image = downloaded.Result;
+            using (var stream = new MemoryStream(image.Bytes, writable: false))
+            {
+                // Keep MediaServices' existing authorization, thumbnail, revision,
+                // SHA-256 and persistence path as the single source of truth.
+                return await _mediaServicesManager.AddResourceMediaAsync(
+                    Guid.NewGuid().ToId(), stream, image.FileName, image.ContentType,
+                    OrgEntityHeader, UserEntityHeader, saveResourceRecord: true,
+                    isPublic: isPublic, resourceName: name, mediaLibraryId: mediaLibraryId);
+            }
+        }
+
         [McpEndpoint("media-image-assembly-create", Description = "Create a temporary blank PNG canvas in cloud storage, returning its assembly ID.", FamilyId = "media")]
         [Authorize]
         [HttpPost("/api/media/image-assembly/create")]
