@@ -7,7 +7,8 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
     /// <summary>
     /// MediaServices owns its MCP App HTML and CSP declaration.
     /// The shared API host discovers this resource from the feature assembly.
-    /// Exact-revision preview and native ChatGPT source-image handoff. The model\n    /// does not retrieve image bytes via an MCP download tool.
+    /// Exact-revision preview and native ChatGPT source-image handoff. The model
+    /// does not retrieve image bytes via an MCP download tool.
     /// </summary>
     [McpServerResourceType]
     public static class MediaGalleryWidgetResource
@@ -45,7 +46,9 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
             };
         }
 
-        // Reuse the verified MCP Apps handshake to display the exact immutable\n        // revision; transfer source pixels via window.openai.uploadFile only\n        // after a user explicitly clicks the native handoff button.
+        // Reuse the verified MCP Apps handshake to display the exact immutable
+        // revision; transfer source pixels via window.openai.uploadFile only
+        // after a user explicitly clicks the native handoff button.
         public const string Html = """
             <!doctype html>
             <html lang="en">
