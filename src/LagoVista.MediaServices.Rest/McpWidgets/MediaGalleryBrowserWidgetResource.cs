@@ -11,7 +11,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
     [McpServerResourceType]
     public static class MediaGalleryBrowserWidgetResource
     {
-        public const string ResourceUri = "ui://media/gallery/v5.html";
+        public const string ResourceUri = "ui://media/gallery/v6.html";
         public const string AppMimeType = "text/html;profile=mcp-app";
 
         [McpServerResource(UriTemplate = ResourceUri, Name = "APTIX Media Library Browser", MimeType = AppMimeType)]
@@ -32,7 +32,9 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                             ["resourceDomains"] = new JsonArray(
                                 "https://storage-dev.nuviot.com",
                                 "https://storage.nuviot.com"),
-                            ["connectDomains"] = new JsonArray()
+                            ["connectDomains"] = new JsonArray(
+                                "https://storage-dev.nuviot.com",
+                                "https://storage.nuviot.com")
                         }
                     }
                 }
@@ -40,7 +42,8 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
         }
 
         // All business data is obtained from MediaServices MCP tools. The page only
-        // receives six items per tools/call, and never handles raw image bytes.
+        // receives fifteen items per tools/call. Only explicit user image handoff
+        // downloads the selected original into the browser for ChatGPT upload.
         public const string Html = """
             <!doctype html>
             <html lang="en">
@@ -79,6 +82,10 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                 button.nav:disabled {opacity:.38;cursor:default}
                 .selected-info {margin-top:12px;border:1px solid rgba(128,128,128,.3);border-radius:9px;padding:10px 12px;font-size:12px}
                 .selected-title {font-weight:700;font-size:13px;margin-bottom:4px}
+                .selected-actions {display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:11px}
+                #handoffStatus {font-size:12px;overflow-wrap:anywhere;flex:1;min-width:180px}
+                .nav.primary {background:#0969b6;color:#fff;border-color:#0969b6;font-weight:600}
+                .nav.primary:disabled {opacity:.45}
                 .details {opacity:.72;overflow-wrap:anywhere}
                 .empty {grid-column:1/-1;text-align:center;padding:30px 10px;opacity:.75;font-size:13px}
                 @media(max-width:480px) {.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.controls{align-items:stretch;flex-direction:column}.controls select{width:100%}}
@@ -87,8 +94,8 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
             <body>
               <main class="shell">
                 <div class="heading">
-                  <div><div class="eyebrow">APTIX · MediaServices · v5</div><h2>Media Library Browser</h2></div>
-                  <div class="quiet">6 items / page</div>
+                  <div><div class="eyebrow">APTIX · MediaServices · v6</div><h2>Media Library Browser</h2></div>
+                  <div class="quiet">15 items / page</div>
                 </div>
                 <div class="controls">
                   <label for="libraries">Library</label>
@@ -105,6 +112,10 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                 <section id="selected" class="selected-info" hidden>
                   <div id="selectedTitle" class="selected-title"></div>
                   <div id="selectedDetails" class="details"></div>
+                  <div class="selected-actions">
+                    <button id="handoff" class="nav primary" type="button" disabled>Work with this image</button>
+                    <span id="handoffStatus" role="status" class="quiet">Select an image to hand off to ChatGPT.</span>
+                  </div>
                 </section>
               </main>
               <script>
@@ -122,6 +133,10 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                   let pageIndex = 1;
                   let pageData = null;
                   let loading = false;
+                  let transferring = false;
+                  let selectedItem = null;
+                  const handoff = el('handoff');
+                  const handoffStatus = el('handoffStatus');
                   let requestCounter = 20;
                   let loadGeneration = 0;
                   const pending = new Map();
@@ -147,7 +162,8 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                       } else if (typeof v === 'object') {
                         if (v.successful === false || v.isError === true)
                           return {error: errorText(v)};
-                        if (Array.isArray(v.libraries) || Array.isArray(v.items)) return v;
+                        if (Array.isArray(v.libraries) || Array.isArray(v.items) ||
+                            (typeof v.url === 'string' && v.mediaResourceId)) return v;
                         for (const key of ['structuredContent','result','model','content','text']) {
                           if (v[key] != null) queue.push(v[key]);
                         }
@@ -173,9 +189,13 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                   };
                   const setStatus = msg => {status.textContent = msg};
                   const resetSelection = () => {
+                    selectedItem = null;
+                    handoff.disabled = true;
+                    handoffStatus.textContent = 'Select an image to hand off to ChatGPT.';
                     el('selected').hidden = true;
                   };
                   const selectItem = (item, tile) => {
+                    selectedItem = item;
                     for (const child of grid.children) child.classList.remove('selected');
                     tile.classList.add('selected');
                     el('selectedTitle').textContent = item.name || 'Untitled media resource';
@@ -185,12 +205,18 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                       (item.kind || 'file') + (item.mimeType ? ' · ' + item.mimeType : '') +
                       size + ' · Media Resource: ' + item.id +
                       (item.revisionId ? ' · Revision: ' + item.revisionId : '');
+                    handoff.disabled = transferring || item.kind !== 'image' || !item.revisionId;
+                    handoffStatus.textContent = item.kind !== 'image'
+                      ? 'Image handoff is available for images only.'
+                      : !item.revisionId
+                        ? 'This item has no persisted image revision to transfer.'
+                        : 'Only this selected image will be uploaded into ChatGPT.';
                     el('selected').hidden = false;
                   };
                   const render = () => {
                     grid.replaceChildren();
                     resetSelection();
-                    const items = Array.isArray(pageData?.items) ? pageData.items.slice(0,6) : [];
+                    const items = Array.isArray(pageData?.items) ? pageData.items.slice(0,15) : [];
                     if (!items.length) {
                       grid.appendChild(make('div','empty','No Media Resources on this page.'));
                     }
@@ -233,6 +259,93 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                       params:{name,arguments:args}
                     },'*');
                   });
+                  // This is a user-initiated bridge: the gallery continues to browse
+                  // without model image bytes until this button is explicitly clicked.
+                  handoff.addEventListener('click', async () => {
+                    if (transferring || !selectedItem || selectedItem.kind !== 'image' ||
+                        !selectedItem.id || !selectedItem.revisionId) return;
+
+                    const openai = window.openai;
+                    if (!openai?.uploadFile || !openai?.setWidgetState) {
+                      handoffStatus.textContent = 'This host does not expose ChatGPT native file upload and image state.';
+                      return;
+                    }
+                    const item = selectedItem;
+                    transferring = true;
+                    handoff.disabled = true;
+                    try {
+                      handoffStatus.textContent = 'Requesting a signed URL for the selected original...';
+                      const lease = unwrap(await callTool('media-gallery-image-lease',
+                        {id:item.id,revisionid:item.revisionId}));
+                      if (!lease || lease.error) throw Error(lease?.error || 'No original image lease returned');
+                      if (lease.mediaResourceId !== item.id || lease.revisionId !== item.revisionId)
+                        throw Error('MediaServices returned a different image revision');
+                      const url = safeUrl(lease.url);
+                      if (!url) throw Error('Signed original URL was not from an approved HTTPS storage host');
+
+                      handoffStatus.textContent = 'Retrieving selected image directly from storage...';
+                      // Fetch requires BOTH widget connectDomains and cross-origin CORS
+                      // on the storage host. Rendering <img> alone does not prove CORS.
+                      const response = await fetch(url, {method:'GET', credentials:'omit'});
+                      if (!response.ok) throw Error('Image download returned HTTP ' + response.status);
+                      const limit = 25 * 1024 * 1024;
+                      const headerSize = Number(response.headers.get('content-length') || 0);
+                      if (headerSize > limit) throw Error('Selected original exceeds 25 MB handoff limit');
+                      const blob = await response.blob();
+                      if (!blob.size || blob.size > limit) throw Error('Selected image is empty or exceeds 25 MB');
+
+                      const mime = (lease.contentType || item.mimeType || blob.type || '').toLowerCase();
+                      const extension = ({'image/png':'.png','image/jpeg':'.jpg',
+                        'image/webp':'.webp','image/gif':'.gif'})[mime];
+                      if (!extension) throw Error('Selected resource is not a supported image format');
+                      const fileName = lease.fileName || item.fileName || ('media-' + item.id + extension);
+                      const file = new File([blob], fileName, {type:mime});
+
+                      handoffStatus.textContent = 'Uploading selected image through ChatGPT native file API...';
+                      const uploaded = await openai.uploadFile(file);
+                      if (!uploaded?.fileId) throw Error('ChatGPT did not return a file ID');
+
+                      // imageIds is an OpenAI widget extension. It makes only this
+                      // uploaded file visible to the model in subsequent turns.
+                      openai.setWidgetState({
+                        modelContent:{
+                          action:'review_selected_media_image',
+                          instruction:'Describe the selected APTIX MediaServices image before editing it.',
+                          mediaResourceId:item.id,
+                          revisionId:item.revisionId,
+                          imageName:item.name
+                        },
+                        privateContent:{
+                          libraryId,
+                          selectedResourceId:item.id,
+                          selectedRevisionId:item.revisionId
+                        },
+                        imageIds:[uploaded.fileId]
+                      });
+
+                      handoffStatus.textContent = 'Image uploaded and attached to model context.';
+                      if (typeof openai.sendFollowUpMessage === 'function') {
+                        await openai.sendFollowUpMessage({
+                          prompt:'I selected the APTIX MediaServices image "' +
+                            (item.name || 'Untitled') + '" (resource ' + item.id +
+                            ', revision ' + item.revisionId +
+                            '). Please describe what you actually see in the image so we can verify the handoff. Do not edit or save it yet.'
+                        });
+                        handoffStatus.textContent = 'Image attached to ChatGPT. Requested visual verification.';
+                      } else {
+                        handoffStatus.textContent =
+                          'Image attached. Ask ChatGPT to describe the selected image to verify handoff.';
+                      }
+                    } catch (error) {
+                      handoffStatus.textContent = 'Handoff failed: ' + errorText(error) +
+                        '. If previews load but fetch fails, check storage CORS and connectDomains.';
+                    } finally {
+                      transferring = false;
+                      handoff.disabled = !selectedItem || selectedItem.kind !== 'image' ||
+                        !selectedItem.revisionId;
+                    }
+                  });
+
                   const loadPage = async requested => {
                     if (!connected || !libraryId || loading) return;
                     const generation = ++loadGeneration;
@@ -240,14 +353,14 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                     loading = true;
                     previous.disabled = true;
                     next.disabled = true;
-                    setStatus('Loading up to six Media Resources...');
+                    setStatus('Loading up to fifteen Media Resources...');
                     try {
                       const result = unwrap(await callTool('media-gallery-page',
                         {libraryid:requestedLibrary,page:requested}));
                       if (generation !== loadGeneration || requestedLibrary !== libraryId) return;
                       if (!result || result.error) throw Error(result?.error || 'Invalid gallery page response');
-                      if (!Array.isArray(result.items) || result.items.length > 6)
-                        throw Error('MediaServices did not return a bounded six-item page.');
+                      if (!Array.isArray(result.items) || result.items.length > 15)
+                        throw Error('MediaServices did not return a bounded fifteen-item page.');
                       pageIndex = requested;
                       pageData = result;
                       setStatus(result.items.length
@@ -328,7 +441,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                     jsonrpc:'2.0',id:1,method:'ui/initialize',
                     params:{
                       protocolVersion:'2026-01-26',
-                      appInfo:{name:'aptix-media-library',version:'5.0.0'},
+                      appInfo:{name:'aptix-media-library',version:'6.0.0'},
                       appCapabilities:{}
                     }
                   },'*');
