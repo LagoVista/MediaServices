@@ -11,7 +11,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
     [McpServerResourceType]
     public static class MediaGalleryBrowserWidgetResource
     {
-        public const string ResourceUri = "ui://media/gallery/v7.html";
+        public const string ResourceUri = "ui://media/gallery/v8.html";
         public const string AppMimeType = "text/html;profile=mcp-app";
 
         [McpServerResource(UriTemplate = ResourceUri, Name = "APTIX Media Library Browser", MimeType = AppMimeType)]
@@ -32,18 +32,17 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                             ["resourceDomains"] = new JsonArray(
                                 "https://storage-dev.nuviot.com",
                                 "https://storage.nuviot.com"),
-                            ["connectDomains"] = new JsonArray(
-                                "https://storage-dev.nuviot.com",
-                                "https://storage.nuviot.com")
+                            ["connectDomains"] = new JsonArray()
                         }
                     }
                 }
             };
         }
 
-        // All business data is obtained from MediaServices MCP tools. The page only
-        // receives fifteen items per tools/call. Only explicit user image handoff
-        // downloads the selected original into the browser for ChatGPT upload.
+        // Browse bounded media pages, then show the selected immutable original
+        // in the browser so users can Copy image and paste into ChatGPT.
+        // Selection metadata goes into widget model context; no image is
+        // uploaded from the widget to the model.
         public const string Html = """
             <!doctype html>
             <html lang="en">
@@ -82,10 +81,14 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                 button.nav:disabled {opacity:.38;cursor:default}
                 .selected-info {margin-top:12px;border:1px solid rgba(128,128,128,.3);border-radius:9px;padding:10px 12px;font-size:12px}
                 .selected-title {font-weight:700;font-size:13px;margin-bottom:4px}
-                .selected-actions {display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:11px}
-                #handoffStatus {font-size:12px;overflow-wrap:anywhere;flex:1;min-width:180px}
-                .nav.primary {background:#0969b6;color:#fff;border-color:#0969b6;font-weight:600}
-                .nav.primary:disabled {opacity:.45}
+                .selected-preview {display:flex;justify-content:center;align-items:center;min-height:180px;margin:12px 0 4px;border:1px solid rgba(128,128,128,.25);border-radius:9px;background:rgba(128,128,128,.06);overflow:hidden}
+                .selected-preview img {display:block;max-width:100%;max-height:540px;object-fit:contain}
+                .edit-instructions {border-top:1px solid rgba(128,128,128,.3);margin-top:12px;padding-top:12px}
+                .edit-instructions h3 {font-size:14px;margin:0 0 6px}
+                .edit-instructions ol {margin:0 0 8px;padding-left:22px;font-size:12px;line-height:1.7}
+                .edit-instructions p {margin:7px 0;font-size:12px;overflow-wrap:anywhere}
+                .edit-instructions code {font-size:11px;overflow-wrap:anywhere}
+                .edit-instructions a {color:#0969b6;text-decoration:underline}
                 .details {opacity:.72;overflow-wrap:anywhere}
                 .empty {grid-column:1/-1;text-align:center;padding:30px 10px;opacity:.75;font-size:13px}
                 @media(max-width:480px) {.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.controls{align-items:stretch;flex-direction:column}.controls select{width:100%}}
@@ -94,7 +97,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
             <body>
               <main class="shell">
                 <div class="heading">
-                  <div><div class="eyebrow">APTIX · MediaServices · v7</div><h2>Media Library Browser</h2></div>
+                  <div><div class="eyebrow">APTIX · MediaServices · v8</div><h2>Media Library Browser</h2></div>
                   <div class="quiet">15 items / page</div>
                 </div>
                 <div class="controls">
@@ -112,10 +115,23 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                 <section id="selected" class="selected-info" hidden>
                   <div id="selectedTitle" class="selected-title"></div>
                   <div id="selectedDetails" class="details"></div>
-                  <div class="selected-actions">
-                    <button id="handoff" class="nav primary" type="button" disabled>Work with this image</button>
-                    <span id="handoffStatus" role="status" class="quiet">Select an image to hand off to ChatGPT.</span>
-                  </div>
+                  <div class="selected-preview"><img id="originalPreview" hidden alt="Selected full-resolution Media Resource image. Right-click to copy this original image."></div>
+                  <p id="originalStatus" class="quiet" role="status">Loading the original image...</p>
+                  <section class="edit-instructions" aria-label="How to edit this image">
+                    <h3>To make changes</h3>
+                    <ol>
+                      <li>Right-click the <strong>full-size original above</strong> and choose <strong>Copy image</strong> (not Copy image address).</li>
+                      <li>Click the ChatGPT message box and paste the image (Ctrl+V on Windows, Cmd+V on Mac).</li>
+                      <li>Describe the changes you want and send the message.</li>
+                      <li>Review the image ChatGPT creates.</li>
+                      <li>Ask for more changes as needed.</li>
+                      <li>When satisfied, ask ChatGPT to <strong>save the image as a new revision</strong> of this resource.</li>
+                    </ol>
+                    <p>Media Resource ID: <code id="selectedResourceId"></code></p>
+                    <p>Source revision: <code id="selectedRevisionId"></code></p>
+                    <p><a id="openOriginal" hidden target="_blank" rel="noopener noreferrer">Open full-size original</a> if Copy image is unavailable in this widget.</p>
+                    <p>Nothing is saved until you explicitly ask ChatGPT to save.</p>
+                  </section>
                 </section>
               </main>
               <script>
@@ -133,10 +149,11 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                   let pageIndex = 1;
                   let pageData = null;
                   let loading = false;
-                  let transferring = false;
                   let selectedItem = null;
-                  const handoff = el('handoff');
-                  const handoffStatus = el('handoffStatus');
+                  let previewGeneration = 0;
+                  const originalPreview = el('originalPreview');
+                  const originalStatus = el('originalStatus');
+                  const openOriginal = el('openOriginal');
                   let requestCounter = 20;
                   let loadGeneration = 0;
                   const pending = new Map();
@@ -188,12 +205,85 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                     return node;
                   };
                   const setStatus = msg => {status.textContent = msg};
-                  const resetSelection = () => {
-                    selectedItem = null;
-                    handoff.disabled = true;
-                    handoffStatus.textContent = 'Select an image to hand off to ChatGPT.';
-                    el('selected').hidden = true;
+                  // Keep the selected resource identity available to ChatGPT
+                  // for approval-driven saves. Pixels are pasted into the composer
+                  // by the user, never uploaded with window.openai.uploadFile.
+                  const publishSelectionContext = item => {
+                    if (!window.openai?.setWidgetState) return;
+                    const modelContent = item
+                      ? {
+                          action:'aptix_media_image_selected_for_manual_edit',
+                          mediaResourceId:item.id,
+                          revisionId:item.revisionId,
+                          imageName:item.name || 'Media Resource',
+                          mediaLibraryId:libraryId,
+                          sourceTransport:'user-copies-exact-original-and-pastes-into-chat-composer',
+                          instruction:'When the user asks for an edit, use the image they manually pasted into their ChatGPT message as the image-editor source. The widget preview alone is NOT a source-image attachment. When the user approves and asks to save, call media-revise-chatgpt-image with this mediaResourceId; do not silently use another resource. Do not save before user approval.'
+                        }
+                      : {
+                          action:'aptix_media_selection_cleared',
+                          instruction:'No Media Resource is currently selected. Ask the user to select a resource before saving an image.'
+                        };
+                    Promise.resolve(window.openai.setWidgetState({
+                      modelContent,
+                      privateContent:item ? {
+                        libraryId,
+                        selectedResourceId:item.id,
+                        selectedRevisionId:item.revisionId
+                      } : {}
+                    })).catch(() => {
+                      // The resource and revision IDs remain visible for
+                      // inclusion in a manual save request if state is unsupported.
+                    });
                   };
+                  const resetSelection = () => {
+                    ++previewGeneration;
+                    selectedItem = null;
+                    originalPreview.hidden = true;
+                    originalPreview.removeAttribute('src');
+                    originalStatus.textContent = 'Select an image to preview its original pixels.';
+                    openOriginal.hidden = true;
+                    openOriginal.removeAttribute('href');
+                    el('selected').hidden = true;
+                    publishSelectionContext(null);
+                  };
+                  const showOriginal = async item => {
+                    const generation = ++previewGeneration;
+                    originalPreview.hidden = true;
+                    originalPreview.removeAttribute('src');
+                    openOriginal.hidden = true;
+                    openOriginal.removeAttribute('href');
+                    if (item.kind !== 'image' || !item.revisionId) {
+                      originalStatus.textContent = 'This resource is not an image with a saved revision.';
+                      return;
+                    }
+                    originalStatus.textContent = 'Loading the full-resolution original to copy...';
+                    try {
+                      const lease = unwrap(await callTool('media-gallery-image-lease',
+                        {id:item.id,revisionid:item.revisionId}));
+                      if (generation !== previewGeneration || selectedItem !== item) return;
+                      if (!lease || lease.error) throw Error(lease?.error || 'No original image lease available');
+                      if (lease.mediaResourceId !== item.id || lease.revisionId !== item.revisionId)
+                        throw Error('MediaServices returned an unexpected image revision');
+                      const signedUrl = safeUrl(lease.url);
+                      if (!signedUrl) throw Error('Original image URL is not on approved HTTPS storage');
+                      openOriginal.href = signedUrl;
+                      openOriginal.hidden = false;
+                      originalPreview.src = signedUrl;
+                      originalPreview.hidden = false;
+                      originalStatus.textContent = 'Original is loading; right-click the full-size image to copy it.';
+                    } catch (error) {
+                      if (generation === previewGeneration)
+                        originalStatus.textContent = 'Cannot display the original: ' + errorText(error);
+                    }
+                  };
+                  originalPreview.addEventListener('load', () => {
+                    originalStatus.textContent = 'Full-resolution original ready. Right-click and choose Copy image.';
+                  });
+                  originalPreview.addEventListener('error', () => {
+                    originalPreview.hidden = true;
+                    originalStatus.textContent = 'Image preview failed; try Open full-size original above.';
+                  });
                   const selectItem = (item, tile) => {
                     selectedItem = item;
                     for (const child of grid.children) child.classList.remove('selected');
@@ -205,13 +295,11 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                       (item.kind || 'file') + (item.mimeType ? ' · ' + item.mimeType : '') +
                       size + ' · Media Resource: ' + item.id +
                       (item.revisionId ? ' · Revision: ' + item.revisionId : '');
-                    handoff.disabled = transferring || item.kind !== 'image' || !item.revisionId;
-                    handoffStatus.textContent = item.kind !== 'image'
-                      ? 'Image handoff is available for images only.'
-                      : !item.revisionId
-                        ? 'This item has no persisted image revision to transfer.'
-                        : 'Only this selected image will be uploaded into ChatGPT.';
+                    el('selectedResourceId').textContent = item.id || '';
+                    el('selectedRevisionId').textContent = item.revisionId || 'Not available';
                     el('selected').hidden = false;
+                    publishSelectionContext(item);
+                    showOriginal(item);
                   };
                   const render = () => {
                     grid.replaceChildren();
@@ -261,93 +349,6 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                   });
                   // This is a user-initiated bridge: the gallery continues to browse
                   // without model image bytes until this button is explicitly clicked.
-                  handoff.addEventListener('click', async () => {
-                    if (transferring || !selectedItem || selectedItem.kind !== 'image' ||
-                        !selectedItem.id || !selectedItem.revisionId) return;
-
-                    const openai = window.openai;
-                    if (!openai?.uploadFile || !openai?.setWidgetState) {
-                      handoffStatus.textContent = 'This host does not expose ChatGPT native file upload and image state.';
-                      return;
-                    }
-                    const item = selectedItem;
-                    transferring = true;
-                    handoff.disabled = true;
-                    try {
-                      handoffStatus.textContent = 'Requesting a signed URL for the selected original...';
-                      const lease = unwrap(await callTool('media-gallery-image-lease',
-                        {id:item.id,revisionid:item.revisionId}));
-                      if (!lease || lease.error) throw Error(lease?.error || 'No original image lease returned');
-                      if (lease.mediaResourceId !== item.id || lease.revisionId !== item.revisionId)
-                        throw Error('MediaServices returned a different image revision');
-                      const url = safeUrl(lease.url);
-                      if (!url) throw Error('Signed original URL was not from an approved HTTPS storage host');
-
-                      handoffStatus.textContent = 'Retrieving selected image directly from storage...';
-                      // Fetch requires BOTH widget connectDomains and cross-origin CORS
-                      // on the storage host. Rendering <img> alone does not prove CORS.
-                      const response = await fetch(url, {method:'GET', credentials:'omit'});
-                      if (!response.ok) throw Error('Image download returned HTTP ' + response.status);
-                      const limit = 25 * 1024 * 1024;
-                      const headerSize = Number(response.headers.get('content-length') || 0);
-                      if (headerSize > limit) throw Error('Selected original exceeds 25 MB handoff limit');
-                      const blob = await response.blob();
-                      if (!blob.size || blob.size > limit) throw Error('Selected image is empty or exceeds 25 MB');
-
-                      const mime = (lease.contentType || item.mimeType || blob.type || '').toLowerCase();
-                      const extension = ({'image/png':'.png','image/jpeg':'.jpg',
-                        'image/webp':'.webp','image/gif':'.gif'})[mime];
-                      if (!extension) throw Error('Selected resource is not a supported image format');
-                      const fileName = lease.fileName || item.fileName || ('media-' + item.id + extension);
-                      const file = new File([blob], fileName, {type:mime});
-
-                      handoffStatus.textContent = 'Uploading selected image through ChatGPT native file API...';
-                      const uploaded = await openai.uploadFile(file);
-                      if (!uploaded?.fileId) throw Error('ChatGPT did not return a file ID');
-
-                      // imageIds is an OpenAI widget extension. It makes only this
-                      // uploaded file visible to the model in subsequent turns.
-                      await Promise.resolve(openai.setWidgetState({
-                        modelContent:{
-                          action:'aptix_source_image_handoff',
-                          mediaResourceId:item.id,
-                          revisionId:item.revisionId,
-                          imageName:item.name,
-                          sourceImageFileId:uploaded.fileId,
-                          sourceTransport:'openai.uploadFile + setWidgetState.imageIds',
-                          instruction:'This attached image is the selected original source. When the user requests an edit, pass the ACTUAL attached image file to the image editing tool; never regenerate from a description alone. Do not substitute another revision or use media-resource-image-download for this native handoff. If the editor cannot use the attached file as a source, report the limitation rather than fabricate an edit. Do not save without explicit user approval.'
-                        },
-                        privateContent:{
-                          libraryId,
-                          selectedResourceId:item.id,
-                          selectedRevisionId:item.revisionId
-                        },
-                        imageIds:[uploaded.fileId]
-                      }));
-
-                      handoffStatus.textContent = 'Image uploaded and attached to model context.';
-                      if (typeof openai.sendFollowUpMessage === 'function') {
-                        await openai.sendFollowUpMessage({
-                          prompt:'I selected the APTIX MediaServices image "' +
-                            (item.name || 'Untitled') + '" (resource ' + item.id +
-                            ', revision ' + item.revisionId +
-                            '). Its original pixels have been attached to ChatGPT via native imageIds. Please describe what you actually see, then wait for my edit instruction. When editing, supply the ATTACHED SOURCE IMAGE as the actual image editor input; never recreate from description. If source-image editing is unavailable, report this rather than generating a lookalike. Do not download via media-resource-image-download or save without approval.'
-                        });
-                        handoffStatus.textContent = 'Image attached to ChatGPT. Requested visual verification.';
-                      } else {
-                        handoffStatus.textContent =
-                          'Image attached. Ask ChatGPT to describe the selected image to verify handoff.';
-                      }
-                    } catch (error) {
-                      handoffStatus.textContent = 'Handoff failed: ' + errorText(error) +
-                        '. If previews load but fetch fails, check storage CORS and connectDomains.';
-                    } finally {
-                      transferring = false;
-                      handoff.disabled = !selectedItem || selectedItem.kind !== 'image' ||
-                        !selectedItem.revisionId;
-                    }
-                  });
-
                   const loadPage = async requested => {
                     if (!connected || !libraryId || loading) return;
                     const generation = ++loadGeneration;
@@ -443,7 +444,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                     jsonrpc:'2.0',id:1,method:'ui/initialize',
                     params:{
                       protocolVersion:'2026-01-26',
-                      appInfo:{name:'aptix-media-library',version:'7.0.0'},
+                      appInfo:{name:'aptix-media-library',version:'8.0.0'},
                       appCapabilities:{}
                     }
                   },'*');
