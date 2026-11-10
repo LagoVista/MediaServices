@@ -59,7 +59,6 @@ namespace LagoVista.DependencyInjection
             LagoVista.MediaServices.CloudRepos.Startup.ConfigureServices(services);
             LagoVista.MediaServices.Startup.ConfigureServices(services);
             services.AddMetaDataHelper<MediaLibrary>();
-            services.AddMetaDataHelper<ImageFamily>();
         }
     }
 }
