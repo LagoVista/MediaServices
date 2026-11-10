@@ -487,10 +487,10 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                     ' (id '+currentId+').',
                   'First use media-image-families-get with this exact ID to retrieve the latest visual guidance.',
                   'Use the family style, palette, rendering, mood, composition, use-case and avoid guidance.',
-                  'Ask me which subject or use case to depict if needed, then generate a draft image using ChatGPT image generation.',
-                  'Existing referenceImage headers are identifiers, not actual image pixels. Do not claim to have seen their images.',
-                  'Show the draft in chat for review. DO NOT SAVE until I explicitly approve.',
-                  'After approval, use media-import-chatgpt-image to create a NEW Media Resource, verify it, and then ask me to reopen this Studio to attach the saved resource as a reference.'
+                  'Ask me which subject or use case to depict if needed, then use media-image-generate MCP with Intent CreateNew, ImageFamily EntityHeader (id '+currentId+'), empty ReferenceMediaResources (server loads real family reference bytes), IsPublic false.',
+                  'APTIX resolves these Image Family reference IDs into actual authorized image bytes; do not claim ChatGPT itself received their pixels.',
+                  'The APTIX service saves a PRIVATE draft MediaResource. Show it with media-gallery-preview and DO NOT PUBLISH until explicit approval.',
+                  'After approval, publish the existing draft MediaResource, then ask before attaching it to this Image Family.'
                 ].join('\n'));
               });
               window.addEventListener('message',event=>{
