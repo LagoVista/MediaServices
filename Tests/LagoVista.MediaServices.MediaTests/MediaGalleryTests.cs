@@ -36,10 +36,10 @@ namespace LagoVista.MediaServices.MediaTests
         }
 
         [TestMethod]
-        public void PageSizeDefaultsToSixAndContainsNoMediaBytes()
+        public void PageSizeDefaultsToFifteenAndContainsNoMediaBytes()
         {
             var page = new MediaGalleryPage();
-            Assert.AreEqual(6, page.PageSize);
+            Assert.AreEqual(15, page.PageSize);
             Assert.IsNotNull(page.Items);
             Assert.AreEqual(0, page.Items.Count);
         }
