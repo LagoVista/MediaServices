@@ -31,6 +31,21 @@ namespace LagoVista.MediaServices.MediaTests
         }
 
         [TestMethod]
+        public void StudioOpenModelSupportsCreateAndReopenWithoutPersistedWorkflowState()
+        {
+            var open = new MediaImageFamilyStudioOpen
+            {
+                Family = new ImageFamily { Name = "AppTrex", Key = "apptrex" },
+            };
+            Assert.IsNull(open.InitialFamilyId);
+            Assert.AreEqual("AppTrex", open.Family.Name);
+            Assert.IsNotNull(open.Families);
+            Assert.IsNotNull(open.Libraries);
+            Assert.AreEqual(0, open.Families.Count);
+            Assert.AreEqual(0, open.Libraries.Count);
+        }
+
+        [TestMethod]
         public void ImageFamilyFormMetadataIncludesEditableGuidance()
         {
             var fields = new ImageFamily().GetFormFields();

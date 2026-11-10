@@ -7,11 +7,13 @@ using LagoVista.IoT.Web.Common.Attributes;
 using LagoVista.IoT.Web.Common.Controllers;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
+using LagoVista.MediaServices.Rest.McpWidgets;
 using LagoVista.UserAdmin.Models.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace LagoVista.MediaServices.Rest.Controllers
@@ -19,11 +21,13 @@ namespace LagoVista.MediaServices.Rest.Controllers
     public class ImageFamilyController : LagoVistaBaseController
     {
         private readonly IImageFamilyManager _manager;
+        private readonly IMediaLibraryManager _libraryManager;
 
         public ImageFamilyController(UserManager<AppUser> userManager, IAdminLogger logger,
-            IImageFamilyManager manager) : base(userManager, logger)
+            IImageFamilyManager manager, IMediaLibraryManager libraryManager) : base(userManager, logger)
         {
             _manager = manager ?? throw new ArgumentNullException(nameof(manager));
+            _libraryManager = libraryManager ?? throw new ArgumentNullException(nameof(libraryManager));
         }
 
         [McpEndpoint("media-image-families-factory", Description = "Create an unsaved image family for the current organization.", FamilyId = "media")]
@@ -55,6 +59,60 @@ namespace LagoVista.MediaServices.Rest.Controllers
         {
             SetUpdatedProperties(imageFamily);
             return _manager.UpdateImageFamilyAsync(imageFamily, OrgEntityHeader, UserEntityHeader);
+        }
+
+        /// <summary>
+        /// Open a reusable workspace for creating or maintaining one Image Family.
+        /// Only the ImageFamily record is persisted: the Studio itself has no
+        /// separate workflow state. An omitted id starts an unsaved new family.
+        /// </summary>
+        [McpEndpoint("media-image-family-studio-open",
+            Description = "OPEN THE APTIX IMAGE FAMILY STUDIO to create an Image Family or reopen an existing one. Optional imageFamilyId selects a saved family. The widget edits reusable visual guidance and allows selection/removal of existing Media Resource references using the authorized gallery. Save explicitly through existing media-image-families-create/update. No images are generated, imported, or uploaded by opening the Studio. Use this tool when the user wants to build, review, or maintain an image family.",
+            FamilyId = "media", WidgetResourceUri = MediaImageFamilyStudioWidgetResource.ResourceUri)]
+        [Authorize]
+        [HttpGet("/api/media/imagefamily/studio/open")]
+        public async Task<InvokeResult<MediaImageFamilyStudioOpen>> OpenImageFamilyStudio(string imageFamilyId = null)
+        {
+            var familyList = await _manager.GetImageFamiliesForOrgAsync(
+                OrgEntityHeader.Id, ListRequest.Create(1, 100), UserEntityHeader);
+            if (!familyList.Successful)
+                return InvokeResult<MediaImageFamilyStudioOpen>.FromInvokeResult(familyList.ToInvokeResult());
+
+            var libraryList = await _libraryManager.GetMediaLibrariesForOrgsAsync(
+                OrgEntityHeader.Id, ListRequest.Create(1, 100), UserEntityHeader);
+            if (!libraryList.Successful)
+                return InvokeResult<MediaImageFamilyStudioOpen>.FromInvokeResult(libraryList.ToInvokeResult());
+
+            ImageFamily selected;
+            if (String.IsNullOrWhiteSpace(imageFamilyId))
+            {
+                selected = new ImageFamily { Id = Guid.NewGuid().ToId() };
+                SetAuditProperties(selected);
+                SetOwnedProperties(selected);
+            }
+            else
+            {
+                selected = await _manager.GetImageFamilyAsync(imageFamilyId, OrgEntityHeader, UserEntityHeader);
+            }
+
+            return InvokeResult<MediaImageFamilyStudioOpen>.Create(new MediaImageFamilyStudioOpen
+            {
+                InitialFamilyId = String.IsNullOrWhiteSpace(imageFamilyId) ? null : selected.Id,
+                Family = selected,
+                Families = (familyList.Model ?? Enumerable.Empty<ImageFamilySummary>())
+                    .Select(family => new MediaImageCreationFamily
+                    {
+                        Id = family.Id,
+                        Name = family.Name,
+                        Key = family.Key
+                    }).ToList(),
+                Libraries = (libraryList.Model ?? Enumerable.Empty<MediaLibrarySummary>())
+                    .Select(library => new MediaGalleryLibrary
+                    {
+                        Id = library.Id,
+                        Name = library.Name
+                    }).ToList()
+            });
         }
 
         [McpEndpoint("media-image-families-list", Description = "List image families available to the current organization.", FamilyId = "media")]
