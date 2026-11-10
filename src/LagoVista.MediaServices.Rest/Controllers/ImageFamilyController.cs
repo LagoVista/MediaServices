@@ -97,7 +97,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
 
             return InvokeResult<MediaImageFamilyStudioOpen>.Create(new MediaImageFamilyStudioOpen
             {
-                InitialFamilyId = String.IsNullOrWhiteSpace(imageFamilyId) ? null : selected.Id,
+                InitialFamilyId = String.IsNullOrWhiteSpace(imageFamilyId) ? null : selected.Id.ToString(),
                 Family = selected,
                 Families = (familyList.Model ?? Enumerable.Empty<ImageFamilySummary>())
                     .Select(family => new MediaImageCreationFamily
