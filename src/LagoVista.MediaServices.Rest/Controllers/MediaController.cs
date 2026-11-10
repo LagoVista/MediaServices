@@ -557,6 +557,59 @@ namespace LagoVista.MediaServices.Rest.Controllers
             }
         }
 
+        /// <summary>
+        /// Save a ChatGPT-generated/edited image as a new revision on an existing
+        /// Media Resource. Uses the proven native ChatGPT file transfer and the
+        /// existing MediaServices revision/thumbnail persistence path.
+        /// No new Media Resource is created; existing revision blobs remain intact.
+        /// </summary>
+        [McpEndpoint("media-revise-chatgpt-image",
+            Description = "Save a ChatGPT-generated or edited PNG/JPEG/WebP image as a new revision on an existing Media Resource via native ChatGPT file transfer. Provide the existing resource id, a ChatGPT file, and optionally expectedRevisionId and editInstruction. Preserves the original revision and updates the current revision.",
+            FamilyId = "media", FileParams = new[] { "file" })]
+        [Authorize]
+        [HttpPost("/api/media/chatgpt/image-revise/{id}")]
+        public async Task<InvokeResult<MediaResource>> ReviseChatGptImage(
+            string id,
+            [FromBody] ChatGptFileReference file,
+            string expectedRevisionId = null,
+            string editInstruction = null)
+        {
+            if (String.IsNullOrWhiteSpace(id))
+                return InvokeResult<MediaResource>.FromError("An existing Media Resource ID is required.");
+
+            var existing = await _mediaServicesManager.GetMediaResourceRecordAsync(
+                id, OrgEntityHeader, UserEntityHeader);
+            if (existing == null)
+                return InvokeResult<MediaResource>.FromError("Could not find the specified Media Resource.");
+
+            if (!String.IsNullOrWhiteSpace(expectedRevisionId) &&
+                !String.Equals(existing.CurrentRevision, expectedRevisionId, StringComparison.OrdinalIgnoreCase))
+                return InvokeResult<MediaResource>.FromError(
+                    "The Media Resource current revision has changed since the image was selected.");
+
+            if (String.IsNullOrWhiteSpace(existing.MimeType) ||
+                !existing.MimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                return InvokeResult<MediaResource>.FromError(
+                    "This revision importer only supports existing image Media Resources.");
+
+            var downloaded = await ChatGptFileProbe.DownloadAsync(file);
+            if (!downloaded.Successful)
+                return InvokeResult<MediaResource>.FromInvokeResult(downloaded.ToInvokeResult());
+
+            var image = downloaded.Result;
+            using (var stream = new MemoryStream(image.Bytes, writable: false))
+            {
+                // saveResourceRecord=true persists the new immutable revision;
+                // AddResourceMediaRevisionAsync also generates the thumbnail,
+                // dimensions, and SHA-256 while retaining earlier History entries.
+                return await _mediaServicesManager.AddResourceMediaRevisionAsync(
+                    id, stream, image.FileName, image.ContentType,
+                    OrgEntityHeader, UserEntityHeader,
+                    saveResourceRecord: true,
+                    revisedPrompt: editInstruction ?? String.Empty);
+            }
+        }
+
         [McpEndpoint("media-image-assembly-create", Description = "Create a temporary blank PNG canvas in cloud storage, returning its assembly ID.", FamilyId = "media")]
         [Authorize]
         [HttpPost("/api/media/image-assembly/create")]
