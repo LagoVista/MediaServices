@@ -388,6 +388,36 @@
   <data name="GeneratedImageSizes_Portrait" xml:space="preserve">
     <value>Portrait (1024 × 1536)</value>
   </data>
+  <data name="ImageGenerationIntents_CreateNew" xml:space="preserve">
+    <value>Create New</value>
+  </data>
+  <data name="ImageGenerationIntents_EditExisting" xml:space="preserve">
+    <value>Edit Existing</value>
+  </data>
+  <data name="ImageGenerationRequest_ImageFamily" xml:space="preserve">
+    <value>Image Family</value>
+  </data>
+  <data name="ImageGenerationRequest_ImageFamily_Help" xml:space="preserve">
+    <value>Optional reusable image family supplying style guidance and default reference images.</value>
+  </data>
+  <data name="ImageGenerationRequest_Intent" xml:space="preserve">
+    <value>Generation Intent</value>
+  </data>
+  <data name="ImageGenerationRequest_Intent_Help" xml:space="preserve">
+    <value>Create a new media resource or edit the selected existing image using it as the source.</value>
+  </data>
+  <data name="ImageGenerationRequest_MediaResource" xml:space="preserve">
+    <value>Image To Edit</value>
+  </data>
+  <data name="ImageGenerationRequest_MediaResource_Help" xml:space="preserve">
+    <value>Existing image used as the source when editing.</value>
+  </data>
+  <data name="ImageGenerationRequest_ReferenceMediaResources" xml:space="preserve">
+    <value>Reference Images</value>
+  </data>
+  <data name="ImageGenerationRequest_ReferenceMediaResources_Help" xml:space="preserve">
+    <value>Optional reference images. If empty, use the selected Image Family's reference images.</value>
+  </data>
   <data name="ImageGenerationRequest_Title" xml:space="preserve">
     <value>Image Generation Request</value>
   </data>

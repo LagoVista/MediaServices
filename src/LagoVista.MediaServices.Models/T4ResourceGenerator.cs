@@ -167,6 +167,26 @@ namespace LagoVista.MediaServices.Models.Resources
         public static string ImageGenerationRequest_NumberGenerated { get { return GetResourceString("ImageGenerationRequest_NumberGenerated"); } }
 //Resources:MediaServicesResources:ImageGenerationRequest_NumberGenerated_Help
         public static string ImageGenerationRequest_NumberGenerated_Help { get { return GetResourceString("ImageGenerationRequest_NumberGenerated_Help"); } }
+//Resources:MediaServicesResources:ImageGenerationIntents_CreateNew
+        public static string ImageGenerationIntents_CreateNew { get { return GetResourceString("ImageGenerationIntents_CreateNew"); } }
+//Resources:MediaServicesResources:ImageGenerationIntents_EditExisting
+        public static string ImageGenerationIntents_EditExisting { get { return GetResourceString("ImageGenerationIntents_EditExisting"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_ImageFamily
+        public static string ImageGenerationRequest_ImageFamily { get { return GetResourceString("ImageGenerationRequest_ImageFamily"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_ImageFamily_Help
+        public static string ImageGenerationRequest_ImageFamily_Help { get { return GetResourceString("ImageGenerationRequest_ImageFamily_Help"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_Intent
+        public static string ImageGenerationRequest_Intent { get { return GetResourceString("ImageGenerationRequest_Intent"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_Intent_Help
+        public static string ImageGenerationRequest_Intent_Help { get { return GetResourceString("ImageGenerationRequest_Intent_Help"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_MediaResource
+        public static string ImageGenerationRequest_MediaResource { get { return GetResourceString("ImageGenerationRequest_MediaResource"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_MediaResource_Help
+        public static string ImageGenerationRequest_MediaResource_Help { get { return GetResourceString("ImageGenerationRequest_MediaResource_Help"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_ReferenceMediaResources
+        public static string ImageGenerationRequest_ReferenceMediaResources { get { return GetResourceString("ImageGenerationRequest_ReferenceMediaResources"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_ReferenceMediaResources_Help
+        public static string ImageGenerationRequest_ReferenceMediaResources_Help { get { return GetResourceString("ImageGenerationRequest_ReferenceMediaResources_Help"); } }
 //Resources:MediaServicesResources:ImageGenerationRequest_Title
         public static string ImageGenerationRequest_Title { get { return GetResourceString("ImageGenerationRequest_Title"); } }
 //Resources:MediaServicesResources:ImageGenerationRequest_UserPrompt
@@ -699,6 +719,16 @@ namespace LagoVista.MediaServices.Models.Resources
             public const string ImageGenerationRequest_IsPublic_Help = "ImageGenerationRequest_IsPublic_Help";
             public const string ImageGenerationRequest_NumberGenerated = "ImageGenerationRequest_NumberGenerated";
             public const string ImageGenerationRequest_NumberGenerated_Help = "ImageGenerationRequest_NumberGenerated_Help";
+            public const string ImageGenerationIntents_CreateNew = "ImageGenerationIntents_CreateNew";
+            public const string ImageGenerationIntents_EditExisting = "ImageGenerationIntents_EditExisting";
+            public const string ImageGenerationRequest_ImageFamily = "ImageGenerationRequest_ImageFamily";
+            public const string ImageGenerationRequest_ImageFamily_Help = "ImageGenerationRequest_ImageFamily_Help";
+            public const string ImageGenerationRequest_Intent = "ImageGenerationRequest_Intent";
+            public const string ImageGenerationRequest_Intent_Help = "ImageGenerationRequest_Intent_Help";
+            public const string ImageGenerationRequest_MediaResource = "ImageGenerationRequest_MediaResource";
+            public const string ImageGenerationRequest_MediaResource_Help = "ImageGenerationRequest_MediaResource_Help";
+            public const string ImageGenerationRequest_ReferenceMediaResources = "ImageGenerationRequest_ReferenceMediaResources";
+            public const string ImageGenerationRequest_ReferenceMediaResources_Help = "ImageGenerationRequest_ReferenceMediaResources_Help";
             public const string ImageGenerationRequest_Title = "ImageGenerationRequest_Title";
             public const string ImageGenerationRequest_UserPrompt = "ImageGenerationRequest_UserPrompt";
             public const string ImageGenerationRequest_UserPrompt_Help = "ImageGenerationRequest_UserPrompt_Help";

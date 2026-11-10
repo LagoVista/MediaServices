@@ -8,6 +8,15 @@ using System.Collections.Generic;
 
 namespace LagoVista.MediaServices.Models
 {
+    public enum ImageGenerationIntents
+    {
+        [EnumLabel(MediaServicesResources.Names.ImageGenerationIntents_CreateNew, MediaServicesResources.Names.ImageGenerationIntents_CreateNew, typeof(MediaServicesResources))]
+        CreateNew,
+
+        [EnumLabel(MediaServicesResources.Names.ImageGenerationIntents_EditExisting, MediaServicesResources.Names.ImageGenerationIntents_EditExisting, typeof(MediaServicesResources))]
+        EditExisting
+    }
+
     public enum GeneratedImageStyles
     {
         [EnumLabel(ImageGenerationRequest.GeneratedImageStyles_StudioPortrait, MediaServicesResources.Names.GeneratedImageStyles_StudioPortrait, typeof(MediaServicesResources))]
@@ -80,11 +89,36 @@ namespace LagoVista.MediaServices.Models
 
         public string EntityFieldName { get; set; }
 
+        // Transitional compatibility for existing API and Angular callers. New requests use EntityHeaders.
+        [System.Obsolete("Use MediaResource instead.")]
         public string MediaResourceId { get; set; }
 
         public string PreviousResponseId { get; set; }
 
+        [System.Obsolete("Use ReferenceMediaResources instead.")]
         public string ReferenceMediaResourceId { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.ImageGenerationRequest_Intent,
+            HelpResource: MediaServicesResources.Names.ImageGenerationRequest_Intent_Help,
+            EnumType: typeof(ImageGenerationIntents), FieldType: FieldTypes.Picker,
+            ResourceType: typeof(MediaServicesResources), IsUserEditable: true)]
+        public EntityHeader<ImageGenerationIntents> Intent { get; set; } = EntityHeader<ImageGenerationIntents>.Create(ImageGenerationIntents.CreateNew);
+
+        [FormField(LabelResource: MediaServicesResources.Names.ImageGenerationRequest_ImageFamily,
+            HelpResource: MediaServicesResources.Names.ImageGenerationRequest_ImageFamily_Help,
+            EntityHeaderPickerUrl: "/api/media/imagefamilies", FieldType: FieldTypes.EntityHeaderPicker,
+            ResourceType: typeof(MediaServicesResources), IsUserEditable: true)]
+        public EntityHeader ImageFamily { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.ImageGenerationRequest_MediaResource,
+            HelpResource: MediaServicesResources.Names.ImageGenerationRequest_MediaResource_Help,
+            FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsUserEditable: true)]
+        public EntityHeader MediaResource { get; set; }
+
+        [FormField(LabelResource: MediaServicesResources.Names.ImageGenerationRequest_ReferenceMediaResources,
+            HelpResource: MediaServicesResources.Names.ImageGenerationRequest_ReferenceMediaResources_Help,
+            FieldType: FieldTypes.MediaResources, ResourceType: typeof(MediaServicesResources), IsUserEditable: true)]
+        public List<EntityHeader> ReferenceMediaResources { get; set; } = new List<EntityHeader>();
 
         [FormField(LabelResource: MediaServicesResources.Names.ImageGenerationRequest_ImageStyle, HelpResource: MediaServicesResources.Names.ImageGenerationRequest_ImageStyle_Help, EnumType: typeof(GeneratedImageStyles), FieldType: FieldTypes.Picker, IsRequired: true, IsUserEditable: true, ResourceType: typeof(MediaServicesResources))]
         public EntityHeader<GeneratedImageStyles> ImageStyle { get; set; } = EntityHeader<GeneratedImageStyles>.Create(GeneratedImageStyles.EditorialPhotography);
@@ -114,6 +148,10 @@ namespace LagoVista.MediaServices.Models
         {
             return new List<string>()
             {
+                nameof(Intent),
+                nameof(ImageFamily),
+                nameof(MediaResource),
+                nameof(ReferenceMediaResources),
                 nameof(ImageStyle),
                 nameof(ImageSize),
                 nameof(ImageQuality),

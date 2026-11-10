@@ -46,6 +46,33 @@ namespace LagoVista.MediaServices.MediaTests
         }
 
         [TestMethod]
+        public void ImageGenerationRequestUsesEntityHeadersForFamilySourceAndReferences()
+        {
+            var request = new ImageGenerationRequest
+            {
+                ImageFamily = new LagoVista.Core.Models.EntityHeader { Id = "FAMILY1", Text = "Brand Family" },
+                MediaResource = new LagoVista.Core.Models.EntityHeader { Id = "SOURCE1", Text = "Source Image" },
+                ReferenceMediaResources = new System.Collections.Generic.List<LagoVista.Core.Models.EntityHeader>
+                {
+                    new LagoVista.Core.Models.EntityHeader { Id = "REFERENCE1", Text = "Visual Reference" }
+                }
+            };
+
+            Assert.IsNotNull(request.Intent);
+            Assert.AreEqual("FAMILY1", request.ImageFamily.Id);
+            Assert.AreEqual("SOURCE1", request.MediaResource.Id);
+            Assert.AreEqual("REFERENCE1", request.ReferenceMediaResources[0].Id);
+            var fields = request.GetFormFields();
+            Assert.IsTrue(fields.Contains(nameof(ImageGenerationRequest.Intent)));
+            Assert.IsTrue(fields.Contains(nameof(ImageGenerationRequest.ImageFamily)));
+            Assert.IsTrue(fields.Contains(nameof(ImageGenerationRequest.MediaResource)));
+            Assert.IsTrue(fields.Contains(nameof(ImageGenerationRequest.ReferenceMediaResources)));
+            var snapshot = request.CreateSnapshot();
+            Assert.AreEqual(request.ImageFamily.Id, snapshot.ImageFamily.Id);
+            Assert.AreEqual(request.ReferenceMediaResources[0].Id, snapshot.ReferenceMediaResources[0].Id);
+        }
+
+        [TestMethod]
         public void ImageFamilyFormMetadataIncludesEditableGuidance()
         {
             var fields = new ImageFamily().GetFormFields();
