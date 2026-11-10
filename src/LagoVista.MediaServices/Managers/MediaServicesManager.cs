@@ -778,6 +778,15 @@ namespace LagoVista.MediaServices.Managers
                 throw new RecordNotFoundException(nameof(MediaResource), id);
             }
 
+            // The public download route is anonymous: both visibility and
+            // organization ownership are mandatory. Match the thumbnail route's
+            // explicit IsPublic check; never serve private images by knowing IDs.
+            if (!resource.IsPublic || resource.OwnerOrganization == null ||
+                !String.Equals(resource.OwnerOrganization.Id, orgId, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new RecordNotFoundException(nameof(MediaResource), id);
+            }
+
             response.LastModified = resource.LastUpdatedDate;
             response.Timings.Add(new ResultTiming() { Key = "GetMediaResourceRecord", Ms = stopWatch.Elapsed.TotalMilliseconds });
 
