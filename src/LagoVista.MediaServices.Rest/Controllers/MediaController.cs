@@ -413,7 +413,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         }
 
         [McpEndpoint("media-resource-image-download",
-            Description = "FALLBACK ONLY: Download image bytes as an MCP tool result for explicit server-side analysis or export. Do NOT use for normal ChatGPT conversational image editing: model-side downloads are not the verified image-editor source attachment path. For a known Media Resource ID and exact revision ID, use media-gallery-preview and have the user click 'Work with this exact image' to attach the original via window.openai.uploadFile and setWidgetState(imageIds). For general library browsing use media-gallery-open. Never silently replace a requested historical revision with the current revision.",
+            Description = "FALLBACK ONLY: Download an authorized Media Resource revision as a model-side image result for explicit analysis/export, NOT the normal conversational image editing path. For editing, use media-gallery-open or media-gallery-preview(id,revisionid). The widget displays the actual original; the user right-clicks Copy image and pastes it into the ChatGPT composer. Edit THAT user-pasted image as your source. The widget's setWidgetState(modelContent) communicates selected resource/revision IDs, not image pixels. Never silently select a different revision or claim a preview is itself an editor source.",
             FamilyId = "media")]
         [Authorize]
         [HttpGet("/api/media/resource/{id}/download/{revisionid}")]
@@ -445,7 +445,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// are returned to the model; the app requests fifteen signed previews per page.
         /// </summary>
         [McpEndpoint("media-gallery-open",
-            Description = "PREFERRED FOR BROWSING + IMAGE EDITING: Open the interactive APTIX Media Library browser with fifteen media tiles per page. User selects an image and clicks 'Work with this image'; the widget fetches the original revision directly in the browser, uploads it with window.openai.uploadFile, and sends native setWidgetState(imageIds) plus a follow-up to ChatGPT. This is the verified path to put actual pixels in model vision context; do NOT call media-resource-image-download as a substitute. When the user names an exact historical revision ID, use media-gallery-preview(id,revisionid) instead: the gallery tiles represent CURRENT revisions only. Editing tool source-image input must still be verified; never pretend a text-only regeneration is a true edit.",
+            Description = "PREFERRED INTERACTIVE LIBRARY BROWSER: Opens the APTIX Media Gallery (15 media items per page). The user selects an image to see its FULL-RESOLUTION ORIGINAL and six simple steps: right-click the original and Copy image, click ChatGPT message box and Paste (Ctrl+V/Cmd+V), request changes, review/iterate, then ask to save. Never ask user to copy the thumbnail. Widget publishes the selected mediaResourceId and revisionId as modelContent via setWidgetState WITHOUT uploading pixels or sending messages. For editing, use the original image the USER pasted into the chat composer as the image editor input; NOT the widget preview and NOT text regeneration. When user explicitly approves and asks to save, use media-revise-chatgpt-image on the selected mediaResourceId, verify exact ID and persisted revision. Widget state may not be available to every host; if missing, ask user for the Resource ID shown in the widget. For a specific historical revision use media-gallery-preview(id,revisionid).",
             FamilyId = "media", WidgetResourceUri = MediaGalleryBrowserWidgetResource.ResourceUri)]
         [Authorize]
         [HttpGet("/api/media/gallery/open")]
@@ -500,7 +500,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// Server authorization and exact immutable revision checks are unchanged.
         /// </summary>
         [McpEndpoint("media-gallery-image-lease",
-            Description = "WIDGET INTERNAL: Authorize a specific immutable Media Resource revision and return a short-lived signed original-image URL to the MCP Gallery widget. This is NOT a model-side image download or native imageIds attachment; the widget uses it in the browser before window.openai.uploadFile. For a model-requested known revision use media-gallery-preview(id,revisionid), then have the user click 'Work with this exact image'.",
+            Description = "WIDGET INTERNAL: Authorize the exact immutable image revision and return a short-lived signed URL, used by the gallery widget to DISPLAY THE FULL-RESOLUTION ORIGINAL for manual browser Copy image. This does not upload pixels into ChatGPT or attach an image to model context. Users paste the copied image into the ChatGPT message composer. For known exact revisions invoke media-gallery-preview(id,revisionid), then follow the on-screen copy/paste instructions.",
             FamilyId = "media")]
         [Authorize]
         [HttpGet("/api/media/gallery/image-lease/{id}/{revisionid}")]
@@ -511,7 +511,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         }
 
         [McpEndpoint("media-gallery-preview",
-            Description = "PREFERRED FOR EXACT-REVISION IMAGE EDITING/HANDOFF: Provide existing Media Resource id and the EXACT desired revisionid (including historical revisions). Opens an MCP App preview of that immutable revision with a 'Work with this exact image' button. The USER clicks that button: widget fetches original pixels from signed storage in the browser, uses window.openai.uploadFile(File), sets setWidgetState({imageIds:[fileId],modelContent:{mediaResourceId,revisionId,...}}), and sends a follow-up. DO NOT call media-resource-image-download instead or use the current revision when another revision was specified. After imageIds handoff, image editing MUST use the actual uploaded image as source, never a text-only lookalike; if the image editor cannot accept the native image attachment as source, say so rather than generating. Do not save until user explicitly approves. For browsing rather than known IDs use media-gallery-open.",
+            Description = "PREFERRED EXACT-REVISION IMAGE PREVIEW: Provide existing Media Resource id and EXACT revisionid (historical revisions supported). This widget shows the original source image for browser Copy image; it does NOT attach image bytes to model or send a message. On the preview, user right-clicks and chooses Copy image (NOT Copy image address), clicks ChatGPT composer and pastes (Ctrl+V/Cmd+V), requests changes, reviews and iterates, and asks to save after approving. The widget publishes mediaResourceId and revisionId to modelContent via setWidgetState so ChatGPT can identify the save target; IDs are also printed for manual reference if host state is not available. Edit the image pasted by the user, not the text description alone or the widget's visual preview. Never substitute current revision for requested historical one. Save approved result via media-revise-chatgpt-image on that resource ID and verify the new persisted revision. Do not save before explicit user instruction.",
             FamilyId = "media", WidgetResourceUri = MediaGalleryWidgetResource.ResourceUri)]
         [Authorize]
         [HttpGet("/api/media/gallery/preview/{id}/{revisionid}")]
@@ -536,7 +536,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// ChatGPT supplies the short-lived file reference through native MCP file parameters.
         /// </summary>
         [McpEndpoint("media-import-chatgpt-image",
-            Description = "Create and save a new Media Resource from a ChatGPT-generated or attached image via native file transfer. Pass a ChatGPT file as the file argument, an optional resource name and Media Library ID. Returns the saved resource with revision and digest metadata; each call creates a new resource.",
+            Description = "CREATE NEW RESOURCE ONLY: Import a ChatGPT-generated/attached image as a separate Media Resource. Do NOT use to save edits to a selected existing resource. For approved changes to an existing selected mediaResourceId use media-revise-chatgpt-image instead, preserving original revision history. Accepts native ChatGPT file plus optional name and Media Library ID.",
             FamilyId = "media", FileParams = new[] { "file" })]
         [Authorize]
         [HttpPost("/api/media/chatgpt/image-import")]
@@ -566,7 +566,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// No new Media Resource is created; existing revision blobs remain intact.
         /// </summary>
         [McpEndpoint("media-revise-chatgpt-image",
-            Description = "Save a ChatGPT-generated or edited PNG/JPEG/WebP image as a new revision on an existing Media Resource via native ChatGPT file transfer. Provide the existing resource id, a ChatGPT file, and optionally expectedRevisionId and editInstruction. Preserves the original revision and updates the current revision.",
+            Description = "AFTER EXPLICIT USER APPROVAL ONLY: Save the final ChatGPT-edited PNG/JPEG/WebP as a NEW revision of an existing Media Resource. Use the original mediaResourceId from selected gallery/preview widget modelContent or from user-supplied resource ID, and the ChatGPT-generated/edited IMAGE FILE as file. Optional expectedRevisionId prevents overwriting a changed current revision; DO NOT assume the edited SOURCE revision is still current. This preserves existing revisions and updates current revision. After saving, fetch media_resources_get to verify the exact resource ID, the new revision, and prior revision preservation. Never create a different resource when the user requested an update.",
             FamilyId = "media", FileParams = new[] { "file" })]
         [Authorize]
         [HttpPost("/api/media/chatgpt/image-revise/{id}")]
