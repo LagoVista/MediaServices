@@ -418,6 +418,12 @@
   <data name="ImageGenerationRequest_ReferenceMediaResources_Help" xml:space="preserve">
     <value>Optional reference images. If empty, use the selected Image Family's reference images.</value>
   </data>
+  <data name="ImageGenerationRequest_MediaLibrary" xml:space="preserve">
+    <value>Media Library</value>
+  </data>
+  <data name="ImageGenerationRequest_MediaLibrary_Help" xml:space="preserve">
+    <value>Optional Media Library that will contain the newly generated image.</value>
+  </data>
   <data name="ImageGenerationRequest_Title" xml:space="preserve">
     <value>Image Generation Request</value>
   </data>

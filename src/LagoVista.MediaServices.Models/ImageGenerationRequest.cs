@@ -110,6 +110,12 @@ namespace LagoVista.MediaServices.Models
             ResourceType: typeof(MediaServicesResources), IsUserEditable: true)]
         public EntityHeader ImageFamily { get; set; }
 
+        [FormField(LabelResource: MediaServicesResources.Names.ImageGenerationRequest_MediaLibrary,
+            HelpResource: MediaServicesResources.Names.ImageGenerationRequest_MediaLibrary_Help,
+            EntityHeaderPickerUrl: "/api/media/libraries", FieldType: FieldTypes.EntityHeaderPicker,
+            ResourceType: typeof(MediaServicesResources), IsUserEditable: true)]
+        public EntityHeader MediaLibrary { get; set; }
+
         [FormField(LabelResource: MediaServicesResources.Names.ImageGenerationRequest_MediaResource,
             HelpResource: MediaServicesResources.Names.ImageGenerationRequest_MediaResource_Help,
             FieldType: FieldTypes.EntityHeaderPicker, ResourceType: typeof(MediaServicesResources), IsUserEditable: true)]
@@ -150,6 +156,7 @@ namespace LagoVista.MediaServices.Models
             {
                 nameof(Intent),
                 nameof(ImageFamily),
+                nameof(MediaLibrary),
                 nameof(MediaResource),
                 nameof(ReferenceMediaResources),
                 nameof(ImageStyle),

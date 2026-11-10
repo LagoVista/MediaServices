@@ -187,6 +187,10 @@ namespace LagoVista.MediaServices.Models.Resources
         public static string ImageGenerationRequest_ReferenceMediaResources { get { return GetResourceString("ImageGenerationRequest_ReferenceMediaResources"); } }
 //Resources:MediaServicesResources:ImageGenerationRequest_ReferenceMediaResources_Help
         public static string ImageGenerationRequest_ReferenceMediaResources_Help { get { return GetResourceString("ImageGenerationRequest_ReferenceMediaResources_Help"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_MediaLibrary
+        public static string ImageGenerationRequest_MediaLibrary { get { return GetResourceString("ImageGenerationRequest_MediaLibrary"); } }
+//Resources:MediaServicesResources:ImageGenerationRequest_MediaLibrary_Help
+        public static string ImageGenerationRequest_MediaLibrary_Help { get { return GetResourceString("ImageGenerationRequest_MediaLibrary_Help"); } }
 //Resources:MediaServicesResources:ImageGenerationRequest_Title
         public static string ImageGenerationRequest_Title { get { return GetResourceString("ImageGenerationRequest_Title"); } }
 //Resources:MediaServicesResources:ImageGenerationRequest_UserPrompt
@@ -729,6 +733,8 @@ namespace LagoVista.MediaServices.Models.Resources
             public const string ImageGenerationRequest_MediaResource_Help = "ImageGenerationRequest_MediaResource_Help";
             public const string ImageGenerationRequest_ReferenceMediaResources = "ImageGenerationRequest_ReferenceMediaResources";
             public const string ImageGenerationRequest_ReferenceMediaResources_Help = "ImageGenerationRequest_ReferenceMediaResources_Help";
+            public const string ImageGenerationRequest_MediaLibrary = "ImageGenerationRequest_MediaLibrary";
+            public const string ImageGenerationRequest_MediaLibrary_Help = "ImageGenerationRequest_MediaLibrary_Help";
             public const string ImageGenerationRequest_Title = "ImageGenerationRequest_Title";
             public const string ImageGenerationRequest_UserPrompt = "ImageGenerationRequest_UserPrompt";
             public const string ImageGenerationRequest_UserPrompt_Help = "ImageGenerationRequest_UserPrompt_Help";

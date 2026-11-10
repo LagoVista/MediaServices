@@ -65,6 +65,7 @@ namespace LagoVista.MediaServices.MediaTests
             var fields = request.GetFormFields();
             Assert.IsTrue(fields.Contains(nameof(ImageGenerationRequest.Intent)));
             Assert.IsTrue(fields.Contains(nameof(ImageGenerationRequest.ImageFamily)));
+            Assert.IsTrue(fields.Contains(nameof(ImageGenerationRequest.MediaLibrary)));
             Assert.IsTrue(fields.Contains(nameof(ImageGenerationRequest.MediaResource)));
             Assert.IsTrue(fields.Contains(nameof(ImageGenerationRequest.ReferenceMediaResources)));
             var snapshot = request.CreateSnapshot();
