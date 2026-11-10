@@ -412,7 +412,9 @@ namespace LagoVista.MediaServices.Rest.Controllers
                 request?.LifetimeMinutes);
         }
 
-        [McpEndpoint("media-resource-image-download", Description = "Download an authorized media resource revision as image content.", FamilyId = "media")]
+        [McpEndpoint("media-resource-image-download",
+            Description = "FALLBACK ONLY: Download image bytes as an MCP tool result for explicit server-side analysis or export. Do NOT use for normal ChatGPT conversational image editing: model-side downloads are not the verified image-editor source attachment path. For a known Media Resource ID and exact revision ID, use media-gallery-preview and have the user click 'Work with this exact image' to attach the original via window.openai.uploadFile and setWidgetState(imageIds). For general library browsing use media-gallery-open. Never silently replace a requested historical revision with the current revision.",
+            FamilyId = "media")]
         [Authorize]
         [HttpGet("/api/media/resource/{id}/download/{revisionid}")]
         public async Task<IActionResult> DownloadMediaRevision(string id, string revisionid)
@@ -443,7 +445,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// are returned to the model; the app requests fifteen signed previews per page.
         /// </summary>
         [McpEndpoint("media-gallery-open",
-            Description = "Open an interactive APTIX Media Library browser. Lists accessible libraries and shows mixed media in a paged three-column gallery, fifteen resources at a time. Optional libraryid starts with that library.",
+            Description = "PREFERRED FOR BROWSING + IMAGE EDITING: Open the interactive APTIX Media Library browser with fifteen media tiles per page. User selects an image and clicks 'Work with this image'; the widget fetches the original revision directly in the browser, uploads it with window.openai.uploadFile, and sends native setWidgetState(imageIds) plus a follow-up to ChatGPT. This is the verified path to put actual pixels in model vision context; do NOT call media-resource-image-download as a substitute. When the user names an exact historical revision ID, use media-gallery-preview(id,revisionid) instead: the gallery tiles represent CURRENT revisions only. Editing tool source-image input must still be verified; never pretend a text-only regeneration is a true edit.",
             FamilyId = "media", WidgetResourceUri = MediaGalleryBrowserWidgetResource.ResourceUri)]
         [Authorize]
         [HttpGet("/api/media/gallery/open")]
@@ -477,7 +479,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// Never returns raw media contents or signed video/audio URLs.
         /// </summary>
         [McpEndpoint("media-gallery-page",
-            Description = "Fetch exactly one fifteen-item page of a Media Library for the MCP Gallery. Returns image/video thumbnail read URLs when available, and media-type tiles for non-images. Page starts at 1.",
+            Description = "WIDGET INTERNAL: Fetch one fifteen-item page for the APTIX Media Gallery browser (page starts at 1). Supplies media metadata/current revision and signed preview URLs, not original image bytes for ChatGPT editing. Invoke media-gallery-open to render the gallery. For exact historical revision handoff use media-gallery-preview(id,revisionid).",
             FamilyId = "media")]
         [Authorize]
         [HttpGet("/api/media/gallery/library/{libraryid}/page/{page}")]
@@ -498,7 +500,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// Server authorization and exact immutable revision checks are unchanged.
         /// </summary>
         [McpEndpoint("media-gallery-image-lease",
-            Description = "Get a short-lived signed original-image URL for an explicitly selected Media Gallery image revision. Data-only, no widget; requires resource ID and exact revision ID.",
+            Description = "WIDGET INTERNAL: Authorize a specific immutable Media Resource revision and return a short-lived signed original-image URL to the MCP Gallery widget. This is NOT a model-side image download or native imageIds attachment; the widget uses it in the browser before window.openai.uploadFile. For a model-requested known revision use media-gallery-preview(id,revisionid), then have the user click 'Work with this exact image'.",
             FamilyId = "media")]
         [Authorize]
         [HttpGet("/api/media/gallery/image-lease/{id}/{revisionid}")]
@@ -509,7 +511,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         }
 
         [McpEndpoint("media-gallery-preview",
-            Description = "Open an APTIX Media Gallery preview for an existing Media Resource revision. Shows the image in an interactive MCP widget; requires resource id and exact revision id.",
+            Description = "PREFERRED FOR EXACT-REVISION IMAGE EDITING/HANDOFF: Provide existing Media Resource id and the EXACT desired revisionid (including historical revisions). Opens an MCP App preview of that immutable revision with a 'Work with this exact image' button. The USER clicks that button: widget fetches original pixels from signed storage in the browser, uses window.openai.uploadFile(File), sets setWidgetState({imageIds:[fileId],modelContent:{mediaResourceId,revisionId,...}}), and sends a follow-up. DO NOT call media-resource-image-download instead or use the current revision when another revision was specified. After imageIds handoff, image editing MUST use the actual uploaded image as source, never a text-only lookalike; if the image editor cannot accept the native image attachment as source, say so rather than generating. Do not save until user explicitly approves. For browsing rather than known IDs use media-gallery-open.",
             FamilyId = "media", WidgetResourceUri = MediaGalleryWidgetResource.ResourceUri)]
         [Authorize]
         [HttpGet("/api/media/gallery/preview/{id}/{revisionid}")]
