@@ -291,7 +291,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                       '- Use default EditorialPhotography style and Standard quality unless the conversation specifies otherwise.',
                       'The backend saves a private draft MediaResource. Report its ID and revision, and open media-gallery-preview for review.',
                       'Allow follow-up discussions and manual image editing via copying the preview image into ChatGPT. Publish only after explicit approval; do not import duplicate media.'
-                    ].join('\\n');
+                    ].join('\n');
                   };
 
                   form.addEventListener('submit', async event => {

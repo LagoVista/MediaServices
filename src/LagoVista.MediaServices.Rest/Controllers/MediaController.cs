@@ -85,8 +85,10 @@ namespace LagoVista.MediaServices.Rest.Controllers
         }
 
 
+        [McpEndpoint("media-image-generation-request-factory", Description = "Create default EntityHeader-based ImageGenerationRequest values for media-image-generate; returns an unsaved request, never renders.", FamilyId = "media")]
+        [Authorize]
         [HttpGet("/api/media/imagegeneration/factory")]
-        public DetailResponse<ImageGenerationRequest> CreateImageGenerationRequest(string entityTypeName, string entityFieldName, string entityId)
+        public DetailResponse<ImageGenerationRequest> CreateImageGenerationRequest(string entityTypeName = null, string entityFieldName = null, string entityId = null)
         {
             var request = new ImageGenerationRequest()
             {
@@ -463,7 +465,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// defaults, but never creates a Media Resource until separately approved.
         /// </summary>
         [McpEndpoint("media-image-create-open",
-            Description = "OPEN THE APTIX CREATE NEW IMAGE WIDGET BEFORE GENERATION when the user wants a new website/marketing image saved to MediaServices. The user may start with no parameters, or the model should prepopulate name, description (what the image should depict), mediaLibraryId, width/height (target dimensions in pixels), and isPublic, plus optional imageFamilyId or imageFamilyKey. The widget offers editable description, name, Media Library, Image Family, target size presets or custom pixels, and Public checked by default. When a family is selected, retrieve its current visual guidance through media-image-families-get and apply it during generation; anchor images are not used. On user click 'Start creating image' it sends a ChatGPT follow-up containing all the chosen fields. Generate the image using the ChatGPT image tool, show the draft and iterate; DO NOT SAVE at this stage. Only after the user approves and explicitly asks to save, use media-import-chatgpt-image(file=<approved generated image>,name=<chosen name>,mediaLibraryId=<selected library>,isPublic=<selected public flag>) to CREATE a new Media Resource. Verify stored metadata, and if public return the working public image URL. For editing EXISTING images, use media-gallery-open or media-gallery-preview instead. Requested width/height indicate target composition, not guaranteed generated pixel dimensions.",
+            Description = "OPEN THE APTIX CREATE NEW IMAGE WIDGET to collect a new image brief, name, Media Library, optional Image Family, desired dimensions and target public status. After the user submits the brief, use media-image-generate MCP to call the existing APTIX image generator with EntityHeader ImageFamily and MediaLibrary, Intent CreateNew, empty ReferenceMediaResources to use the family reference images, and IsPublic=false for an initial private draft. APTIX builds the family-guided prompt and sends actual reference-image bytes; ChatGPT does not generate the image itself. Show the resulting MediaResource using media-gallery-preview and ask for approval before making it public. For edits, use media-gallery-open and copy/paste source image into the ChatGPT composer.",
             FamilyId = "media", WidgetResourceUri = MediaImageCreationWidgetResource.ResourceUri)]
         [Authorize]
         [HttpGet("/api/media/image/create/open")]
