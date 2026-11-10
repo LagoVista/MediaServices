@@ -11,7 +11,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
     [McpServerResourceType]
     public static class MediaGalleryBrowserWidgetResource
     {
-        public const string ResourceUri = "ui://media/gallery/v6.html";
+        public const string ResourceUri = "ui://media/gallery/v7.html";
         public const string AppMimeType = "text/html;profile=mcp-app";
 
         [McpServerResource(UriTemplate = ResourceUri, Name = "APTIX Media Library Browser", MimeType = AppMimeType)]
@@ -94,7 +94,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
             <body>
               <main class="shell">
                 <div class="heading">
-                  <div><div class="eyebrow">APTIX · MediaServices · v6</div><h2>Media Library Browser</h2></div>
+                  <div><div class="eyebrow">APTIX · MediaServices · v7</div><h2>Media Library Browser</h2></div>
                   <div class="quiet">15 items / page</div>
                 </div>
                 <div class="controls">
@@ -307,13 +307,15 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
 
                       // imageIds is an OpenAI widget extension. It makes only this
                       // uploaded file visible to the model in subsequent turns.
-                      openai.setWidgetState({
+                      await Promise.resolve(openai.setWidgetState({
                         modelContent:{
-                          action:'review_selected_media_image',
-                          instruction:'Describe the selected APTIX MediaServices image before editing it.',
+                          action:'aptix_source_image_handoff',
                           mediaResourceId:item.id,
                           revisionId:item.revisionId,
-                          imageName:item.name
+                          imageName:item.name,
+                          sourceImageFileId:uploaded.fileId,
+                          sourceTransport:'openai.uploadFile + setWidgetState.imageIds',
+                          instruction:'This attached image is the selected original source. When the user requests an edit, pass the ACTUAL attached image file to the image editing tool; never regenerate from a description alone. Do not substitute another revision or use media-resource-image-download for this native handoff. If the editor cannot use the attached file as a source, report the limitation rather than fabricate an edit. Do not save without explicit user approval.'
                         },
                         privateContent:{
                           libraryId,
@@ -321,7 +323,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                           selectedRevisionId:item.revisionId
                         },
                         imageIds:[uploaded.fileId]
-                      });
+                      }));
 
                       handoffStatus.textContent = 'Image uploaded and attached to model context.';
                       if (typeof openai.sendFollowUpMessage === 'function') {
@@ -329,7 +331,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                           prompt:'I selected the APTIX MediaServices image "' +
                             (item.name || 'Untitled') + '" (resource ' + item.id +
                             ', revision ' + item.revisionId +
-                            '). Please describe what you actually see in the image so we can verify the handoff. Do not edit or save it yet.'
+                            '). Its original pixels have been attached to ChatGPT via native imageIds. Please describe what you actually see, then wait for my edit instruction. When editing, supply the ATTACHED SOURCE IMAGE as the actual image editor input; never recreate from description. If source-image editing is unavailable, report this rather than generating a lookalike. Do not download via media-resource-image-download or save without approval.'
                         });
                         handoffStatus.textContent = 'Image attached to ChatGPT. Requested visual verification.';
                       } else {
@@ -441,7 +443,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                     jsonrpc:'2.0',id:1,method:'ui/initialize',
                     params:{
                       protocolVersion:'2026-01-26',
-                      appInfo:{name:'aptix-media-library',version:'6.0.0'},
+                      appInfo:{name:'aptix-media-library',version:'7.0.0'},
                       appCapabilities:{}
                     }
                   },'*');
