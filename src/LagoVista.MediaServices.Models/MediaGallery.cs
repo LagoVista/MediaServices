@@ -12,6 +12,22 @@ namespace LagoVista.MediaServices.Models
         public List<MediaGalleryLibrary> Libraries { get; set; } = new List<MediaGalleryLibrary>();
     }
 
+    /// <summary>
+    /// A non-persisted image creation brief for the ChatGPT MCP App.
+    /// The model can prefill it, or a user can start with an empty prompt.
+    /// Target dimensions guide generation; actual output size is checked later.
+    /// </summary>
+    public class MediaImageCreationOpen
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public string InitialLibraryId { get; set; }
+        public List<MediaGalleryLibrary> Libraries { get; set; } = new List<MediaGalleryLibrary>();
+        public int Width { get; set; } = 1536;
+        public int Height { get; set; } = 1024;
+        public bool IsPublic { get; set; } = true;
+    }
+
     public class MediaGalleryLibrary
     {
         public string Id { get; set; }
