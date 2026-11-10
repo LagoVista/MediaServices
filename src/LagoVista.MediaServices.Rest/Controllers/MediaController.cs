@@ -441,6 +441,64 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// not travel through the tool result.
         /// </summary>
         /// <summary>
+        /// Open a user-editable starting brief for a NEW ChatGPT image.
+        /// This is read-only: it loads available libraries and optional model
+        /// defaults, but never creates a Media Resource until separately approved.
+        /// </summary>
+        [McpEndpoint("media-image-create-open",
+            Description = "OPEN THE APTIX CREATE NEW IMAGE WIDGET BEFORE GENERATION when the user wants a new website/marketing image saved to MediaServices. The user may start with no parameters, or the model should prepopulate name, description (what the image should depict), mediaLibraryId, width/height (target dimensions in pixels), and isPublic. The widget offers editable description, name, Media Library, target size presets or custom pixels, and Public checked by default. On user click 'Start creating image' it sends a ChatGPT follow-up containing all the chosen fields. Generate the image using the ChatGPT image tool, show the draft and iterate; DO NOT SAVE at this stage. Only after the user approves and explicitly asks to save, use media-import-chatgpt-image(file=<approved generated image>,name=<chosen name>,mediaLibraryId=<selected library>,isPublic=<selected public flag>) to CREATE a new Media Resource. Verify stored metadata, and if public return the working public image URL. For editing EXISTING images, use media-gallery-open or media-gallery-preview instead. Requested width/height indicate target composition, not guaranteed generated pixel dimensions.",
+            FamilyId = "media", WidgetResourceUri = MediaImageCreationWidgetResource.ResourceUri)]
+        [Authorize]
+        [HttpGet("/api/media/image/create/open")]
+        public async Task<InvokeResult<MediaImageCreationOpen>> OpenImageCreation(
+            string name = null, string description = null, string mediaLibraryId = null,
+            int? width = null, int? height = null, bool? isPublic = null)
+        {
+            // Validate supplied model defaults; no file or media record is created.
+            if (width.HasValue && (width.Value < 256 || width.Value > 4096) ||
+                height.HasValue && (height.Value < 256 || height.Value > 4096))
+                return InvokeResult<MediaImageCreationOpen>.FromError(
+                    "Target width and height must be from 256 to 4096 pixels.");
+            if (name?.Length > 160 || description?.Length > 4000)
+                return InvokeResult<MediaImageCreationOpen>.FromError(
+                    "Image name must be at most 160 characters and description at most 4000.");
+
+            var list = await _libraryManager.GetMediaLibrariesForOrgsAsync(
+                OrgEntityHeader.Id, ListRequest.Create(1, 100), UserEntityHeader);
+            if (!list.Successful)
+                return InvokeResult<MediaImageCreationOpen>.FromInvokeResult(list.ToInvokeResult());
+
+            var libraries = (list.Model ?? Enumerable.Empty<MediaLibrarySummary>())
+                .Select(item => new MediaGalleryLibrary
+                {
+                    Id = item.Id,
+                    Name = item.Name
+                }).ToList();
+
+            if (!String.IsNullOrWhiteSpace(mediaLibraryId) &&
+                !libraries.Any(item => String.Equals(item.Id, mediaLibraryId, StringComparison.OrdinalIgnoreCase)))
+                return InvokeResult<MediaImageCreationOpen>.FromError(
+                    "The requested Media Library was not found in the current organization's accessible libraries.");
+
+            var initial = libraries.FirstOrDefault(item =>
+                String.Equals(item.Id, mediaLibraryId, StringComparison.OrdinalIgnoreCase))
+                ?? libraries.FirstOrDefault(item =>
+                    item.Name?.IndexOf("marketing", StringComparison.OrdinalIgnoreCase) >= 0)
+                ?? libraries.FirstOrDefault();
+
+            return InvokeResult<MediaImageCreationOpen>.Create(new MediaImageCreationOpen
+            {
+                Name = name?.Trim(),
+                Description = description?.Trim(),
+                InitialLibraryId = initial?.Id,
+                Libraries = libraries,
+                Width = width ?? 1536,
+                Height = height ?? 1024,
+                IsPublic = isPublic ?? true
+            });
+        }
+
+        /// <summary>
         /// Open a MediaServices-owned MCP Apps library browser. Only library names
         /// are returned to the model; the app requests fifteen signed previews per page.
         /// </summary>
