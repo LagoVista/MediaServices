@@ -15,6 +15,18 @@ namespace LagoVista.MediaServices.MediaTests
         }
 
         [TestMethod]
+        public void GeneratedVideoWithExternalUrlIsStillVideo()
+        {
+            Assert.AreEqual("video", MediaGalleryItem.DetectKind(
+                "video/mp4", "Video", false,
+                "https://nuviotdev.blob.core.windows.net/production/video.mp4"));
+            Assert.AreEqual("audio", MediaGalleryItem.DetectKind(
+                "audio/mpeg", "Audio", false, "https://example.com/audio.mp3"));
+            Assert.AreEqual("document", MediaGalleryItem.DetectKind(
+                "application/pdf", "Other", false, "https://example.com/report.pdf"));
+        }
+
+        [TestMethod]
         public void ClassifiesDocumentsArchivesAndLinks()
         {
             Assert.AreEqual("document", MediaGalleryItem.DetectKind("application/pdf", "Manual", true, null));
