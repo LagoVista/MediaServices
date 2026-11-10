@@ -48,6 +48,42 @@ namespace LagoVista.MediaServices.MediaTests
         }
 
         [TestMethod]
+        public void NewImageBriefDefaultsToPublicAndLandscapeWithoutSaving()
+        {
+            var brief = new MediaImageCreationOpen();
+
+            Assert.IsTrue(brief.IsPublic);
+            Assert.AreEqual(1536, brief.Width);
+            Assert.AreEqual(1024, brief.Height);
+            Assert.IsNotNull(brief.Libraries);
+            Assert.AreEqual(0, brief.Libraries.Count);
+            Assert.IsNull(brief.Name);
+            Assert.IsNull(brief.Description);
+        }
+
+        [TestMethod]
+        public void ImageBriefSupportsModelPrefillAndPrivateSelection()
+        {
+            var brief = new MediaImageCreationOpen
+            {
+                Name = "Insiders hero",
+                Description = "An AI-powered virtual team meeting",
+                Width = 1920,
+                Height = 1080,
+                IsPublic = false,
+                InitialLibraryId = "marketing",
+            };
+            brief.Libraries.Add(new MediaGalleryLibrary { Id = "marketing", Name = "Marketing" });
+
+            Assert.IsFalse(brief.IsPublic);
+            Assert.AreEqual("An AI-powered virtual team meeting", brief.Description);
+            Assert.AreEqual(1920, brief.Width);
+            Assert.AreEqual(1080, brief.Height);
+            Assert.AreEqual("marketing", brief.InitialLibraryId);
+            Assert.AreEqual(1, brief.Libraries.Count);
+        }
+
+        [TestMethod]
         public void PageSizeDefaultsToFifteenAndContainsNoMediaBytes()
         {
             var page = new MediaGalleryPage();
