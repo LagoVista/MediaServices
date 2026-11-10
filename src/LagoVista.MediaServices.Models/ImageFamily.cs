@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace LagoVista.MediaServices.Models
 {
-    [CollectionName("ImageFamilies")]
+    [CollectionName("MediaResources")]
     [EntityDescription(MediaServicesDomain.MediaServices, MediaServicesResources.Names.ImageFamily_Title,
         MediaServicesResources.Names.ImageFamily_Help, MediaServicesResources.Names.ImageFamily_Description,
         EntityDescriptionAttribute.EntityTypes.SimpleModel, ResourceType: typeof(MediaServicesResources),
