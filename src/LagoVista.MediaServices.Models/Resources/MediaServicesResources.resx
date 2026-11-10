@@ -225,6 +225,61 @@
   <data name="MediaResource_Link_Help" xml:space="preserve">
     <value>A link lets you add a link to an existing, external online resource.</value>
   </data>
+  <data name="ImageFamilies_Title" xml:space="preserve">
+    <value>Image Families</value>
+  </data>
+  <data name="ImageFamily_Description" xml:space="preserve">
+    <value>Define consistent visual guidance for images associated with a brand, product, or use case.</value>
+  </data>
+  <data name="ImageFamily_Help" xml:space="preserve">
+    <value>Image families provide reusable image generation guidance for a team or organization.</value>
+  </data>
+  <data name="ImageFamily_Title" xml:space="preserve">
+    <value>Image Family</value>
+  </data>
+  <data name="ImageFamily_StyleGuidance" xml:space="preserve">
+    <value>Base Style Guidance</value>
+  </data>
+  <data name="ImageFamily_StyleGuidance_Help" xml:space="preserve">
+    <value>The primary visual direction used when generating an image in this family.</value>
+  </data>
+  <data name="ImageFamily_PaletteGuidance" xml:space="preserve">
+    <value>Color Palette Guidance</value>
+  </data>
+  <data name="ImageFamily_PaletteGuidance_Help" xml:space="preserve">
+    <value>Preferred colors, accents, contrasts, and colors to avoid.</value>
+  </data>
+  <data name="ImageFamily_RenderingGuidance" xml:space="preserve">
+    <value>Rendering Style Guidance</value>
+  </data>
+  <data name="ImageFamily_RenderingGuidance_Help" xml:space="preserve">
+    <value>Preferred photography, illustration, 3D, or hybrid rendering treatment.</value>
+  </data>
+  <data name="ImageFamily_MoodGuidance" xml:space="preserve">
+    <value>Mood and Lighting Guidance</value>
+  </data>
+  <data name="ImageFamily_MoodGuidance_Help" xml:space="preserve">
+    <value>Describe the intended atmosphere, emotional tone, and lighting.</value>
+  </data>
+  <data name="ImageFamily_CompositionGuidance" xml:space="preserve">
+    <value>Composition Guidance</value>
+  </data>
+  <data name="ImageFamily_CompositionGuidance_Help" xml:space="preserve">
+    <value>Recommended framing, subject placement, whitespace, and backgrounds.</value>
+  </data>
+  <data name="ImageFamily_UsageGuidance" xml:space="preserve">
+    <value>Use Case Guidance</value>
+  </data>
+  <data name="ImageFamily_UsageGuidance_Help" xml:space="preserve">
+    <value>Typical audiences, subjects, and contexts where this image family should be used.</value>
+  </data>
+  <data name="ImageFamily_AvoidGuidance" xml:space="preserve">
+    <value>Avoid Guidance</value>
+  </data>
+  <data name="ImageFamily_AvoidGuidance_Help" xml:space="preserve">
+    <value>Visual treatments, subjects, or brand expressions that should not appear.</value>
+  </data>
+
   <data name="MediaLibrary_Description" xml:space="preserve">
     <value>Collect, organize, and manage your online media resources in the Media Library for easy access and reuse.</value>
   </data>

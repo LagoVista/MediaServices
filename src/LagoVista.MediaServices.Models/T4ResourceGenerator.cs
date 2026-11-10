@@ -95,6 +95,42 @@ namespace LagoVista.MediaServices.Models.Resources
         public static string GeneratedImageStyles_StudioPortrait { get { return GetResourceString("GeneratedImageStyles_StudioPortrait"); } }
 //Resources:MediaServicesResources:GeneratedImageStyles_ThreeDimensionalIllustration
         public static string GeneratedImageStyles_ThreeDimensionalIllustration { get { return GetResourceString("GeneratedImageStyles_ThreeDimensionalIllustration"); } }
+//Resources:MediaServicesResources:ImageFamilies_Title
+        public static string ImageFamilies_Title { get { return GetResourceString("ImageFamilies_Title"); } }
+//Resources:MediaServicesResources:ImageFamily_AvoidGuidance
+        public static string ImageFamily_AvoidGuidance { get { return GetResourceString("ImageFamily_AvoidGuidance"); } }
+//Resources:MediaServicesResources:ImageFamily_AvoidGuidance_Help
+        public static string ImageFamily_AvoidGuidance_Help { get { return GetResourceString("ImageFamily_AvoidGuidance_Help"); } }
+//Resources:MediaServicesResources:ImageFamily_CompositionGuidance
+        public static string ImageFamily_CompositionGuidance { get { return GetResourceString("ImageFamily_CompositionGuidance"); } }
+//Resources:MediaServicesResources:ImageFamily_CompositionGuidance_Help
+        public static string ImageFamily_CompositionGuidance_Help { get { return GetResourceString("ImageFamily_CompositionGuidance_Help"); } }
+//Resources:MediaServicesResources:ImageFamily_Description
+        public static string ImageFamily_Description { get { return GetResourceString("ImageFamily_Description"); } }
+//Resources:MediaServicesResources:ImageFamily_Help
+        public static string ImageFamily_Help { get { return GetResourceString("ImageFamily_Help"); } }
+//Resources:MediaServicesResources:ImageFamily_MoodGuidance
+        public static string ImageFamily_MoodGuidance { get { return GetResourceString("ImageFamily_MoodGuidance"); } }
+//Resources:MediaServicesResources:ImageFamily_MoodGuidance_Help
+        public static string ImageFamily_MoodGuidance_Help { get { return GetResourceString("ImageFamily_MoodGuidance_Help"); } }
+//Resources:MediaServicesResources:ImageFamily_PaletteGuidance
+        public static string ImageFamily_PaletteGuidance { get { return GetResourceString("ImageFamily_PaletteGuidance"); } }
+//Resources:MediaServicesResources:ImageFamily_PaletteGuidance_Help
+        public static string ImageFamily_PaletteGuidance_Help { get { return GetResourceString("ImageFamily_PaletteGuidance_Help"); } }
+//Resources:MediaServicesResources:ImageFamily_RenderingGuidance
+        public static string ImageFamily_RenderingGuidance { get { return GetResourceString("ImageFamily_RenderingGuidance"); } }
+//Resources:MediaServicesResources:ImageFamily_RenderingGuidance_Help
+        public static string ImageFamily_RenderingGuidance_Help { get { return GetResourceString("ImageFamily_RenderingGuidance_Help"); } }
+//Resources:MediaServicesResources:ImageFamily_StyleGuidance
+        public static string ImageFamily_StyleGuidance { get { return GetResourceString("ImageFamily_StyleGuidance"); } }
+//Resources:MediaServicesResources:ImageFamily_StyleGuidance_Help
+        public static string ImageFamily_StyleGuidance_Help { get { return GetResourceString("ImageFamily_StyleGuidance_Help"); } }
+//Resources:MediaServicesResources:ImageFamily_Title
+        public static string ImageFamily_Title { get { return GetResourceString("ImageFamily_Title"); } }
+//Resources:MediaServicesResources:ImageFamily_UsageGuidance
+        public static string ImageFamily_UsageGuidance { get { return GetResourceString("ImageFamily_UsageGuidance"); } }
+//Resources:MediaServicesResources:ImageFamily_UsageGuidance_Help
+        public static string ImageFamily_UsageGuidance_Help { get { return GetResourceString("ImageFamily_UsageGuidance_Help"); } }
 //Resources:MediaServicesResources:ImageGenerationRequest_Description
         public static string ImageGenerationRequest_Description { get { return GetResourceString("ImageGenerationRequest_Description"); } }
 //Resources:MediaServicesResources:ImageGenerationRequest_Help
@@ -623,6 +659,24 @@ namespace LagoVista.MediaServices.Models.Resources
             public const string GeneratedImageStyles_FlatIllustration = "GeneratedImageStyles_FlatIllustration";
             public const string GeneratedImageStyles_StudioPortrait = "GeneratedImageStyles_StudioPortrait";
             public const string GeneratedImageStyles_ThreeDimensionalIllustration = "GeneratedImageStyles_ThreeDimensionalIllustration";
+            public const string ImageFamilies_Title = "ImageFamilies_Title";
+            public const string ImageFamily_AvoidGuidance = "ImageFamily_AvoidGuidance";
+            public const string ImageFamily_AvoidGuidance_Help = "ImageFamily_AvoidGuidance_Help";
+            public const string ImageFamily_CompositionGuidance = "ImageFamily_CompositionGuidance";
+            public const string ImageFamily_CompositionGuidance_Help = "ImageFamily_CompositionGuidance_Help";
+            public const string ImageFamily_Description = "ImageFamily_Description";
+            public const string ImageFamily_Help = "ImageFamily_Help";
+            public const string ImageFamily_MoodGuidance = "ImageFamily_MoodGuidance";
+            public const string ImageFamily_MoodGuidance_Help = "ImageFamily_MoodGuidance_Help";
+            public const string ImageFamily_PaletteGuidance = "ImageFamily_PaletteGuidance";
+            public const string ImageFamily_PaletteGuidance_Help = "ImageFamily_PaletteGuidance_Help";
+            public const string ImageFamily_RenderingGuidance = "ImageFamily_RenderingGuidance";
+            public const string ImageFamily_RenderingGuidance_Help = "ImageFamily_RenderingGuidance_Help";
+            public const string ImageFamily_StyleGuidance = "ImageFamily_StyleGuidance";
+            public const string ImageFamily_StyleGuidance_Help = "ImageFamily_StyleGuidance_Help";
+            public const string ImageFamily_Title = "ImageFamily_Title";
+            public const string ImageFamily_UsageGuidance = "ImageFamily_UsageGuidance";
+            public const string ImageFamily_UsageGuidance_Help = "ImageFamily_UsageGuidance_Help";
             public const string ImageGenerationRequest_Description = "ImageGenerationRequest_Description";
             public const string ImageGenerationRequest_Help = "ImageGenerationRequest_Help";
             public const string ImageGenerationRequest_ImageGenerationStyleGuidance = "ImageGenerationRequest_ImageGenerationStyleGuidance";

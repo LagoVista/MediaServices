@@ -37,6 +37,7 @@ namespace LagoVista.MediaServices.CloudRepos
             services.AddTransient<IVideoCompositionBlockTemplateRepo, VideoCompositionBlockTemplateRepo>();
 
             services.AddTransient<IMediaLibraryRepo, MediaLibraryRepo>();
+            services.AddTransient<IImageFamilyRepo, ImageFamilyRepo>();
             services.AddTransient<IHeyGenVideoService, HeyGenVideoService>();
             services.AddTransient<ILagoVistaIconAssetPublisher, LagoVistaIconAssetPublisher>();
             services.AddTransient<ILagoVistaIconCatalogManager, LagoVistaIconCatalogManager>();
@@ -58,6 +59,7 @@ namespace LagoVista.DependencyInjection
             LagoVista.MediaServices.CloudRepos.Startup.ConfigureServices(services);
             LagoVista.MediaServices.Startup.ConfigureServices(services);
             services.AddMetaDataHelper<MediaLibrary>();
+            services.AddMetaDataHelper<ImageFamily>();
         }
     }
 }
