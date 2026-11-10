@@ -596,7 +596,7 @@ namespace LagoVista.MediaServices.Managers
 
         /// <summary>
         /// MCP gallery browsing uses a database-paged six-item summary query, then
-        /// issues at most six short-lived read-only URLs. The API never fetches image bytes.
+        /// issues at most fifteen short-lived read-only URLs. The API never fetches image bytes.
         /// Audio, documents and videos without poster thumbnails produce type tiles.
         /// </summary>
         public async Task<InvokeResult<MediaGalleryPage>> GetMediaGalleryPageAsync(
@@ -609,7 +609,7 @@ namespace LagoVista.MediaServices.Managers
             if (org == null || String.IsNullOrWhiteSpace(org.Id))
                 return InvokeResult<MediaGalleryPage>.FromError("Active organization is required.");
 
-            const int pageSize = 6;
+            const int pageSize = 15;
             var list = await GetMediaResourceSummariesAsync(
                 libraryId, org.Id, ListRequest.Create(pageIndex, pageSize), user);
             if (!list.Successful)
@@ -643,7 +643,7 @@ namespace LagoVista.MediaServices.Managers
                     continue;
 
                 // A summary deliberately excludes revision storage references. Do
-                // bounded metadata reads (at most 6), never media byte reads.
+                // bounded metadata reads (at most 15), never media byte reads.
                 var resource = await _mediaRepo.TryGetMediaResourceRecordAsync(summary.Id);
                 if (resource?.OwnerOrganization == null ||
                     !String.Equals(resource.OwnerOrganization.Id, org.Id, StringComparison.OrdinalIgnoreCase))
