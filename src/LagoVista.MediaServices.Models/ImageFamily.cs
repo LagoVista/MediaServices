@@ -29,6 +29,12 @@ namespace LagoVista.MediaServices.Models
             ResourceType: typeof(MediaServicesResources), IsUserEditable: true)]
         public bool IsActive { get; set; }
 
+        [FormField(LabelResource: MediaServicesResources.Names.ImageFamily_ReferenceImages,
+            HelpResource: MediaServicesResources.Names.ImageFamily_ReferenceImages_Help,
+            FieldType: FieldTypes.MediaResources, IsUserEditable: true,
+            ResourceType: typeof(MediaServicesResources))]
+        public List<EntityHeader> ReferenceImages { get; set; } = new List<EntityHeader>();
+
         [FormField(LabelResource: MediaServicesResources.Names.ImageFamily_StyleGuidance,
             HelpResource: MediaServicesResources.Names.ImageFamily_StyleGuidance_Help,
             FieldType: FieldTypes.MultiLineText, IsRequired: true, IsUserEditable: true,
@@ -74,6 +80,7 @@ namespace LagoVista.MediaServices.Models
                 nameof(Icon),
                 nameof(Description),
                 nameof(IsActive),
+                nameof(ReferenceImages),
                 nameof(StyleGuidance),
                 nameof(PaletteGuidance),
                 nameof(RenderingGuidance),

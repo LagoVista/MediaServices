@@ -121,6 +121,10 @@ namespace LagoVista.MediaServices.Models.Resources
         public static string ImageFamily_RenderingGuidance { get { return GetResourceString("ImageFamily_RenderingGuidance"); } }
 //Resources:MediaServicesResources:ImageFamily_RenderingGuidance_Help
         public static string ImageFamily_RenderingGuidance_Help { get { return GetResourceString("ImageFamily_RenderingGuidance_Help"); } }
+//Resources:MediaServicesResources:ImageFamily_ReferenceImages
+        public static string ImageFamily_ReferenceImages { get { return GetResourceString("ImageFamily_ReferenceImages"); } }
+//Resources:MediaServicesResources:ImageFamily_ReferenceImages_Help
+        public static string ImageFamily_ReferenceImages_Help { get { return GetResourceString("ImageFamily_ReferenceImages_Help"); } }
 //Resources:MediaServicesResources:ImageFamily_StyleGuidance
         public static string ImageFamily_StyleGuidance { get { return GetResourceString("ImageFamily_StyleGuidance"); } }
 //Resources:MediaServicesResources:ImageFamily_StyleGuidance_Help
@@ -672,6 +676,8 @@ namespace LagoVista.MediaServices.Models.Resources
             public const string ImageFamily_PaletteGuidance_Help = "ImageFamily_PaletteGuidance_Help";
             public const string ImageFamily_RenderingGuidance = "ImageFamily_RenderingGuidance";
             public const string ImageFamily_RenderingGuidance_Help = "ImageFamily_RenderingGuidance_Help";
+            public const string ImageFamily_ReferenceImages = "ImageFamily_ReferenceImages";
+            public const string ImageFamily_ReferenceImages_Help = "ImageFamily_ReferenceImages_Help";
             public const string ImageFamily_StyleGuidance = "ImageFamily_StyleGuidance";
             public const string ImageFamily_StyleGuidance_Help = "ImageFamily_StyleGuidance_Help";
             public const string ImageFamily_Title = "ImageFamily_Title";

@@ -38,6 +38,8 @@ namespace LagoVista.MediaServices.MediaTests
             Assert.IsTrue(fields.Contains(nameof(ImageFamily.PaletteGuidance)));
             Assert.IsTrue(fields.Contains(nameof(ImageFamily.AvoidGuidance)));
             Assert.IsTrue(fields.Contains(nameof(ImageFamily.IsActive)));
+            Assert.IsTrue(fields.Contains(nameof(ImageFamily.ReferenceImages)));
+            Assert.IsNotNull(new ImageFamily().ReferenceImages);
         }
     }
 }

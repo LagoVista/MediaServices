@@ -237,6 +237,12 @@
   <data name="ImageFamily_Title" xml:space="preserve">
     <value>Image Family</value>
   </data>
+  <data name="ImageFamily_ReferenceImages" xml:space="preserve">
+    <value>Reference Images</value>
+  </data>
+  <data name="ImageFamily_ReferenceImages_Help" xml:space="preserve">
+    <value>Select existing Media Resources that demonstrate the visual style of this image family.</value>
+  </data>
   <data name="ImageFamily_StyleGuidance" xml:space="preserve">
     <value>Base Style Guidance</value>
   </data>
