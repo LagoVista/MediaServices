@@ -43,22 +43,24 @@ namespace LagoVista.MediaServices.Models
 
         public static string DetectKind(string mimeType, string resourceType, bool isFileUpload, string externalUrl)
         {
-            if (!isFileUpload && !String.IsNullOrWhiteSpace(externalUrl))
-                return "link";
+            // MIME describes the actual content. Generated video and audio may
+            // have IsFileUpload=false plus a URL; that does NOT make them links.
             var mime = (mimeType ?? String.Empty).Trim().ToLowerInvariant();
             var category = (resourceType ?? String.Empty).Trim().ToLowerInvariant();
-            if (mime.StartsWith("image/") || category == "picture")
-                return "image";
-            if (mime.StartsWith("video/") || category == "video" || category == "rawvideo")
-                return "video";
-            if (mime.StartsWith("audio/") || category == "audio")
-                return "audio";
-            if (mime.Contains("zip") || mime.Contains("compressed") || category == "zip")
-                return "archive";
+            if (mime.StartsWith("image/")) return "image";
+            if (mime.StartsWith("video/")) return "video";
+            if (mime.StartsWith("audio/")) return "audio";
+            if (mime.Contains("zip") || mime.Contains("compressed")) return "archive";
             if (mime == "application/pdf" || mime.StartsWith("text/") ||
-                mime.Contains("document") || mime.Contains("word") ||
-                category == "manual" || category == "userguide" || category == "specification")
-                return "document";
+                mime.Contains("document") || mime.Contains("word")) return "document";
+            if (!isFileUpload && !String.IsNullOrWhiteSpace(externalUrl))
+                return "link";
+            if (category == "picture") return "image";
+            if (category == "video" || category == "rawvideo") return "video";
+            if (category == "audio") return "audio";
+            if (category == "zip") return "archive";
+            if (category == "manual" || category == "userguide" ||
+                category == "specification") return "document";
             return "file";
         }
 
