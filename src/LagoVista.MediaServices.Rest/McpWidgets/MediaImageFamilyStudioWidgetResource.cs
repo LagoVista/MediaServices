@@ -146,7 +146,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
             
               <section class="panel" aria-label="Creative assistance">
                 <h3>Work with ChatGPT</h3>
-                <p class="muted">Once the family is saved, you can request a new candidate image from its guidance. ChatGPT generates and reviews images in the conversation; only approved images should be imported into MediaServices and then added as references here.</p>
+                <p class="muted">Once the family is saved, open the Create Image widget with this family preselected. Generated images are saved automatically in the chosen Media Library and can be copied into ChatGPT for editing as references here.</p>
                 <div class="row">
                   <button id="askGuidance" type="button" disabled>Help draft guidance</button>
                   <button id="generate" type="button" disabled>Generate an example</button>
@@ -487,10 +487,9 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                     ' (id '+currentId+').',
                   'First use media-image-families-get with this exact ID to retrieve the latest visual guidance.',
                   'Use the family style, palette, rendering, mood, composition, use-case and avoid guidance.',
-                  'Ask me which subject or use case to depict if needed, then use media-image-generate MCP with Intent CreateNew, ImageFamily EntityHeader (id '+currentId+'), empty ReferenceMediaResources (server loads real family reference bytes), IsPublic false.',
-                  'APTIX resolves these Image Family reference IDs into actual authorized image bytes; do not claim ChatGPT itself received their pixels.',
-                  'The APTIX service saves a PRIVATE draft MediaResource. Show it with media-gallery-preview and DO NOT PUBLISH until explicit approval.',
-                  'After approval, publish the existing draft MediaResource, then ask before attaching it to this Image Family.'
+                  'Open media-image-create-open with imageFamilyId '+currentId+' and a suggested description to use our Create Image widget.',
+                  'The Create Image widget renders using APTIX, saves the generated MediaResource immediately in the chosen library, then previews the exact saved revision.',
+                  'For manual edits, copy the rendered image into ChatGPT; its MediaResource ID and revision are retained by widget state so approved edits update the same resource.'
                 ].join('\n'));
               });
               window.addEventListener('message',event=>{

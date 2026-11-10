@@ -460,12 +460,12 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// not travel through the tool result.
         /// </summary>
         /// <summary>
-        /// Open a user-editable starting brief for a NEW ChatGPT image.
-        /// This is read-only: it loads available libraries and optional model
-        /// defaults, but never creates a Media Resource until separately approved.
+        /// Open a user-editable creation brief for a new APTIX-generated image.
+        /// Opening the widget reads defaults only. Submitting the brief generates
+        /// and persists a MediaResource immediately in the selected library.
         /// </summary>
         [McpEndpoint("media-image-create-open",
-            Description = "OPEN THE APTIX CREATE NEW IMAGE WIDGET to collect a new image brief, name, Media Library, optional Image Family, desired dimensions and target public status. After the user submits the brief, use media-image-generate MCP to call the existing APTIX image generator with EntityHeader ImageFamily and MediaLibrary, Intent CreateNew, empty ReferenceMediaResources to use the family reference images, and IsPublic=false for an initial private draft. APTIX builds the family-guided prompt and sends actual reference-image bytes; ChatGPT does not generate the image itself. Show the resulting MediaResource using media-gallery-preview and ask for approval before making it public. For edits, use media-gallery-open and copy/paste source image into the ChatGPT composer.",
+            Description = "OPEN THE APTIX CREATE NEW IMAGE WIDGET for new website or marketing images. The widget collects the image description, name, Media Library, optional Image Family, target dimensions, and public/private choice. ON GENERATE the widget calls the existing media-image-generate MCP endpoint, saves the new MediaResource immediately in the selected library, verifies its saved current revision, and displays the full-resolution image through the authorized media-gallery-image-lease. No separate approval or Save step is required. The widget publishes mediaResourceId and revisionId to modelContent so ChatGPT can use the existing manual Copy image / Paste image editing flow and save approved edits as revisions to the SAME MediaResource. Image Family guidance and actual visual-reference pixels are resolved by the APTIX backend. Generated resources may be deleted later from the library. For editing an EXISTING resource, use media-gallery-open or media-gallery-preview.",
             FamilyId = "media", WidgetResourceUri = MediaImageCreationWidgetResource.ResourceUri)]
         [Authorize]
         [HttpGet("/api/media/image/create/open")]

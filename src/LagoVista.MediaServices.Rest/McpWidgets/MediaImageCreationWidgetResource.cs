@@ -5,14 +5,14 @@ using System.Text.Json.Nodes;
 namespace LagoVista.MediaServices.Rest.McpWidgets
 {
     /// <summary>
-    /// APTIX creation brief for new ChatGPT images. This widget collects metadata
-    /// and a starting description; it does NOT generate, upload or save media.
-    /// Submitting the brief requests image generation through the conversation.
+    /// APTIX image creation workspace. It saves generated MediaResources immediately
+    /// through the existing MCP generator, and previews exact saved revisions.
+    /// ChatGPT editing still uses user copy/paste into the conversation.
     /// </summary>
     [McpServerResourceType]
     public static class MediaImageCreationWidgetResource
     {
-        public const string ResourceUri = "ui://media/image-create/v3.html";
+        public const string ResourceUri = "ui://media/image-create/v4.html";
         public const string AppMimeType = "text/html;profile=mcp-app";
 
         [McpServerResource(UriTemplate = ResourceUri, Name = "APTIX Create New Image", MimeType = AppMimeType)]
@@ -30,7 +30,9 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                         ["prefersBorder"] = true,
                         ["csp"] = new JsonObject
                         {
-                            ["resourceDomains"] = new JsonArray(),
+                            ["resourceDomains"] = new JsonArray(
+                                "https://storage-dev.nuviot.com",
+                                "https://storage.nuviot.com"),
                             ["connectDomains"] = new JsonArray()
                         }
                     }
@@ -75,30 +77,38 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                 #status {font-size:12px;line-height:1.5;overflow-wrap:anywhere;flex:1}
                 #fallback {margin-top:8px;min-height:90px}
                 .notice {margin:0;font-size:12px;line-height:1.5;opacity:.8}
+                .saved-result {margin-top:18px;padding-top:16px;border-top:1px solid rgba(128,128,128,.35)}
+                .saved-result h3 {font-size:17px;margin:7px 0 12px}
+                .image-frame {display:flex;align-items:center;justify-content:center;min-height:160px;border-radius:9px;border:1px solid rgba(128,128,128,.3);background:rgba(128,128,128,.06);overflow:hidden}
+                .image-frame img {display:block;max-width:100%;max-height:520px;object-fit:contain}
+                .saved-result a {font-size:13px;color:inherit;text-decoration:underline}
+                .saved-result p {font-size:12px;line-height:1.5}
+                .image-details {font-size:11px;opacity:.75;overflow-wrap:anywhere}
+                .saved-result .hint {margin:8px 0}
                 [hidden] {display:none!important}
                 @media(max-width:540px) {.card{padding:14px}.layout{grid-template-columns:1fr}}
               </style>
             </head>
             <body>
               <main class="card">
-                <div class="eyebrow">APTIX / MediaServices / Create New Image / v3</div>
+                <div class="eyebrow">APTIX / MediaServices / Create New Image / v4</div>
                 <h2>Create a new image</h2>
-                <p class="intro">Describe what you need or refine the starting idea ChatGPT provided. Develop the image with ChatGPT, then render a private draft in APTIX using the Image Family's actual reference-image bytes.</p>
+                <p class="intro">Describe an image, choose a Media Library, and generate it. APTIX saves the image automatically and shows it here. Copy the image into ChatGPT whenever you want to edit it.</p>
                 <form id="imageForm">
                   <div class="field">
                     <label for="imageName">Image name</label>
                     <input id="imageName" type="text" maxlength="160" placeholder="e.g., AppTrex Insiders — Virtual Team Hero">
-                    <div class="hint">A working name is fine. You can change it before saving.</div>
+                    <div class="hint">Optional — we can name the image from your description. Rename it in the library anytime.</div>
                   </div>
                   <div class="field">
                     <label for="description">Describe the image</label>
                     <textarea id="description" maxlength="4000" placeholder="Describe the subjects, composition, visual style, and what this image is for..."></textarea>
-                    <div class="hint">Start from scratch, or edit a description ChatGPT has prefilled. If you leave this empty, ChatGPT will help develop your idea.</div>
+                    <div class="hint">A short description is enough. You can ask ChatGPT to help write it first.</div>
                   </div>
                   <div class="field">
                     <label for="library">Media library</label>
                     <select id="library"><option value="">Loading available libraries...</option></select>
-                    <div class="hint">New image drafts are stored privately in this library; approval is required before public access.</div>
+                    <div class="hint">Every generated image is saved to this Media Library immediately; delete unwanted images from the library.</div>
                   </div>
                   <div class="field">
                     <label for="family">Image family (optional)</label>
@@ -129,20 +139,25 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                   <div class="checkline">
                     <input type="checkbox" id="isPublic" checked>
                     <div>
-                      <label for="isPublic">Make image public after approval</label>
-                      <div class="hint">Enabled by default for website and marketing content. Public images can be accessed via a public link after saving.</div>
+                      <label for="isPublic">Make this image public when generated</label>
+                      <div class="hint">Public images can be accessed by link immediately. Uncheck for private library images.</div>
                     </div>
                   </div>
                   <div class="actions">
-                    <button id="start" class="primary" type="submit">Start creating image</button>
-                    <span id="status" role="status">Ready to develop your image in ChatGPT.</span>
+                    <button id="start" class="primary" type="submit">Generate and save image</button>
+                    <span id="status" role="status">Connecting to APTIX...</span>
                   </div>
-                  <div id="manual" hidden>
-                    <label for="fallback">If ChatGPT could not receive the brief, copy this text into the chat:</label>
-                    <textarea id="fallback" readonly></textarea>
-                  </div>
-                  <p class="notice"><strong>Generating creates a private MediaResource draft.</strong> Review it before explicitly approving public access.</p>
+                  <p class="notice">Each generation creates a saved MediaResource. There is no separate Save step; remove unwanted images from your library.</p>
                 </form>
+                <section id="savedResult" class="saved-result" hidden aria-live="polite">
+                  <div class="eyebrow">Saved in your Media Library</div>
+                  <h3 id="savedName"></h3>
+                  <div class="image-frame"><img id="savedImage" alt="Saved, full-resolution generated image. Right-click and choose Copy image to edit it in ChatGPT." hidden></div>
+                  <p id="previewStatus" role="status">Loading saved image...</p>
+                  <a id="openOriginal" href="#" target="_blank" rel="noopener noreferrer" hidden>Open full-size original</a>
+                  <p class="hint">To edit: right-click the image and choose <strong>Copy image</strong> (not Copy image address), then paste it into ChatGPT and describe your changes. The MediaResource ID and revision are passed to ChatGPT for saving edits back to this image.</p>
+                  <div id="savedIdentity" class="image-details"></div>
+                </section>
               </main>
               <script>
                 (() => {
@@ -158,8 +173,16 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                   const isPublic = el('isPublic');
                   const status = el('status');
                   const start = el('start');
-                  const manual = el('manual');
-                  const fallback = el('fallback');
+                  const savedResult = el('savedResult');
+                  const savedName = el('savedName');
+                  const savedImage = el('savedImage');
+                  const savedIdentity = el('savedIdentity');
+                  const previewStatus = el('previewStatus');
+                  const openOriginal = el('openOriginal');
+                  const allowedHosts = new Set(['storage-dev.nuviot.com','storage.nuviot.com']);
+                  let connected = false;
+                  let requestCounter = 20;
+                  const pending = new Map();
                   let prefilled = false;
                   let submitting = false;
                   let libraries = [];
@@ -246,7 +269,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                     height.value = data.height || data.Height || 1024;
                     isPublic.checked = (data.isPublic ?? data.IsPublic ?? true) === true;
                     syncPreset();
-                    status.textContent = 'Brief ready. Review the details and choose Start creating image.';
+                    status.textContent = connected ? 'Ready. Generate and save directly to your Media Library.' : 'Brief ready. Connecting to APTIX...';
                   };
 
                   const buildBrief = () => {
@@ -273,66 +296,193 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                     };
                   };
 
-                  const messageFor = brief => {
-                    return [
-                      'APTIX CREATE NEW IMAGE — user-submitted brief.',
-                      'Use media-image-generate MCP (the existing APTIX image-generation service), NOT native ChatGPT image generation.',
-                      'Image name / ResourceName: '+(brief.imageName || '(help me choose a name first)'),
-                      'Image description / UserPrompt: '+(brief.imageDescription || '(help me develop the image idea before generating)'),
-                      'Target: '+brief.targetWidth+' x '+brief.targetHeight+' pixels; choose the closest supported ImageSize preset.',
-                      'MediaLibrary EntityHeader: '+(brief.mediaLibraryId ? JSON.stringify({id:brief.mediaLibraryId,text:brief.mediaLibraryName}) : 'null'),
-                      'ImageFamily EntityHeader: '+(brief.imageFamilyId ? JSON.stringify({id:brief.imageFamilyId,text:brief.imageFamilyName,key:brief.imageFamilyKey}) : 'null'),
-                      'Desired PUBLIC state only AFTER APPROVAL: '+String(brief.isPublic),
-                      'Once the name and description are ready, call media-image-generate with the ImageGenerationRequest:',
-                      '- Intent=CreateNew, MediaResource=null, ResourceName as above, UserPrompt as above, NumberGenerated=1.',
-                      '- ImageFamily and MediaLibrary as the EntityHeaders above.',
-                      '- ReferenceMediaResources=[] so the APTIX service loads the Image Family and passes its real reference-image bytes to the provider.',
-                      '- IsPublic=false for this private draft, regardless of desired public state after approval.',
-                      '- Use default EditorialPhotography style and Standard quality unless the conversation specifies otherwise.',
-                      'The backend saves a private draft MediaResource. Report its ID and revision, and open media-gallery-preview for review.',
-                      'Allow follow-up discussions and manual image editing via copying the preview image into ChatGPT. Publish only after explicit approval; do not import duplicate media.'
-                    ].join('\n');
+                  const errorText = value => {
+                    if (typeof value === 'string') return value;
+                    return value?.errorMessage || value?.message ||
+                      (Array.isArray(value?.errors) && value.errors[0]?.message) ||
+                      'APTIX image operation failed.';
                   };
-
+                  const findPayload = (raw, predicate) => {
+                    const queue = [raw];
+                    let checks = 0;
+                    while (queue.length && checks++ < 75) {
+                      const v = queue.shift();
+                      if (v == null) continue;
+                      if (typeof v === 'string') {
+                        try {queue.push(JSON.parse(v))} catch (_) {}
+                        continue;
+                      }
+                      if (Array.isArray(v)) {queue.push(...v); continue;}
+                      if (typeof v !== 'object') continue;
+                      if (v.isError === true || v.successful === false) throw Error(errorText(v));
+                      if (predicate(v)) return v;
+                      for (const key of ['structuredContent','result','model','content','text'])
+                        if (v[key] != null) queue.push(v[key]);
+                    }
+                    throw Error('APTIX returned an unexpected response.');
+                  };
+                  const callTool = (toolName,args) => new Promise((resolve,reject) => {
+                    if (!connected) {reject(Error('MCP App is not connected. Reopen the image creator.'));return;}
+                    const id = ++requestCounter;
+                    pending.set(id,{resolve,reject});
+                    window.parent.postMessage({jsonrpc:'2.0',id,method:'tools/call',
+                      params:{name:toolName,arguments:args}},'*');
+                  });
+                  const safeUrl = value => {
+                    if (typeof value !== 'string') return null;
+                    try {
+                      const url = new URL(value);
+                      return url.protocol === 'https:' && allowedHosts.has(url.hostname) ? url.href : null;
+                    } catch (_) {return null;}
+                  };
+                  const publishSelection = async (media,brief) => {
+                    if (typeof window.openai?.setWidgetState !== 'function') return;
+                    try {
+                      await Promise.resolve(window.openai.setWidgetState({
+                        modelContent:{
+                          action:'aptix_media_image_selected_for_manual_edit',
+                          mediaResourceId:media.id,
+                          revisionId:media.currentRevision,
+                          imageName:media.name,
+                          mediaLibraryId:brief.mediaLibraryId,
+                          isPublic:media.isPublic === true,
+                          sourceTransport:'user-copies-exact-original-and-pastes-into-chat-composer',
+                          instruction:'This MediaResource was generated and SAVED in the APTIX library. The widget image is a preview only, not a source attachment. For edits, use the image the user pastes into ChatGPT; when approved, use media-revise-chatgpt-image with the selected mediaResourceId and current revision guard. Never create a duplicate resource for the edited image.'
+                        },
+                        privateContent:{
+                          selectedResourceId:media.id,
+                          selectedRevisionId:media.currentRevision,
+                          libraryId:brief.mediaLibraryId
+                        }
+                      }));
+                    } catch (_) {
+                      // The exact resource and revision remain visible for manual reference.
+                    }
+                  };
+                  const sizeSelection = (w,h) => {
+                    if (w >= h * 1.12) return {key:'landscape1536x1024',text:'Landscape'};
+                    if (h >= w * 1.12) return {key:'portrait1024x1536',text:'Portrait'};
+                    return {key:'square1024x1024',text:'Square'};
+                  };
+                  const requestFor = (model,brief) => {
+                    const request = JSON.parse(JSON.stringify(model));
+                    const selectedSize = sizeSelection(brief.targetWidth,brief.targetHeight);
+                    request.imageSize = {
+                      ...(request.imageSize || {}),
+                      id:selectedSize.key,key:selectedSize.key,text:selectedSize.text
+                    };
+                    request.mediaLibrary = brief.mediaLibraryId
+                      ? {id:brief.mediaLibraryId,text:brief.mediaLibraryName,entityType:'MediaLibrary'} : null;
+                    request.imageFamily = brief.imageFamilyId
+                      ? {id:brief.imageFamilyId,key:brief.imageFamilyKey,
+                         text:brief.imageFamilyName,entityType:'ImageFamily'} : null;
+                    request.mediaResource = null;
+                    request.mediaResourceId = null;
+                    request.previousResponseId = null;
+                    request.referenceMediaResourceId = null;
+                    request.referenceMediaResources = [];
+                    request.resourceName = brief.imageName || brief.imageDescription.replace(/\s+/g,' ').slice(0,80).trim();
+                    request.userPrompt = brief.imageDescription;
+                    request.numberGenerated = 1;
+                    request.isPublic = brief.isPublic;
+                    return request;
+                  };
+                  const showSavedIdentity = media => {
+                    savedResult.hidden = false;
+                    savedName.textContent = media.name || 'Generated image';
+                    savedIdentity.textContent = 'MediaResource ID: '+media.id+
+                      ' | Revision ID: '+(media.currentRevision || '(not provided)')+
+                      ' | '+(media.isPublic ? 'Public' : 'Private');
+                    savedImage.hidden = true;
+                    savedImage.removeAttribute('src');
+                    openOriginal.hidden = true;
+                    openOriginal.removeAttribute('href');
+                  };
+                  const showOriginal = async media => {
+                    if (!media.currentRevision) {
+                      previewStatus.textContent = 'The image was saved, but its revision ID is missing. Open it from the Media Library.';
+                      return;
+                    }
+                    previewStatus.textContent = 'Loading saved, full-resolution image...';
+                    const raw = await callTool('media-gallery-image-lease',
+                      {id:media.id,revisionid:media.currentRevision});
+                    const lease = findPayload(raw, v => typeof v.url === 'string' && !!v.mediaResourceId);
+                    if (lease.mediaResourceId !== media.id || lease.revisionId !== media.currentRevision)
+                      throw Error('MediaServices returned a different image revision.');
+                    const originalUrl = safeUrl(lease.url);
+                    if (!originalUrl) throw Error('The image URL did not come from approved storage.');
+                    openOriginal.href = originalUrl;
+                    openOriginal.hidden = false;
+                    savedImage.src = originalUrl;
+                    savedImage.hidden = false;
+                    previewStatus.textContent = 'Image saved. Loading full-resolution preview...';
+                  };
+                  savedImage.addEventListener('load', () => {
+                    previewStatus.textContent = 'Saved and ready. Right-click to Copy image, then paste into ChatGPT to edit.';
+                  });
+                  savedImage.addEventListener('error', () => {
+                    savedImage.hidden = true;
+                    previewStatus.textContent = 'The image was saved, but its preview could not load. Open the full-size original or find it in the Media Library.';
+                  });
                   form.addEventListener('submit', async event => {
                     event.preventDefault();
                     if (submitting) return;
                     let brief;
-                    try { brief = buildBrief(); }
-                    catch (error) { status.textContent = String(error.message || error); return; }
-                    const message = messageFor(brief);
-                    if (!window.openai?.sendFollowUpMessage) {
-                      fallback.value = message;
-                      manual.hidden = false;
-                      status.textContent = 'This ChatGPT host cannot submit the brief automatically. Copy the brief below into the chat message box.';
+                    try {
+                      brief = buildBrief();
+                      if (!brief.mediaLibraryId) throw Error('Choose a Media Library before generating.');
+                      if (!brief.imageDescription) throw Error('Describe the image first. ChatGPT can help with the wording.');
+                      if (!connected) throw Error('APTIX MCP is not connected yet. Reopen the widget or retry.');
+                    } catch (error) {
+                      status.textContent = errorText(error);
                       return;
                     }
                     submitting = true;
                     start.disabled = true;
-                    manual.hidden = true;
-                    status.textContent = 'Sending your image brief to ChatGPT...';
+                    status.textContent = 'Generating image and saving it directly to your library...';
+                    let generated = null;
                     try {
-                      if (typeof window.openai.setWidgetState === 'function') {
-                        try {
-                          await Promise.resolve(window.openai.setWidgetState({
-                            modelContent:{
-                              action:'aptix_create_new_image_brief',
-                              ...brief,
-                              instruction:'Use media-image-generate MCP to create a new PRIVATE APTIX MediaResource with EntityHeader ImageFamily and MediaLibrary, resolving family references in the backend. Publish only after approval.'
-                            },
-                            privateContent:{creationBrief:brief}
-                          }));
-                        } catch (_) {
-                          // The full brief is also in the follow-up prompt.
-                        }
+                      const factory = findPayload(
+                        await callTool('media-image-generation-request-factory', {}),
+                        v => v.model && v.model.imageStyle && v.model.imageSize && v.model.imageQuality);
+                      const request = requestFor(factory.model,brief);
+                      const raw = await callTool('media-image-generate',{request});
+                      const response = findPayload(raw,v =>
+                        (Array.isArray(v.result) && v.result.length > 0 && !!v.result[0]?.id) ||
+                        (Array.isArray(v.model) && v.model.length > 0 && !!v.model[0]?.id));
+                      const resources = Array.isArray(response.result) ? response.result : response.model;
+                      generated = resources[0];
+                      if (!generated?.id) throw Error('APTIX did not return a MediaResource ID.');
+                      showSavedIdentity(generated);
+                      await publishSelection(generated,brief);
+                      status.textContent = 'Image created in your Media Library. Verifying its saved revision...';
+                      const verified = findPayload(
+                        await callTool('media-resources-get',{id:generated.id}),
+                        v => v.model && v.model.id === generated.id);
+                      const media = verified.model;
+                      if (media.mediaLibrary?.id !== brief.mediaLibraryId)
+                        throw Error('The saved image was not linked to the selected Media Library.');
+                      if (!media.currentRevision)
+                        throw Error('The saved MediaResource has no current revision ID.');
+                      generated = media;
+                      showSavedIdentity(media);
+                      await publishSelection(media,brief);
+                      status.textContent = 'Saved in the selected Media Library. You can generate another or edit this image.';
+                      try {await showOriginal(media)}
+                      catch (error) {
+                        previewStatus.textContent = 'Image saved, but preview unavailable: '+errorText(error)+
+                          ' Open it from the Media Library.';
                       }
-                      await window.openai.sendFollowUpMessage({prompt:message});
-                      status.textContent = 'Brief sent. Continue reviewing and refining the image in the ChatGPT conversation.';
                     } catch (error) {
-                      fallback.value = message;
-                      manual.hidden = false;
-                      status.textContent = 'Could not send the brief: ' +
-                        String(error?.message || error) + '. Copy the brief below into ChatGPT instead.';
+                      if (generated?.id) {
+                        showSavedIdentity(generated);
+                        await publishSelection(generated,brief);
+                        status.textContent = 'Image '+generated.id+' may already be saved. Check the Media Library before generating again.';
+                        previewStatus.textContent = 'Could not finish verifying the image: '+errorText(error);
+                      } else {
+                        status.textContent = 'Could not complete generation: '+errorText(error)+
+                          ' If generation was interrupted, check your Media Library before retrying.';
+                      }
                     } finally {
                       submitting = false;
                       start.disabled = false;
@@ -342,22 +492,35 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                   window.addEventListener('message', event => {
                     if (event.source !== window.parent || !event.data || event.data.jsonrpc !== '2.0') return;
                     const msg = event.data;
-                    if (msg.method === 'ui/notifications/tool-result') {receive(msg.params);return;}
-                    if (msg.id === 1 && msg.result) {
-                      window.parent.postMessage({
-                        jsonrpc:'2.0',method:'ui/notifications/initialized',params:{}
-                      },'*');
-                      if (window.openai?.toolOutput) receive(window.openai.toolOutput);
+                    if (msg.id === 1) {
+                      if (msg.error) {
+                        status.textContent = 'MCP Apps host rejected initialization: '+errorText(msg.error);
+                        return;
+                      }
+                      if (msg.result) {
+                        window.parent.postMessage({jsonrpc:'2.0',
+                          method:'ui/notifications/initialized',params:{}},'*');
+                        connected = true;
+                        if (window.openai?.toolOutput) receive(window.openai.toolOutput);
+                        if (prefilled) status.textContent = 'Connected. Generate and save directly to your Media Library.';
+                      }
+                      return;
                     }
-                    if (msg.id === 1 && msg.error)
-                      status.textContent = 'MCP Apps host rejected initialization.';
+                    if (pending.has(msg.id)) {
+                      const request = pending.get(msg.id);
+                      pending.delete(msg.id);
+                      if (msg.error) request.reject(Error(errorText(msg.error)));
+                      else request.resolve(msg.result);
+                      return;
+                    }
+                    if (msg.method === 'ui/notifications/tool-result') receive(msg.params);
                   });
                   if (window.openai?.toolOutput) receive(window.openai.toolOutput);
                   window.parent.postMessage({
                     jsonrpc:'2.0',id:1,method:'ui/initialize',
                     params:{
                       protocolVersion:'2026-01-26',
-                      appInfo:{name:'aptix-image-create',version:'3.0.0'},
+                      appInfo:{name:'aptix-image-create',version:'4.0.0'},
                       appCapabilities:{}
                     }
                   },'*');
