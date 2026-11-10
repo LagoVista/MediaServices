@@ -57,6 +57,9 @@ namespace LagoVista.MediaServices.MediaTests
             Assert.AreEqual(1024, brief.Height);
             Assert.IsNotNull(brief.Libraries);
             Assert.AreEqual(0, brief.Libraries.Count);
+            Assert.IsNotNull(brief.Families);
+            Assert.AreEqual(0, brief.Families.Count);
+            Assert.IsNull(brief.InitialFamilyId);
             Assert.IsNull(brief.Name);
             Assert.IsNull(brief.Description);
         }
@@ -74,6 +77,8 @@ namespace LagoVista.MediaServices.MediaTests
                 InitialLibraryId = "marketing",
             };
             brief.Libraries.Add(new MediaGalleryLibrary { Id = "marketing", Name = "Marketing" });
+            brief.InitialFamilyId = "apptrex-family";
+            brief.Families.Add(new MediaImageCreationFamily { Id = "apptrex-family", Name = "AppTrex", Key = "apptrex" });
 
             Assert.IsFalse(brief.IsPublic);
             Assert.AreEqual("An AI-powered virtual team meeting", brief.Description);
@@ -81,6 +86,8 @@ namespace LagoVista.MediaServices.MediaTests
             Assert.AreEqual(1080, brief.Height);
             Assert.AreEqual("marketing", brief.InitialLibraryId);
             Assert.AreEqual(1, brief.Libraries.Count);
+            Assert.AreEqual("apptrex-family", brief.InitialFamilyId);
+            Assert.AreEqual("apptrex", brief.Families[0].Key);
         }
 
         [TestMethod]

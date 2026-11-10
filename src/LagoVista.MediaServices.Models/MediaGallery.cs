@@ -23,9 +23,18 @@ namespace LagoVista.MediaServices.Models
         public string Description { get; set; }
         public string InitialLibraryId { get; set; }
         public List<MediaGalleryLibrary> Libraries { get; set; } = new List<MediaGalleryLibrary>();
+        public string InitialFamilyId { get; set; }
+        public List<MediaImageCreationFamily> Families { get; set; } = new List<MediaImageCreationFamily>();
         public int Width { get; set; } = 1536;
         public int Height { get; set; } = 1024;
         public bool IsPublic { get; set; } = true;
+    }
+
+    public class MediaImageCreationFamily
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string Key { get; set; }
     }
 
     public class MediaGalleryLibrary

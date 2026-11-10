@@ -39,6 +39,7 @@ namespace LagoVista.MediaServices.Rest.Controllers
         IMediaServicesManager _mediaServicesManager;
         IImageAssemblyManager _imageAssemblyManager;
         IMediaLibraryManager _libraryManager;
+        IImageFamilyManager _imageFamilyManager;
 
         /// <summary>
         /// The Media Controller will let users upload images and download them.
@@ -46,11 +47,12 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// <param name="userManager"></param>
         /// <param name="logger"></param>
         /// <param name="mediaServiceManager"></param>
-        public MediaController(UserManager<AppUser> userManager, IAdminLogger logger, IMediaLibraryManager libraryManager, IMediaServicesManager mediaServiceManager, IImageAssemblyManager imageAssemblyManager) : base(userManager, logger)
+        public MediaController(UserManager<AppUser> userManager, IAdminLogger logger, IMediaLibraryManager libraryManager, IMediaServicesManager mediaServiceManager, IImageAssemblyManager imageAssemblyManager, IImageFamilyManager imageFamilyManager) : base(userManager, logger)
         {
             _mediaServicesManager = mediaServiceManager;
             _imageAssemblyManager = imageAssemblyManager;
             _libraryManager = libraryManager;
+            _imageFamilyManager = imageFamilyManager;
         }
 
         /// <summary>
@@ -461,13 +463,14 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// defaults, but never creates a Media Resource until separately approved.
         /// </summary>
         [McpEndpoint("media-image-create-open",
-            Description = "OPEN THE APTIX CREATE NEW IMAGE WIDGET BEFORE GENERATION when the user wants a new website/marketing image saved to MediaServices. The user may start with no parameters, or the model should prepopulate name, description (what the image should depict), mediaLibraryId, width/height (target dimensions in pixels), and isPublic. The widget offers editable description, name, Media Library, target size presets or custom pixels, and Public checked by default. On user click 'Start creating image' it sends a ChatGPT follow-up containing all the chosen fields. Generate the image using the ChatGPT image tool, show the draft and iterate; DO NOT SAVE at this stage. Only after the user approves and explicitly asks to save, use media-import-chatgpt-image(file=<approved generated image>,name=<chosen name>,mediaLibraryId=<selected library>,isPublic=<selected public flag>) to CREATE a new Media Resource. Verify stored metadata, and if public return the working public image URL. For editing EXISTING images, use media-gallery-open or media-gallery-preview instead. Requested width/height indicate target composition, not guaranteed generated pixel dimensions.",
+            Description = "OPEN THE APTIX CREATE NEW IMAGE WIDGET BEFORE GENERATION when the user wants a new website/marketing image saved to MediaServices. The user may start with no parameters, or the model should prepopulate name, description (what the image should depict), mediaLibraryId, width/height (target dimensions in pixels), and isPublic, plus optional imageFamilyId or imageFamilyKey. The widget offers editable description, name, Media Library, Image Family, target size presets or custom pixels, and Public checked by default. When a family is selected, retrieve its current visual guidance through media-image-families-get and apply it during generation; anchor images are not used. On user click 'Start creating image' it sends a ChatGPT follow-up containing all the chosen fields. Generate the image using the ChatGPT image tool, show the draft and iterate; DO NOT SAVE at this stage. Only after the user approves and explicitly asks to save, use media-import-chatgpt-image(file=<approved generated image>,name=<chosen name>,mediaLibraryId=<selected library>,isPublic=<selected public flag>) to CREATE a new Media Resource. Verify stored metadata, and if public return the working public image URL. For editing EXISTING images, use media-gallery-open or media-gallery-preview instead. Requested width/height indicate target composition, not guaranteed generated pixel dimensions.",
             FamilyId = "media", WidgetResourceUri = MediaImageCreationWidgetResource.ResourceUri)]
         [Authorize]
         [HttpGet("/api/media/image/create/open")]
         public async Task<InvokeResult<MediaImageCreationOpen>> OpenImageCreation(
             string name = null, string description = null, string mediaLibraryId = null,
-            int? width = null, int? height = null, bool? isPublic = null)
+            int? width = null, int? height = null, bool? isPublic = null,
+            string imageFamilyId = null, string imageFamilyKey = null)
         {
             // Validate supplied model defaults; no file or media record is created.
             if (width.HasValue && (width.Value < 256 || width.Value > 4096) ||
@@ -501,12 +504,40 @@ namespace LagoVista.MediaServices.Rest.Controllers
                     item.Name?.IndexOf("marketing", StringComparison.OrdinalIgnoreCase) >= 0)
                 ?? libraries.FirstOrDefault();
 
+
+            var familyList = await _imageFamilyManager.GetImageFamiliesForOrgAsync(
+                OrgEntityHeader.Id, ListRequest.Create(1, 100), UserEntityHeader);
+            if (!familyList.Successful)
+                return InvokeResult<MediaImageCreationOpen>.FromInvokeResult(familyList.ToInvokeResult());
+
+            var families = (familyList.Model ?? Enumerable.Empty<ImageFamilySummary>())
+                .Where(item => item.IsActive)
+                .Select(item => new MediaImageCreationFamily
+                {
+                    Id = item.Id,
+                    Name = item.Name,
+                    Key = item.Key
+                }).ToList();
+
+            var selectedFamily = families.FirstOrDefault(item =>
+                (!String.IsNullOrWhiteSpace(imageFamilyId) &&
+                 String.Equals(item.Id, imageFamilyId, StringComparison.OrdinalIgnoreCase)) ||
+                (String.IsNullOrWhiteSpace(imageFamilyId) && !String.IsNullOrWhiteSpace(imageFamilyKey) &&
+                 String.Equals(item.Key, imageFamilyKey, StringComparison.OrdinalIgnoreCase)));
+
+            if ((!String.IsNullOrWhiteSpace(imageFamilyId) || !String.IsNullOrWhiteSpace(imageFamilyKey)) &&
+                selectedFamily == null)
+                return InvokeResult<MediaImageCreationOpen>.FromError(
+                    "The requested Image Family is not active or accessible to the current organization.");
+
             return InvokeResult<MediaImageCreationOpen>.Create(new MediaImageCreationOpen
             {
                 Name = name?.Trim(),
                 Description = description?.Trim(),
                 InitialLibraryId = initial?.Id,
                 Libraries = libraries,
+                Families = families,
+                InitialFamilyId = selectedFamily?.Id,
                 Width = width ?? 1536,
                 Height = height ?? 1024,
                 IsPublic = isPublic ?? true
