@@ -225,6 +225,117 @@
   <data name="MediaResource_Link_Help" xml:space="preserve">
     <value>A link lets you add a link to an existing, external online resource.</value>
   </data>
+  <data name="BrandStandardColor_Description" xml:space="preserve">
+    <value>A named color in the approved brand palette.</value>
+  </data>
+  <data name="BrandStandardColor_Help" xml:space="preserve">
+    <value>One approved palette color and its intended role.</value>
+  </data>
+  <data name="BrandStandardColor_HexColor" xml:space="preserve">
+    <value>Hex Color</value>
+  </data>
+  <data name="BrandStandardColor_HexColor_Help" xml:space="preserve">
+    <value>Six-digit hexadecimal color, for example #123ABC.</value>
+  </data>
+  <data name="BrandStandardColor_Name" xml:space="preserve">
+    <value>Color Name</value>
+  </data>
+  <data name="BrandStandardColor_Role" xml:space="preserve">
+    <value>Color Role</value>
+  </data>
+  <data name="BrandStandardColor_Role_Help" xml:space="preserve">
+    <value>For example primary, secondary, accent, background, or text.</value>
+  </data>
+  <data name="BrandStandardColor_Title" xml:space="preserve">
+    <value>Brand Color</value>
+  </data>
+  <data name="BrandStandardColor_UsageGuidance" xml:space="preserve">
+    <value>Color Usage Guidance</value>
+  </data>
+  <data name="BrandStandardLogo_Description" xml:space="preserve">
+    <value>A Media Resource used as an approved brand logo variant.</value>
+  </data>
+  <data name="BrandStandardLogo_Help" xml:space="preserve">
+    <value>One approved logo reference and its intended role.</value>
+  </data>
+  <data name="BrandStandardLogo_MediaResource" xml:space="preserve">
+    <value>Logo Media Resource</value>
+  </data>
+  <data name="BrandStandardLogo_Role" xml:space="preserve">
+    <value>Logo Role</value>
+  </data>
+  <data name="BrandStandardLogo_Role_Help" xml:space="preserve">
+    <value>For example primary, alternate, light, dark, or icon.</value>
+  </data>
+  <data name="BrandStandardLogo_Title" xml:space="preserve">
+    <value>Brand Logo</value>
+  </data>
+  <data name="BrandStandardLogo_UsageGuidance" xml:space="preserve">
+    <value>Logo Usage Guidance</value>
+  </data>
+  <data name="BrandStandards_AvoidGuidance" xml:space="preserve">
+    <value>Avoid Guidance</value>
+  </data>
+  <data name="BrandStandards_BodyFontFamily" xml:space="preserve">
+    <value>Body Font Family</value>
+  </data>
+  <data name="BrandStandards_BrandIdentityArtifact" xml:space="preserve">
+    <value>Source Brand Identity</value>
+  </data>
+  <data name="BrandStandards_BrandIdentityArtifact_Help" xml:space="preserve">
+    <value>Optional upstream Brand Identity artifact that informed these standards.</value>
+  </data>
+  <data name="BrandStandards_Colors" xml:space="preserve">
+    <value>Color Palette</value>
+  </data>
+  <data name="BrandStandards_Colors_Help" xml:space="preserve">
+    <value>Approved named brand colors, their roles, and usage guidance.</value>
+  </data>
+  <data name="BrandStandards_Description" xml:space="preserve">
+    <value>Define reusable logos, colors, typography, and verbal standards for a brand.</value>
+  </data>
+  <data name="BrandStandards_HeadingFontFamily" xml:space="preserve">
+    <value>Heading Font Family</value>
+  </data>
+  <data name="BrandStandards_Help" xml:space="preserve">
+    <value>Approved operational rules for consistent branded content and assets.</value>
+  </data>
+  <data name="BrandStandards_ListTitle" xml:space="preserve">
+    <value>Brand Standards</value>
+  </data>
+  <data name="BrandStandards_Logos" xml:space="preserve">
+    <value>Approved Logos</value>
+  </data>
+  <data name="BrandStandards_Logos_Help" xml:space="preserve">
+    <value>Reusable Media Resource references for approved logo variants and their intended uses.</value>
+  </data>
+  <data name="BrandStandards_LogoUsageGuidance" xml:space="preserve">
+    <value>Logo Usage Guidance</value>
+  </data>
+  <data name="BrandStandards_MessagingGuidance" xml:space="preserve">
+    <value>Messaging Guidance</value>
+  </data>
+  <data name="BrandStandards_TerminologyGuidance" xml:space="preserve">
+    <value>Terminology Guidance</value>
+  </data>
+  <data name="BrandStandards_Title" xml:space="preserve">
+    <value>Brand Standards</value>
+  </data>
+  <data name="BrandStandards_ToneGuidance" xml:space="preserve">
+    <value>Tone Guidance</value>
+  </data>
+  <data name="BrandStandards_TypographyGuidance" xml:space="preserve">
+    <value>Typography Guidance</value>
+  </data>
+  <data name="BrandStandards_UsageGuidance" xml:space="preserve">
+    <value>General Usage Guidance</value>
+  </data>
+  <data name="BrandStandards_VoiceGuidance" xml:space="preserve">
+    <value>Brand Voice Guidance</value>
+  </data>
+  <data name="BrandStandards_WritingGuidance" xml:space="preserve">
+    <value>Writing Conventions</value>
+  </data>
   <data name="ImageFamilies_Title" xml:space="preserve">
     <value>Image Families</value>
   </data>

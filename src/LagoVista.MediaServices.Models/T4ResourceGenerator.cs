@@ -29,6 +29,80 @@ namespace LagoVista.MediaServices.Models.Resources
             return str;
         }
 
+//Resources:MediaServicesResources:BrandStandardColor_Description
+        public static string BrandStandardColor_Description { get { return GetResourceString("BrandStandardColor_Description"); } }
+//Resources:MediaServicesResources:BrandStandardColor_Help
+        public static string BrandStandardColor_Help { get { return GetResourceString("BrandStandardColor_Help"); } }
+//Resources:MediaServicesResources:BrandStandardColor_HexColor
+        public static string BrandStandardColor_HexColor { get { return GetResourceString("BrandStandardColor_HexColor"); } }
+//Resources:MediaServicesResources:BrandStandardColor_HexColor_Help
+        public static string BrandStandardColor_HexColor_Help { get { return GetResourceString("BrandStandardColor_HexColor_Help"); } }
+//Resources:MediaServicesResources:BrandStandardColor_Name
+        public static string BrandStandardColor_Name { get { return GetResourceString("BrandStandardColor_Name"); } }
+//Resources:MediaServicesResources:BrandStandardColor_Role
+        public static string BrandStandardColor_Role { get { return GetResourceString("BrandStandardColor_Role"); } }
+//Resources:MediaServicesResources:BrandStandardColor_Role_Help
+        public static string BrandStandardColor_Role_Help { get { return GetResourceString("BrandStandardColor_Role_Help"); } }
+//Resources:MediaServicesResources:BrandStandardColor_Title
+        public static string BrandStandardColor_Title { get { return GetResourceString("BrandStandardColor_Title"); } }
+//Resources:MediaServicesResources:BrandStandardColor_UsageGuidance
+        public static string BrandStandardColor_UsageGuidance { get { return GetResourceString("BrandStandardColor_UsageGuidance"); } }
+//Resources:MediaServicesResources:BrandStandardLogo_Description
+        public static string BrandStandardLogo_Description { get { return GetResourceString("BrandStandardLogo_Description"); } }
+//Resources:MediaServicesResources:BrandStandardLogo_Help
+        public static string BrandStandardLogo_Help { get { return GetResourceString("BrandStandardLogo_Help"); } }
+//Resources:MediaServicesResources:BrandStandardLogo_MediaResource
+        public static string BrandStandardLogo_MediaResource { get { return GetResourceString("BrandStandardLogo_MediaResource"); } }
+//Resources:MediaServicesResources:BrandStandardLogo_Role
+        public static string BrandStandardLogo_Role { get { return GetResourceString("BrandStandardLogo_Role"); } }
+//Resources:MediaServicesResources:BrandStandardLogo_Role_Help
+        public static string BrandStandardLogo_Role_Help { get { return GetResourceString("BrandStandardLogo_Role_Help"); } }
+//Resources:MediaServicesResources:BrandStandardLogo_Title
+        public static string BrandStandardLogo_Title { get { return GetResourceString("BrandStandardLogo_Title"); } }
+//Resources:MediaServicesResources:BrandStandardLogo_UsageGuidance
+        public static string BrandStandardLogo_UsageGuidance { get { return GetResourceString("BrandStandardLogo_UsageGuidance"); } }
+//Resources:MediaServicesResources:BrandStandards_AvoidGuidance
+        public static string BrandStandards_AvoidGuidance { get { return GetResourceString("BrandStandards_AvoidGuidance"); } }
+//Resources:MediaServicesResources:BrandStandards_BodyFontFamily
+        public static string BrandStandards_BodyFontFamily { get { return GetResourceString("BrandStandards_BodyFontFamily"); } }
+//Resources:MediaServicesResources:BrandStandards_BrandIdentityArtifact
+        public static string BrandStandards_BrandIdentityArtifact { get { return GetResourceString("BrandStandards_BrandIdentityArtifact"); } }
+//Resources:MediaServicesResources:BrandStandards_BrandIdentityArtifact_Help
+        public static string BrandStandards_BrandIdentityArtifact_Help { get { return GetResourceString("BrandStandards_BrandIdentityArtifact_Help"); } }
+//Resources:MediaServicesResources:BrandStandards_Colors
+        public static string BrandStandards_Colors { get { return GetResourceString("BrandStandards_Colors"); } }
+//Resources:MediaServicesResources:BrandStandards_Colors_Help
+        public static string BrandStandards_Colors_Help { get { return GetResourceString("BrandStandards_Colors_Help"); } }
+//Resources:MediaServicesResources:BrandStandards_Description
+        public static string BrandStandards_Description { get { return GetResourceString("BrandStandards_Description"); } }
+//Resources:MediaServicesResources:BrandStandards_HeadingFontFamily
+        public static string BrandStandards_HeadingFontFamily { get { return GetResourceString("BrandStandards_HeadingFontFamily"); } }
+//Resources:MediaServicesResources:BrandStandards_Help
+        public static string BrandStandards_Help { get { return GetResourceString("BrandStandards_Help"); } }
+//Resources:MediaServicesResources:BrandStandards_ListTitle
+        public static string BrandStandards_ListTitle { get { return GetResourceString("BrandStandards_ListTitle"); } }
+//Resources:MediaServicesResources:BrandStandards_Logos
+        public static string BrandStandards_Logos { get { return GetResourceString("BrandStandards_Logos"); } }
+//Resources:MediaServicesResources:BrandStandards_Logos_Help
+        public static string BrandStandards_Logos_Help { get { return GetResourceString("BrandStandards_Logos_Help"); } }
+//Resources:MediaServicesResources:BrandStandards_LogoUsageGuidance
+        public static string BrandStandards_LogoUsageGuidance { get { return GetResourceString("BrandStandards_LogoUsageGuidance"); } }
+//Resources:MediaServicesResources:BrandStandards_MessagingGuidance
+        public static string BrandStandards_MessagingGuidance { get { return GetResourceString("BrandStandards_MessagingGuidance"); } }
+//Resources:MediaServicesResources:BrandStandards_TerminologyGuidance
+        public static string BrandStandards_TerminologyGuidance { get { return GetResourceString("BrandStandards_TerminologyGuidance"); } }
+//Resources:MediaServicesResources:BrandStandards_Title
+        public static string BrandStandards_Title { get { return GetResourceString("BrandStandards_Title"); } }
+//Resources:MediaServicesResources:BrandStandards_ToneGuidance
+        public static string BrandStandards_ToneGuidance { get { return GetResourceString("BrandStandards_ToneGuidance"); } }
+//Resources:MediaServicesResources:BrandStandards_TypographyGuidance
+        public static string BrandStandards_TypographyGuidance { get { return GetResourceString("BrandStandards_TypographyGuidance"); } }
+//Resources:MediaServicesResources:BrandStandards_UsageGuidance
+        public static string BrandStandards_UsageGuidance { get { return GetResourceString("BrandStandards_UsageGuidance"); } }
+//Resources:MediaServicesResources:BrandStandards_VoiceGuidance
+        public static string BrandStandards_VoiceGuidance { get { return GetResourceString("BrandStandards_VoiceGuidance"); } }
+//Resources:MediaServicesResources:BrandStandards_WritingGuidance
+        public static string BrandStandards_WritingGuidance { get { return GetResourceString("BrandStandards_WritingGuidance"); } }
 //Resources:MediaServicesResources:Common_CreatedBy
         public static string Common_CreatedBy { get { return GetResourceString("Common_CreatedBy"); } }
 //Resources:MediaServicesResources:Common_CreationDate
@@ -654,6 +728,43 @@ namespace LagoVista.MediaServices.Models.Resources
 
         public static class Names
         {
+            public const string BrandStandardColor_Description = "BrandStandardColor_Description";
+            public const string BrandStandardColor_Help = "BrandStandardColor_Help";
+            public const string BrandStandardColor_HexColor = "BrandStandardColor_HexColor";
+            public const string BrandStandardColor_HexColor_Help = "BrandStandardColor_HexColor_Help";
+            public const string BrandStandardColor_Name = "BrandStandardColor_Name";
+            public const string BrandStandardColor_Role = "BrandStandardColor_Role";
+            public const string BrandStandardColor_Role_Help = "BrandStandardColor_Role_Help";
+            public const string BrandStandardColor_Title = "BrandStandardColor_Title";
+            public const string BrandStandardColor_UsageGuidance = "BrandStandardColor_UsageGuidance";
+            public const string BrandStandardLogo_Description = "BrandStandardLogo_Description";
+            public const string BrandStandardLogo_Help = "BrandStandardLogo_Help";
+            public const string BrandStandardLogo_MediaResource = "BrandStandardLogo_MediaResource";
+            public const string BrandStandardLogo_Role = "BrandStandardLogo_Role";
+            public const string BrandStandardLogo_Role_Help = "BrandStandardLogo_Role_Help";
+            public const string BrandStandardLogo_Title = "BrandStandardLogo_Title";
+            public const string BrandStandardLogo_UsageGuidance = "BrandStandardLogo_UsageGuidance";
+            public const string BrandStandards_AvoidGuidance = "BrandStandards_AvoidGuidance";
+            public const string BrandStandards_BodyFontFamily = "BrandStandards_BodyFontFamily";
+            public const string BrandStandards_BrandIdentityArtifact = "BrandStandards_BrandIdentityArtifact";
+            public const string BrandStandards_BrandIdentityArtifact_Help = "BrandStandards_BrandIdentityArtifact_Help";
+            public const string BrandStandards_Colors = "BrandStandards_Colors";
+            public const string BrandStandards_Colors_Help = "BrandStandards_Colors_Help";
+            public const string BrandStandards_Description = "BrandStandards_Description";
+            public const string BrandStandards_HeadingFontFamily = "BrandStandards_HeadingFontFamily";
+            public const string BrandStandards_Help = "BrandStandards_Help";
+            public const string BrandStandards_ListTitle = "BrandStandards_ListTitle";
+            public const string BrandStandards_Logos = "BrandStandards_Logos";
+            public const string BrandStandards_Logos_Help = "BrandStandards_Logos_Help";
+            public const string BrandStandards_LogoUsageGuidance = "BrandStandards_LogoUsageGuidance";
+            public const string BrandStandards_MessagingGuidance = "BrandStandards_MessagingGuidance";
+            public const string BrandStandards_TerminologyGuidance = "BrandStandards_TerminologyGuidance";
+            public const string BrandStandards_Title = "BrandStandards_Title";
+            public const string BrandStandards_ToneGuidance = "BrandStandards_ToneGuidance";
+            public const string BrandStandards_TypographyGuidance = "BrandStandards_TypographyGuidance";
+            public const string BrandStandards_UsageGuidance = "BrandStandards_UsageGuidance";
+            public const string BrandStandards_VoiceGuidance = "BrandStandards_VoiceGuidance";
+            public const string BrandStandards_WritingGuidance = "BrandStandards_WritingGuidance";
             public const string Common_CreatedBy = "Common_CreatedBy";
             public const string Common_CreationDate = "Common_CreationDate";
             public const string Common_Description = "Common_Description";
