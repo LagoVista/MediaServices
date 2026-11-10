@@ -68,5 +68,65 @@ namespace LagoVista.MediaServices.MediaTests
             standards.Validate(validation);
             Assert.IsTrue(validation.Successful);
         }
+        [TestMethod]
+        public void BrandStandardsFieldsProvideAiAuthoringPrompts()
+        {
+            var standardsFields = new[]
+            {
+                nameof(BrandStandards.BrandIdentityArtifact),
+                nameof(BrandStandards.Logos),
+                nameof(BrandStandards.Colors),
+                nameof(BrandStandards.HeadingFontFamily),
+                nameof(BrandStandards.BodyFontFamily),
+                nameof(BrandStandards.TypographyGuidance),
+                nameof(BrandStandards.LogoUsageGuidance),
+                nameof(BrandStandards.VoiceGuidance),
+                nameof(BrandStandards.ToneGuidance),
+                nameof(BrandStandards.MessagingGuidance),
+                nameof(BrandStandards.TerminologyGuidance),
+                nameof(BrandStandards.WritingGuidance),
+                nameof(BrandStandards.UsageGuidance),
+                nameof(BrandStandards.AvoidGuidance)
+            };
+
+            foreach (var field in standardsFields)
+            {
+                AssertHasPrompt(typeof(BrandStandards), field);
+            }
+
+            foreach (var field in new[]
+            {
+                nameof(BrandStandardLogo.Role),
+                nameof(BrandStandardLogo.MediaResource),
+                nameof(BrandStandardLogo.UsageGuidance)
+            })
+            {
+                AssertHasPrompt(typeof(BrandStandardLogo), field);
+            }
+
+            foreach (var field in new[]
+            {
+                nameof(BrandStandardColor.Name),
+                nameof(BrandStandardColor.Role),
+                nameof(BrandStandardColor.HexColor),
+                nameof(BrandStandardColor.UsageGuidance)
+            })
+            {
+                AssertHasPrompt(typeof(BrandStandardColor), field);
+            }
+        }
+
+        private static void AssertHasPrompt(System.Type modelType, string fieldName)
+        {
+            var property = modelType.GetProperty(fieldName);
+            Assert.IsNotNull(property, $"{modelType.Name}.{fieldName} must exist.");
+            var attribute = property.GetCustomAttributes(typeof(LagoVista.Core.Attributes.FormFieldAttribute), true)
+                .OfType<LagoVista.Core.Attributes.FormFieldAttribute>()
+                .SingleOrDefault();
+            Assert.IsNotNull(attribute, $"{modelType.Name}.{fieldName} must have FormField metadata.");
+            Assert.IsFalse(string.IsNullOrWhiteSpace(attribute.AiChatPrompt),
+                $"{modelType.Name}.{fieldName} must give the AI field-authoring guidance.");
+        }
+
     }
 }
