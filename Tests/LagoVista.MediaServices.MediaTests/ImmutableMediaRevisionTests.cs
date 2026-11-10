@@ -62,7 +62,7 @@ namespace LagoVista.MediaServices.MediaTests
             return resource;
         }
 
-        private static MediaServicesManager CreateManager(Mock<IMediaServicesRepo> repo, Mock<ISecurity> security = null)
+        private static MediaServicesManager CreateManager(Mock<IMediaServicesRepo> repo, Mock<ISecurity> security = null, Mock<IAppConfig> appConfig = null)
         {
             if (security == null)
             {
@@ -88,7 +88,7 @@ namespace LagoVista.MediaServices.MediaTests
                 new Mock<IMediaLibraryRepo>().Object,
                 new Mock<ITextToSpeechService>().Object,
                 new Mock<IAdminLogger>().Object,
-                new Mock<IAppConfig>().Object,
+                (appConfig ?? new Mock<IAppConfig>()).Object,
                 new Mock<IDependencyManager>().Object,
                 security.Object);
         }
@@ -422,6 +422,97 @@ namespace LagoVista.MediaServices.MediaTests
 
             Assert.IsFalse(result.Successful);
             StringAssert.Contains(result.ErrorMessage, "HTTPS");
+        }
+
+
+        [TestMethod]
+        public async Task PublicMediaUrlReturnsWebsiteReadyUrlWithMetadata()
+        {
+            var resource = CreateResource(new byte[] { 1, 2, 3 });
+            resource.IsPublic = true;
+            resource.History[0].Width = 1672;
+            resource.History[0].Height = 941;
+            resource.History[0].MimeType = "image/png";
+            resource.History[0].FileName = "virtual-team.png";
+            resource.History[0].ThumbnailStorageReferenceName = "thumb.webp";
+            var repo = new Mock<IMediaServicesRepo>();
+            repo.Setup(item => item.GetMediaResourceRecordAsync(MediaId)).ReturnsAsync(resource);
+            var config = new Mock<IAppConfig>();
+            config.Setup(item => item.WebAddress).Returns("https://api-dev.nuviot.com/");
+
+            var result = await CreateManager(repo, appConfig: config)
+                .GetPublicMediaResourceUrlAsync(MediaId, Org, User);
+
+            Assert.IsTrue(result.Successful, result.ErrorMessage);
+            Assert.AreEqual($"https://api-dev.nuviot.com/api/media/resource/{Org.Id}/{MediaId}/download", result.Result.Url);
+            Assert.AreEqual($"https://api-dev.nuviot.com/api/media/resource/{Org.Id}/{MediaId}/thumbnail", result.Result.ThumbnailUrl);
+            Assert.AreEqual("virtual-team.png", result.Result.FileName);
+            Assert.AreEqual("image/png", result.Result.MimeType);
+            Assert.AreEqual(1672, result.Result.Width);
+            Assert.AreEqual(941, result.Result.Height);
+            Assert.AreEqual("revision-1", result.Result.CurrentRevisionId);
+            Assert.IsTrue(result.Result.IsPublic);
+        }
+
+        [TestMethod]
+        public async Task PublicMediaUrlRejectsPrivateResource()
+        {
+            var resource = CreateResource(new byte[] { 1, 2, 3 });
+            var repo = new Mock<IMediaServicesRepo>();
+            repo.Setup(item => item.GetMediaResourceRecordAsync(MediaId)).ReturnsAsync(resource);
+            var result = await CreateManager(repo).GetPublicMediaResourceUrlAsync(MediaId, Org, User);
+            Assert.IsFalse(result.Successful);
+            StringAssert.Contains(result.ErrorMessage, "not public");
+        }
+
+        [TestMethod]
+        public async Task PublicMediaUrlRejectsWrongOrganization()
+        {
+            var resource = CreateResource(new byte[] { 1, 2, 3 });
+            resource.IsPublic = true;
+            var repo = new Mock<IMediaServicesRepo>();
+            repo.Setup(item => item.GetMediaResourceRecordAsync(MediaId)).ReturnsAsync(resource);
+            var result = await CreateManager(repo).GetPublicMediaResourceUrlAsync(MediaId, OtherOrg, User);
+            Assert.IsFalse(result.Successful);
+            StringAssert.Contains(result.ErrorMessage, "active organization");
+        }
+
+        [TestMethod]
+        public async Task PublicMediaUrlRejectsNonHttpsBaseAddress()
+        {
+            var resource = CreateResource(new byte[] { 1, 2, 3 });
+            resource.IsPublic = true;
+            var repo = new Mock<IMediaServicesRepo>();
+            repo.Setup(item => item.GetMediaResourceRecordAsync(MediaId)).ReturnsAsync(resource);
+            var config = new Mock<IAppConfig>();
+            config.Setup(item => item.WebAddress).Returns("http://internal-service.local");
+            var result = await CreateManager(repo, appConfig: config)
+                .GetPublicMediaResourceUrlAsync(MediaId, Org, User);
+            Assert.IsFalse(result.Successful);
+            StringAssert.Contains(result.ErrorMessage, "HTTPS");
+        }
+
+        [TestMethod]
+        public async Task PublicMediaUrlRejectsMissingResource()
+        {
+            var repo = new Mock<IMediaServicesRepo>();
+            repo.Setup(item => item.GetMediaResourceRecordAsync(MediaId)).ReturnsAsync((MediaResource)null);
+            var result = await CreateManager(repo).GetPublicMediaResourceUrlAsync(MediaId, Org, User);
+            Assert.IsFalse(result.Successful);
+            StringAssert.Contains(result.ErrorMessage, "Could not find");
+        }
+
+        [TestMethod]
+        public async Task PublicMediaUrlRejectsMissingDownloadableFile()
+        {
+            var resource = CreateResource(new byte[] { 1, 2, 3 });
+            resource.IsPublic = true;
+            resource.IsFileUpload = false;
+            var repo = new Mock<IMediaServicesRepo>();
+            repo.Setup(item => item.GetMediaResourceRecordAsync(MediaId)).ReturnsAsync(resource);
+            var result = await CreateManager(repo).GetPublicMediaResourceUrlAsync(MediaId, Org, User);
+            Assert.IsFalse(result.Successful);
+            StringAssert.Contains(result.ErrorMessage, "downloadable file");
         }
 
         [TestMethod]

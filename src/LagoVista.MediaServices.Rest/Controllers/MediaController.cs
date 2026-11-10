@@ -412,6 +412,21 @@ namespace LagoVista.MediaServices.Rest.Controllers
                 request?.LifetimeMinutes);
         }
 
+
+        /// <summary>
+        /// Resolve the public website URL for a Media Resource's current image.
+        /// Requires a published, authorized resource; does not change visibility.
+        /// </summary>
+        [McpEndpoint("media-resource-public-url",
+            Description = "Get a permanent, absolute HTTPS website image URL for a public Media Resource by ID. Use after saving an approved image and setting isPublic=true. Returns image URL, optional thumbnail URL, dimensions, MIME type and current revision. Rejects private resources. Unlike media-gallery-image-lease, this URL does not expire, but serves the CURRENT revision rather than an immutable revision. Never guess a URL or treat a temporary signed lease as a permanent website URL.",
+            FamilyId = "media")]
+        [Authorize]
+        [HttpGet("/api/media/resource/{id}/public-url")]
+        public Task<InvokeResult<PublicMediaResourceUrl>> GetMediaResourcePublicUrl(string id)
+        {
+            return _mediaServicesManager.GetPublicMediaResourceUrlAsync(id, OrgEntityHeader, UserEntityHeader);
+        }
+
         [McpEndpoint("media-resource-image-download",
             Description = "FALLBACK ONLY: Download an authorized Media Resource revision as a model-side image result for explicit analysis/export, NOT the normal conversational image editing path. For editing, use media-gallery-open or media-gallery-preview(id,revisionid). The widget displays the actual original; the user right-clicks Copy image and pastes it into the ChatGPT composer. Edit THAT user-pasted image as your source. The widget's setWidgetState(modelContent) communicates selected resource/revision IDs, not image pixels. Never silently select a different revision or claim a preview is itself an editor source.",
             FamilyId = "media")]

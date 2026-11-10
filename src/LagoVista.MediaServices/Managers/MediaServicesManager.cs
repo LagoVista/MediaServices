@@ -875,6 +875,60 @@ namespace LagoVista.MediaServices.Managers
             });
         }
 
+
+        /// <summary>
+        /// Return a canonical website-ready public download URL, not a temporary
+        /// signed storage lease and not an MCP gateway-relative URL.
+        /// </summary>
+        public async Task<InvokeResult<PublicMediaResourceUrl>> GetPublicMediaResourceUrlAsync(
+            string id, EntityHeader org, EntityHeader user)
+        {
+            if (String.IsNullOrWhiteSpace(id))
+                return InvokeResult<PublicMediaResourceUrl>.FromError("A media resource ID is required.");
+
+            var resource = await _mediaRepo.GetMediaResourceRecordAsync(id);
+            if (resource == null)
+                return InvokeResult<PublicMediaResourceUrl>.FromError($"Could not find media resource '{id}'.");
+
+            if (org == null || String.IsNullOrWhiteSpace(org.Id) ||
+                resource.OwnerOrganization == null ||
+                !String.Equals(resource.OwnerOrganization.Id, org.Id, StringComparison.OrdinalIgnoreCase))
+                return InvokeResult<PublicMediaResourceUrl>.FromError("The media resource does not belong to the active organization.");
+
+            await AuthorizeAsync(resource, AuthorizeActions.Read, user, org);
+
+            if (resource.IsDeleted == true || !resource.IsPublic)
+                return InvokeResult<PublicMediaResourceUrl>.FromError("The media resource is not public. Publish it before requesting a public URL.");
+
+            if (!resource.IsFileUpload || String.IsNullOrWhiteSpace(resource.GetCurrentStorageReferenceName()))
+                return InvokeResult<PublicMediaResourceUrl>.FromError("The media resource does not contain a downloadable file.");
+
+            if (String.IsNullOrWhiteSpace(_appConfig.WebAddress) ||
+                !Uri.TryCreate(_appConfig.WebAddress, UriKind.Absolute, out var baseUri) ||
+                !String.Equals(baseUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) ||
+                !String.IsNullOrEmpty(baseUri.Query) || !String.IsNullOrEmpty(baseUri.Fragment))
+                return InvokeResult<PublicMediaResourceUrl>.FromError("The public MediaServices web address must be configured as an absolute HTTPS URL.");
+
+            var revision = resource.GetCurrentRevision();
+            var thumbnailReference = revision?.ThumbnailStorageReferenceName ?? resource.ThumbnailStorageReferenceName;
+            var thumbnailPath = $"/api/media/resource/{org.Id}/{resource.Id}/thumbnail";
+
+            return InvokeResult<PublicMediaResourceUrl>.Create(new PublicMediaResourceUrl
+            {
+                MediaResourceId = resource.Id,
+                Url = new Uri(baseUri, resource.DownloadPath).AbsoluteUri,
+                ThumbnailUrl = String.IsNullOrWhiteSpace(thumbnailReference)
+                    ? null : new Uri(baseUri, thumbnailPath).AbsoluteUri,
+                Name = resource.Name,
+                FileName = revision?.FileName ?? resource.FileName,
+                MimeType = revision?.MimeType ?? resource.MimeType,
+                Width = revision?.Width ?? resource.Width,
+                Height = revision?.Height ?? resource.Height,
+                CurrentRevisionId = revision?.Id ?? resource.CurrentRevision,
+                IsPublic = true,
+            });
+        }
+
         private const int DefaultImmutableReadLeaseMinutes = 60;
         private const int MaximumImmutableReadLeaseMinutes = 120;
 
