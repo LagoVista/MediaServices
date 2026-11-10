@@ -23,7 +23,7 @@ namespace LagoVista.MediaServices.Models
         public string LibraryId { get; set; }
         public string LibraryName { get; set; }
         public int PageIndex { get; set; }
-        public int PageSize { get; set; } = 6;
+        public int PageSize { get; set; } = 15;
         public bool HasMore { get; set; }
         public List<MediaGalleryItem> Items { get; set; } = new List<MediaGalleryItem>();
     }
