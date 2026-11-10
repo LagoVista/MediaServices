@@ -440,10 +440,10 @@ namespace LagoVista.MediaServices.Rest.Controllers
         /// </summary>
         /// <summary>
         /// Open a MediaServices-owned MCP Apps library browser. Only library names
-        /// are returned to the model; the app requests six signed previews per page.
+        /// are returned to the model; the app requests fifteen signed previews per page.
         /// </summary>
         [McpEndpoint("media-gallery-open",
-            Description = "Open an interactive APTIX Media Library browser. Lists accessible libraries and shows mixed media in a paged 2x3 gallery, six resources at a time. Optional libraryid starts with that library.",
+            Description = "Open an interactive APTIX Media Library browser. Lists accessible libraries and shows mixed media in a paged three-column gallery, fifteen resources at a time. Optional libraryid starts with that library.",
             FamilyId = "media", WidgetResourceUri = MediaGalleryBrowserWidgetResource.ResourceUri)]
         [Authorize]
         [HttpGet("/api/media/gallery/open")]
@@ -472,12 +472,12 @@ namespace LagoVista.MediaServices.Rest.Controllers
         }
 
         /// <summary>
-        /// Authorize the library, then fetch one server-paged batch of six media
+        /// Authorize the library, then fetch one server-paged batch of fifteen media
         /// summaries and browser-ready signed thumbnail/original-image URLs.
         /// Never returns raw media contents or signed video/audio URLs.
         /// </summary>
         [McpEndpoint("media-gallery-page",
-            Description = "Fetch exactly one six-item page of a Media Library for the MCP Gallery. Returns image/video thumbnail read URLs when available, and media-type tiles for non-images. Page starts at 1.",
+            Description = "Fetch exactly one fifteen-item page of a Media Library for the MCP Gallery. Returns image/video thumbnail read URLs when available, and media-type tiles for non-images. Page starts at 1.",
             FamilyId = "media")]
         [Authorize]
         [HttpGet("/api/media/gallery/library/{libraryid}/page/{page}")]
@@ -490,6 +490,22 @@ namespace LagoVista.MediaServices.Rest.Controllers
             if (result.Successful)
                 result.Result.LibraryName = library.Name;
             return result;
+        }
+
+        /// <summary>
+        /// Data-only original-image lease used by a user's explicit "Work with this
+        /// image" action. Does not render a nested widget or fetch any media bytes.
+        /// Server authorization and exact immutable revision checks are unchanged.
+        /// </summary>
+        [McpEndpoint("media-gallery-image-lease",
+            Description = "Get a short-lived signed original-image URL for an explicitly selected Media Gallery image revision. Data-only, no widget; requires resource ID and exact revision ID.",
+            FamilyId = "media")]
+        [Authorize]
+        [HttpGet("/api/media/gallery/image-lease/{id}/{revisionid}")]
+        public Task<InvokeResult<ImmutableMediaReadLease>> GetMediaGalleryImageLease(string id, string revisionid)
+        {
+            return _mediaServicesManager.CreateImmutableMediaReadLeaseAsync(
+                id, revisionid, OrgEntityHeader, UserEntityHeader, lifetimeMinutes: 10);
         }
 
         [McpEndpoint("media-gallery-preview",
