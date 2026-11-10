@@ -7,13 +7,13 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
     /// <summary>
     /// MediaServices owns its MCP App HTML and CSP declaration.
     /// The shared API host discovers this resource from the feature assembly.
-    /// Exact-revision preview and native ChatGPT source-image handoff. The model
-    /// does not retrieve image bytes via an MCP download tool.
+    /// Exact-revision image preview for manual clipboard-to-composer editing.
+    /// Resource identity travels in widget model context; image pixels do not.
     /// </summary>
     [McpServerResourceType]
     public static class MediaGalleryWidgetResource
     {
-        public const string ResourceUri = "ui://media/gallery/v5.html";
+        public const string ResourceUri = "ui://media/gallery/v6.html";
         public const string AppMimeType = "text/html;profile=mcp-app";
 
         [McpServerResource(UriTemplate = ResourceUri, Name = "APTIX Media Preview", MimeType = AppMimeType)]
@@ -46,9 +46,9 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
             };
         }
 
-        // Reuse the verified MCP Apps handshake to display the exact immutable
-        // revision; transfer source pixels via window.openai.uploadFile only
-        // after a user explicitly clicks the native handoff button.
+        // Render the exact original image for native browser Copy image -> paste
+        // into the ChatGPT composer. Widget state retains resource/revision IDs
+        // without attempting image upload or sending a model follow-up.
         public const string Html = """
             <!doctype html>
             <html lang="en">
@@ -59,11 +59,12 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
               <style>
                 :root {color-scheme:light dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
                 body {margin:0;padding:20px;background:transparent}
-                button {font:inherit}
-                .actions {display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:15px}
-                #handoff {border:1px solid #0969b6;border-radius:9px;padding:9px 14px;color:#fff;background:#0969b6;font-weight:600;cursor:pointer}
-                #handoff:disabled {opacity:.5;cursor:default}
-                #handoffStatus {font-size:12px;opacity:.8;overflow-wrap:anywhere;flex:1;min-width:220px}
+                .instructions {margin-top:16px;border:1px solid rgba(128,128,128,.3);border-radius:10px;padding:14px 16px}
+                .instructions h3 {font-size:14px;margin:0 0 8px}
+                .instructions ol {margin:0 0 10px;padding-left:22px;font-size:13px;line-height:1.7}
+                .instructions p {font-size:12px;margin:7px 0 0;overflow-wrap:anywhere}
+                .instructions code {font-size:11px;overflow-wrap:anywhere}
+                a {color:#0969b6;text-decoration:underline}
                 .card {border:1px solid rgba(128,128,128,.3);border-radius:12px;padding:20px}
                 .label {font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.07em}
                 h2 {font-size:17px;margin:8px 0}
@@ -77,16 +78,27 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
             </head>
             <body>
               <main class="card">
-                <div class="label">APTIX / MediaServices / exact-revision preview / v5</div>
+                <div class="label">APTIX / MediaServices / exact-revision preview / v6</div>
                 <h2>Media Resource preview</h2>
                 <p id="state">Widget HTML loaded. Waiting for JavaScript...</p>
                 <p id="details">Initializing the MCP Apps bridge...</p>
                 <div class="frame"><img id="preview" alt="Selected Media Resource" hidden></div>
-                <p id="imageMeta">Image is browser-rendered; no image bytes have been sent to the model.</p>
-                <div class="actions">
-                  <button id="handoff" type="button" disabled>Work with this exact image</button>
-                  <span id="handoffStatus" role="status">Wait for the original revision to load, then select this action to attach it to ChatGPT.</span>
-                </div>
+                <p id="imageMeta">The exact revision is displayed here; copy its image pixels into your ChatGPT message.</p>
+                <section class="instructions" aria-label="How to edit this image">
+                  <h3>To make changes</h3>
+                  <ol>
+                    <li>Right-click the image above and choose <strong>Copy image</strong> (not Copy image address).</li>
+                    <li>Click the ChatGPT message box and paste the image (Ctrl+V on Windows or Cmd+V on Mac).</li>
+                    <li>Describe what you want changed and send your message.</li>
+                    <li>Review the result ChatGPT shows you.</li>
+                    <li>Ask for further changes until you're happy.</li>
+                    <li>Ask ChatGPT to <strong>save the approved image as a new revision</strong> of this resource.</li>
+                  </ol>
+                  <p>Media Resource ID: <code id="resourceId">Loading...</code></p>
+                  <p>Source revision: <code id="revisionId">Loading...</code></p>
+                  <p><a id="openOriginal" hidden target="_blank" rel="noopener noreferrer">Open full-size original</a> if the browser does not offer Copy image here.</p>
+                  <p>No changes are saved until you explicitly ask ChatGPT to save.</p>
+                </section>
               </main>
               <script>
                 (() => {
@@ -94,12 +106,12 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                   const details = document.getElementById('details');
                   const image = document.getElementById('preview');
                   const imageMeta = document.getElementById('imageMeta');
-                  const handoffButton = document.getElementById('handoff');
-                  const handoffStatus = document.getElementById('handoffStatus');
+                  const resourceId = document.getElementById('resourceId');
+                  const revisionId = document.getElementById('revisionId');
+                  const openOriginal = document.getElementById('openOriginal');
                   let initialized = false;
                   let lease = null;
-                  let imageReady = false;
-                  let transferring = false;
+                  let lastContextKey = null;
                   const permittedHosts = new Set(['storage-dev.nuviot.com',
                     'storage.nuviot.com', 'apptrex.ai', 'api-dev.nuviot.com', 'api.nuviot.com']);
 
@@ -139,8 +151,32 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                       state.textContent = 'MediaServices returned an unapproved image host.';
                       return;
                     }
-                    imageReady = false;
-                    handoffButton.disabled = true;
+                    resourceId.textContent = lease.mediaResourceId || 'Unknown';
+                    revisionId.textContent = lease.revisionId || 'Unknown';
+                    openOriginal.href = target.href;
+                    openOriginal.hidden = false;
+                    const key = (lease.mediaResourceId || '') + ':' + (lease.revisionId || '');
+                    if (key !== lastContextKey && lease.mediaResourceId && lease.revisionId) {
+                      lastContextKey = key;
+                      if (window.openai?.setWidgetState) {
+                        Promise.resolve(window.openai.setWidgetState({
+                          modelContent:{
+                            action:'aptix_media_image_selected_for_manual_edit',
+                            mediaResourceId:lease.mediaResourceId,
+                            revisionId:lease.revisionId,
+                            sourceTransport:'user-copies-full-resolution-image-and-pastes-into-chat-composer',
+                            instruction:'The user is copying the ACTUAL image pixels from this exact Media Resource revision and pasting them into the chat composer to request edits. Use the image attached to the user message as the editing source; do not regenerate from text alone. When the user asks to save, use media-revise-chatgpt-image on THIS mediaResourceId after approval. A widget preview alone is not a source-image attachment. Do not save until explicitly requested.'
+                          },
+                          privateContent:{
+                            selectedResourceId:lease.mediaResourceId,
+                            selectedRevisionId:lease.revisionId
+                          }
+                        })).catch(() => {
+                          // Identifiers remain visible for manual save instructions if
+                          // the host does not retain widget state.
+                        });
+                      }
+                    }
                     state.textContent = 'Loading exact image revision directly from MediaServices storage...';
                     details.textContent = 'Source: ' + target.hostname + ' (signed HTTPS URL)';
                     imageMeta.textContent = (lease.fileName || 'Image') + ' · loading...';
@@ -148,22 +184,14 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                     image.src = target.href;
                   };
                   image.addEventListener('load', () => {
-                    imageReady = !!(lease?.mediaResourceId && lease?.revisionId);
-                    handoffButton.disabled = !imageReady;
                     state.textContent = 'Exact image revision loaded successfully';
                     imageMeta.textContent = (lease?.fileName || 'Media Resource') + ' · ' +
                       image.naturalWidth + ' × ' + image.naturalHeight +
-                      ' · resource ' + (lease?.mediaResourceId || 'unknown') +
-                      ' · revision ' + (lease?.revisionId || 'unknown');
-                    handoffStatus.textContent = imageReady
-                      ? 'Click to attach these exact original pixels to ChatGPT before editing.'
-                      : 'Image revision identity is missing; native handoff is disabled.';
+                      ' · full-resolution original, ready for browser Copy image';
                   });
                   image.addEventListener('error', () => {
-                    imageReady = false;
-                    handoffButton.disabled = true;
                     state.textContent = 'Image failed to load';
-                    imageMeta.textContent = 'Inspect the Network and Console panels for CSP or HTTP errors.';
+                    imageMeta.textContent = 'Open full-size original above, or inspect the browser Network panel.';
                   });
                   const receiveToolResult = value => {
                     const newLease = findLease(value);
@@ -174,109 +202,6 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                     lease = newLease;
                     tryPreview();
                   };
-
-                  // Old media revisions may have neither ContentType nor FileName.
-                  // Detect the MIME from actual source bytes rather than trusting
-                  // signed storage response headers or legacy metadata.
-                  const detectImageMime = async blob => {
-                    const b = new Uint8Array(await blob.slice(0,16).arrayBuffer());
-                    if (b.length >= 8 && b[0]===137 && b[1]===80 && b[2]===78 &&
-                        b[3]===71 && b[4]===13 && b[5]===10 && b[6]===26 && b[7]===10)
-                      return 'image/png';
-                    if (b.length >= 3 && b[0]===255 && b[1]===216 && b[2]===255)
-                      return 'image/jpeg';
-                    if (b.length >= 12 && b[0]===82 && b[1]===73 && b[2]===70 &&
-                        b[3]===70 && b[8]===87 && b[9]===69 && b[10]===66 && b[11]===80)
-                      return 'image/webp';
-                    if (b.length >= 6 && b[0]===71 && b[1]===73 && b[2]===70 &&
-                        b[3]===56 && (b[4]===55 || b[4]===57) && b[5]===97)
-                      return 'image/gif';
-                    return null;
-                  };
-
-                  handoffButton.addEventListener('click', async () => {
-                    if (transferring || !initialized || !imageReady ||
-                        !lease?.mediaResourceId || !lease?.revisionId) return;
-                    const openai = window.openai;
-                    if (!openai?.uploadFile || !openai?.setWidgetState) {
-                      handoffStatus.textContent =
-                        'ChatGPT native uploadFile/setWidgetState is not available in this host.';
-                      return;
-                    }
-                    const original = lease;
-                    transferring = true;
-                    handoffButton.disabled = true;
-                    try {
-                      const target = new URL(original.url);
-                      if (target.protocol !== 'https:' || !permittedHosts.has(target.hostname))
-                        throw Error('Original revision URL is not from an approved HTTPS host');
-
-                      handoffStatus.textContent = 'Downloading the exact original revision in the widget...';
-                      // This fetch occurs in the widget browser, NOT through the
-                      // model-side media-resource-image-download MCP tool.
-                      const response = await fetch(target.href, {method:'GET',credentials:'omit'});
-                      if (!response.ok) throw Error('Image storage returned HTTP ' + response.status);
-                      const maxBytes = 20 * 1024 * 1024;
-                      const length = Number(response.headers.get('content-length') || 0);
-                      if (length > maxBytes) throw Error('Source image exceeds 20 MiB');
-                      const blob = await response.blob();
-                      if (!blob.size || blob.size > maxBytes) throw Error('Invalid source-image size');
-                      const mime = await detectImageMime(blob);
-                      if (!mime) throw Error('Downloaded source is not PNG, JPEG, WebP or GIF');
-
-                      const ext = ({'image/png':'.png','image/jpeg':'.jpg',
-                        'image/webp':'.webp','image/gif':'.gif'})[mime];
-                      const name = (original.fileName && String(original.fileName).trim()) ||
-                        ('media-source-' + original.mediaResourceId + '-' + original.revisionId + ext);
-                      const file = new File([blob], name, {type:mime});
-
-                      handoffStatus.textContent = 'Attaching the original image via ChatGPT uploadFile...';
-                      const uploaded = await openai.uploadFile(file);
-                      if (!uploaded?.fileId) throw Error('ChatGPT did not return a native file ID');
-
-                      // This exact OpenAI-specific imageIds handoff was verified
-                      // to make source pixels available for model vision.
-                      // Image-editor source-input capability remains a separate test.
-                      await Promise.resolve(openai.setWidgetState({
-                        modelContent:{
-                          action:'aptix_exact_revision_source_image_handoff',
-                          mediaResourceId:original.mediaResourceId,
-                          revisionId:original.revisionId,
-                          sourceImageFileId:uploaded.fileId,
-                          imageMimeType:mime,
-                          sourceTransport:'openai.uploadFile + setWidgetState.imageIds',
-                          instruction:'This attached image is the EXACT original revision to use as image-editor source. When the user asks for edits, pass this actual attached file to the image editing tool. Never regenerate solely from text or silently use a different revision. Do not use media-resource-image-download for this native handoff. If image editing cannot receive the source file, report the limitation rather than fabricate an edit. Do not save revisions without explicit approval.'
-                        },
-                        privateContent:{
-                          selectedResourceId:original.mediaResourceId,
-                          selectedRevisionId:original.revisionId,
-                          handoff:'exact-original-revision'
-                        },
-                        imageIds:[uploaded.fileId]
-                      }));
-
-                      handoffStatus.textContent = 'Original image attached to ChatGPT.';
-                      if (typeof openai.sendFollowUpMessage === 'function') {
-                        await openai.sendFollowUpMessage({
-                          prompt:'APTIX NATIVE ORIGINAL-IMAGE HANDOFF: I selected Media Resource ' +
-                            original.mediaResourceId + ', exact revision ' + original.revisionId +
-                            '. Its original pixels have been attached via ChatGPT imageIds. Please first confirm you can inspect the actual image and wait for my edit instruction. When editing, use THIS ATTACHED IMAGE AS THE IMAGE EDITOR SOURCE, not a text-only reconstruction; do not call media-resource-image-download. If the image editor cannot receive the native image attachment as input, tell me and stop instead of regenerating. Do not save until I approve.'
-                        });
-                        handoffStatus.textContent =
-                          'Exact revision attached; requested source-image verification in ChatGPT.';
-                      } else {
-                        handoffStatus.textContent =
-                          'Exact revision attached; ask ChatGPT to verify the selected original.';
-                      }
-                    } catch (error) {
-                      handoffStatus.textContent = 'Native source-image handoff failed: ' +
-                        String(error?.message || error) +
-                        ' (if the preview loads but fetch fails, check storage CORS/CSP).';
-                    } finally {
-                      transferring = false;
-                      handoffButton.disabled = !imageReady;
-                    }
-                  });
 
                   state.textContent = 'JavaScript running. Initializing host connection...';
                   window.addEventListener('message', event => {
@@ -312,7 +237,7 @@ namespace LagoVista.MediaServices.Rest.McpWidgets
                     method: 'ui/initialize',
                     params: {
                       protocolVersion: '2026-01-26',
-                      appInfo: { name: 'aptix-media-gallery', version: '5.0.0' },
+                      appInfo: { name: 'aptix-media-gallery', version: '6.0.0' },
                       appCapabilities: {}
                     }
                   }, '*');
