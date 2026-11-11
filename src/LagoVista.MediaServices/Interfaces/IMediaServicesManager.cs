@@ -38,6 +38,7 @@ namespace LagoVista.MediaServices.Interfaces
         Task<InvokeResult<MediaResourceSummary>> UpdateMediaResourceRecordAsync(MediaResource resource, EntityHeader org, EntityHeader user);
         Task<MediaResource> GetMediaResourceRecordAsync(string id, EntityHeader org, EntityHeader user);
         Task<MediaItemResponse> GetPublicResourceRecordAsync(string ownerOrgId, string id, string lastModified = null);
+        Task<MediaItemResponse> GetDownloadResourceRecordAsync(string ownerOrgId, string id, string lastModified, EntityHeader authenticatedOrg, EntityHeader authenticatedUser);
         Task<MediaItemResponse> GetPublicThumbnailAsync(string ownerOrgId, string id);
         Task<MediaItemResponse> GetMediaRevisionAsync(string id, string revisionId, EntityHeader org, EntityHeader user);
         Task<InvokeResult<ImmutableMediaRevision>> GetImmutableMediaRevisionAsync(string id, string revisionId, EntityHeader org, EntityHeader user);
