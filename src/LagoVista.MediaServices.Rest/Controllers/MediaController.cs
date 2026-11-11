@@ -358,7 +358,11 @@ namespace LagoVista.MediaServices.Rest.Controllers
                 lastMod = DateTime.ParseExact(Request.Headers["If-Modified-Since"], "r", provider, DateTimeStyles.AssumeUniversal).ToJSONString();
             }
 
-            var response = await _mediaServicesManager.GetPublicResourceRecordAsync(orgid, id, lastMod);
+            var isAuthenticated = User?.Identity?.IsAuthenticated == true;
+            var response = await _mediaServicesManager.GetDownloadResourceRecordAsync(
+                orgid, id, lastMod,
+                isAuthenticated ? OrgEntityHeader : null,
+                isAuthenticated ? UserEntityHeader : null);
             if (!String.IsNullOrEmpty(response.AiResponseId)) 
             {
                 Response.Headers["x-ai-responseid"] = response.AiResponseId;
