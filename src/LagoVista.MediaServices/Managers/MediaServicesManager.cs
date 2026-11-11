@@ -766,7 +766,12 @@ namespace LagoVista.MediaServices.Managers
             };
         }
 
-        public async Task<MediaItemResponse> GetPublicResourceRecordAsync(string orgId, string id, string lastModified = null)
+        public Task<MediaItemResponse> GetPublicResourceRecordAsync(string orgId, string id, string lastModified = null)
+        {
+            return GetDownloadResourceRecordAsync(orgId, id, lastModified, null, null);
+        }
+
+        public async Task<MediaItemResponse> GetDownloadResourceRecordAsync(string orgId, string id, string lastModified, EntityHeader authenticatedOrg, EntityHeader authenticatedUser)
         {
             var response = new MediaItemResponse();
 
@@ -778,13 +783,25 @@ namespace LagoVista.MediaServices.Managers
                 throw new RecordNotFoundException(nameof(MediaResource), id);
             }
 
-            // The public download route is anonymous: both visibility and
-            // organization ownership are mandatory. Match the thumbnail route's
-            // explicit IsPublic check; never serve private images by knowing IDs.
-            if (!resource.IsPublic || resource.OwnerOrganization == null ||
+            // The URL organization must always match the resource owner, regardless of visibility.
+            if (resource.OwnerOrganization == null ||
                 !String.Equals(resource.OwnerOrganization.Id, orgId, StringComparison.OrdinalIgnoreCase))
             {
                 throw new RecordNotFoundException(nameof(MediaResource), id);
+            }
+
+            // Anonymous downloads remain public-only. Private resources additionally require
+            // an authenticated user in the owning organization and normal read authorization.
+            if (!resource.IsPublic)
+            {
+                if (String.IsNullOrWhiteSpace(authenticatedOrg?.Id) ||
+                    String.IsNullOrWhiteSpace(authenticatedUser?.Id) ||
+                    !String.Equals(authenticatedOrg.Id, orgId, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new RecordNotFoundException(nameof(MediaResource), id);
+                }
+
+                await AuthorizeAsync(resource, AuthorizeActions.Read, authenticatedUser, authenticatedOrg);
             }
 
             response.LastModified = resource.LastUpdatedDate;
