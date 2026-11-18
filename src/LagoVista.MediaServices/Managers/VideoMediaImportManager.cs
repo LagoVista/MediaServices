@@ -72,23 +72,12 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<VideoMediaImportPreparationResult>.FromError("The video production does not belong to the active organization.");
             }
 
-            if (production.HasImportedCurrentProviderVideo())
+            if (production.Status?.Value == VideoProductionStatus.ProviderVideoReady &&
+                production.FinalVideoMediaResource != null &&
+                !String.IsNullOrWhiteSpace(production.FinalVideoMediaResource.Id) &&
+                !String.IsNullOrWhiteSpace(production.ProviderVideoId) &&
+                String.Equals(production.ProviderVideoImportCompletedProviderVideoId, production.ProviderVideoId, StringComparison.OrdinalIgnoreCase))
             {
-                // An earlier import may be ready but missing an output input hash.
-                // Recover it from the original provider-matched run without starting
-                // another import and without treating later edits as the rendered input.
-                var restoredHash = production.RestoreCompletedOutputInputSha256();
-                var restoreStatus = production.Status?.Value != VideoProductionStatus.ProviderVideoReady &&
-                                    production.Status?.Value != VideoProductionStatus.Completed;
-                if (restoredHash || restoreStatus)
-                {
-                    if (restoreStatus)
-                        production.SetStatus(VideoProductionStatus.ProviderVideoReady);
-
-                    production.ErrorMessage = null;
-                    await _videoProductionRepo.UpdateVideoProductionAsync(production);
-                    await PublishVideoProductionUpdatedAsync(production);
-                }
                 _adminLogger.Trace($"{this.Tag()} [IMPORT ALREADY COMPLETE] ProductionId={production.Id}, ProviderVideoId={production.ProviderVideoId}, MediaResourceId={production.FinalVideoMediaResource.Id}");
 
                 var completedMediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(production.FinalVideoMediaResource.Id, org, user);
@@ -732,13 +721,7 @@ namespace LagoVista.MediaServices.Managers
                 case VideoAssemblyCallbackType.Completed:
                     _adminLogger.Trace($"{this.Tag()} [PROCESSOR COMPLETED] ProductionId={production.Id}, MediaResourceId={callback.MediaResourceId}, RequestId={callback.RequestId}, AttemptId={callback.AttemptId}, Sequence={callback.Sequence}");
          
-                    // The output belongs to the exact HeyGen run, not whatever
-                    // editable settings happen to be current at import time.
-                    // Legacy run records have InputSha256 even if the production
-                    // never initialized ExecutionInputSha256.
-                    production.OutputInputSha256 =
-                        production.GetSubmittedInputSha256ForCurrentProviderVideo() ??
-                        production.ExecutionInputSha256;
+                    production.OutputInputSha256 = production.ExecutionInputSha256;
                     production.ProviderVideoImportCompletedProviderVideoId = registration.ProviderVideoId ?? production.ProviderVideoId;
                     production.IsReady = true;
                     production.CompletedUtc = UtcTimestamp.Now;
