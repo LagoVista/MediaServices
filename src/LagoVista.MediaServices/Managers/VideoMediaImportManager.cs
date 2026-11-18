@@ -74,12 +74,17 @@ namespace LagoVista.MediaServices.Managers
 
             if (production.HasImportedCurrentProviderVideo())
             {
-                // Completed import metadata is authoritative even if late HeyGen
-                // polling momentarily regressed the provider status.
-                if (production.Status?.Value != VideoProductionStatus.ProviderVideoReady &&
-                    production.Status?.Value != VideoProductionStatus.Completed)
+                // An earlier import may be ready but missing an output input hash.
+                // Recover it from the original provider-matched run without starting
+                // another import and without treating later edits as the rendered input.
+                var restoredHash = production.RestoreCompletedOutputInputSha256();
+                var restoreStatus = production.Status?.Value != VideoProductionStatus.ProviderVideoReady &&
+                                    production.Status?.Value != VideoProductionStatus.Completed;
+                if (restoredHash || restoreStatus)
                 {
-                    production.SetStatus(VideoProductionStatus.ProviderVideoReady);
+                    if (restoreStatus)
+                        production.SetStatus(VideoProductionStatus.ProviderVideoReady);
+
                     production.ErrorMessage = null;
                     await _videoProductionRepo.UpdateVideoProductionAsync(production);
                     await PublishVideoProductionUpdatedAsync(production);
@@ -727,7 +732,13 @@ namespace LagoVista.MediaServices.Managers
                 case VideoAssemblyCallbackType.Completed:
                     _adminLogger.Trace($"{this.Tag()} [PROCESSOR COMPLETED] ProductionId={production.Id}, MediaResourceId={callback.MediaResourceId}, RequestId={callback.RequestId}, AttemptId={callback.AttemptId}, Sequence={callback.Sequence}");
          
-                    production.OutputInputSha256 = production.ExecutionInputSha256;
+                    // The output belongs to the exact HeyGen run, not whatever
+                    // editable settings happen to be current at import time.
+                    // Legacy run records have InputSha256 even if the production
+                    // never initialized ExecutionInputSha256.
+                    production.OutputInputSha256 =
+                        production.GetSubmittedInputSha256ForCurrentProviderVideo() ??
+                        production.ExecutionInputSha256;
                     production.ProviderVideoImportCompletedProviderVideoId = registration.ProviderVideoId ?? production.ProviderVideoId;
                     production.IsReady = true;
                     production.CompletedUtc = UtcTimestamp.Now;
