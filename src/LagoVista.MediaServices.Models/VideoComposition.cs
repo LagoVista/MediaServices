@@ -402,6 +402,9 @@ namespace LagoVista.MediaServices.Models
 
         public int SourceCompositionTemplateVersion { get; set; }
 
+        // Auditable policy version applied to Trexel advertisement render labels.
+        public string VideoDisclosurePolicyVersion { get; set; }
+
         public EntityHeader SourceVideoAvatar { get; set; }
 
         public string SourceScript { get; set; }
@@ -493,6 +496,8 @@ namespace LagoVista.MediaServices.Models
             content.AppendLine($"title={NormalizeHashValue(Title)}");
             content.AppendLine($"subtitle={NormalizeHashValue(Subtitle)}");
             content.AppendLine($"callToAction={NormalizeHashValue(CallToAction)}");
+            if (!String.IsNullOrWhiteSpace(VideoDisclosurePolicyVersion))
+                content.AppendLine($"videoDisclosurePolicyVersion={NormalizeHashValue(VideoDisclosurePolicyVersion)}");
             content.AppendLine($"backgroundMediaResourceId={NormalizeHashValue(BackgroundMediaResource?.Id)}");
             content.AppendLine($"backgroundAudioMediaResourceId={NormalizeHashValue(BackgroundAudioMediaResource?.Id)}");
             content.AppendLine($"backgroundAudioVolume={NormalizeHashValue(BackgroundAudioVolume)}");
