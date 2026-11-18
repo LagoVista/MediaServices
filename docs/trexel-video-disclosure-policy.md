@@ -38,3 +38,37 @@ No specific price, hourly-rate comparison, human-equivalent credentials, or guar
 **Future policy updates:** Increment the policy version when disclosure requirements change; update the default label layout/text and the checks together. Reassemble affected videos before republishing. The composition-template version remains a separate record of visual treatment.
 
 **Legal note:** This is a technical transparency control, not a determination of advertising-law compliance for every market or distribution platform. Review the actual final video and platform settings before broad external distribution.
+
+
+## One master for the standard three-block composition
+
+**Authoritative resource:** one organization-owned `VideoCompositionTemplate` named
+`AppTrex Standard Trexel Video` (suggested key `apptrex-standard-trexel-video`).
+The Trexel Video Workbench chooses this resource when a composition is first created.
+The Intro, Content, and CallToAction blocks may themselves reference
+`VideoCompositionBlockTemplate` scenes for additional reuse.
+
+**V1 editing:** Use the existing Video Production Workbench to edit a working
+composition and select **Save as Template → Update existing master**. This
+updates the same template record and increments its version. Do not create
+a replacement template on every edit; that would lose the stable reference.
+
+**On every Trexel reassembly:** The MediaServices assembly service reloads
+the current source `VideoCompositionTemplate`, adopts its blocks, labels,
+audio, and backgrounds, retains the previously generated presenter media,
+applies the mandatory AI disclosure, and resolves any referenced scenes.
+The final effective layout and template version are persisted back to the
+composition. Vimeo publication re-evaluates that same master and rejects
+outdated renders until reassembled.
+
+**Ownership boundary:** The master owns visual treatment and marketing
+copy, including the closing value-proposition label.
+The VTM owns the presenter video, `VideoIntroScript`, identity and title.
+`VideoComposition.CallToAction` is the *video* home-page invitation, not
+the home-page meeting or chat CTA.
+Generic (non-Trexel) video compositions retain the existing snapshot rules.
+
+The master must still be designed with actual Intro/Closing media resources
+and an appropriate Content background. These are content-design inputs,
+not programmatically invented assets. When the master changes, reassemble
+linked videos to propagate the new design; no provider narration rerun is needed.
