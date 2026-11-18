@@ -167,6 +167,27 @@ namespace LagoVista.MediaServices.Managers
                 .OrderBy(block => block.SortOrder)
                 .ToList();
 
+            // A three-scene presenter template is positional: intro (which may itself
+            // be a video), presenter video, closing. Choosing the *first video* would
+            // incorrectly treat a motion-logo introduction as the presenter.
+            if (orderedBlocks.Count == 3 && orderedBlocks[1].Type == VideoCompositionBlockType.Video)
+            {
+                var expectedRoles = new[]
+                {
+                    VideoCompositionBlockRole.Intro,
+                    VideoCompositionBlockRole.Content,
+                    VideoCompositionBlockRole.CallToAction
+                };
+
+                if (orderedBlocks.Select((block, index) =>
+                        block.Role == VideoCompositionBlockRole.None || block.Role == expectedRoles[index]).All(matches => matches))
+                {
+                    for (var index = 0; index < orderedBlocks.Count; index++)
+                        orderedBlocks[index].Role = expectedRoles[index];
+                    return;
+                }
+            }
+
             var contentBlock = orderedBlocks.FirstOrDefault(block => block.Role == VideoCompositionBlockRole.Content)
                 ?? orderedBlocks.FirstOrDefault(block => block.Type == VideoCompositionBlockType.Video);
 
