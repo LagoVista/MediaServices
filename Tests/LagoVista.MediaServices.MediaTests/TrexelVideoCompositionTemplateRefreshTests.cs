@@ -64,7 +64,7 @@ namespace LagoVista.MediaServices.MediaTests
             return new VideoComposition
             {
                 SourceEntityType = "VirtualTeamMember",
-                SourceCompositionTemplate = EntityHeader.Create("template001", "Master"),
+                SourceCompositionTemplate = EntityHeader.Create("A17E0000000000000000000000000100", "Master"),
                 SourceCompositionTemplateVersion = 1,
                 Blocks = new List<VideoCompositionBlock>
                 {
@@ -73,7 +73,7 @@ namespace LagoVista.MediaServices.MediaTests
                     {
                         Key = "presenter", SortOrder = 1, Role = VideoCompositionBlockRole.Content,
                         Type = VideoCompositionBlockType.Video,
-                        MediaResource = EntityHeader.Create("presenter001", "Victor video"),
+                        MediaResource = EntityHeader.Create("A17E0000000000000000000000000101", "Victor video"),
                         DurationSeconds = 38
                     },
                     new VideoCompositionBlock { Key = "closing", SortOrder = 2, Role = VideoCompositionBlockRole.CallToAction, Type = VideoCompositionBlockType.Image }
@@ -85,7 +85,7 @@ namespace LagoVista.MediaServices.MediaTests
         {
             return new VideoCompositionTemplate
             {
-                Id = "template001",
+                Id = "A17E0000000000000000000000000100",
                 Name = "AppTrex Standard Trexel Video",
                 Key = "apptrex-standard-trexel-video",
                 Version = 2,
