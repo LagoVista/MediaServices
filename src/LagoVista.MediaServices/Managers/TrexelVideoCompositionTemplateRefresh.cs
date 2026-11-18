@@ -52,7 +52,8 @@ namespace LagoVista.MediaServices.Managers
             newContent.MediaResourceFileName = currentContent.MediaResourceFileName;
             newContent.MediaResourceMimeType = currentContent.MediaResourceMimeType;
             newContent.ThumbnailUrl = currentContent.ThumbnailUrl;
-            if (!newContent.DurationSeconds.HasValue && currentContent.DurationSeconds.HasValue)
+            // Presenter duration is media-specific, not a global template setting.
+            if (currentContent.DurationSeconds.HasValue && currentContent.DurationSeconds.Value > 0)
                 newContent.DurationSeconds = currentContent.DurationSeconds;
 
             composition.Blocks = freshBlocks;
