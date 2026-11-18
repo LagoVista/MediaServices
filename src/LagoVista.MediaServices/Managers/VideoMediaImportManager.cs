@@ -72,12 +72,18 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<VideoMediaImportPreparationResult>.FromError("The video production does not belong to the active organization.");
             }
 
-            if (production.Status?.Value == VideoProductionStatus.ProviderVideoReady &&
-                production.FinalVideoMediaResource != null &&
-                !String.IsNullOrWhiteSpace(production.FinalVideoMediaResource.Id) &&
-                !String.IsNullOrWhiteSpace(production.ProviderVideoId) &&
-                String.Equals(production.ProviderVideoImportCompletedProviderVideoId, production.ProviderVideoId, StringComparison.OrdinalIgnoreCase))
+            if (production.HasImportedCurrentProviderVideo())
             {
+                // Completed import metadata is authoritative even if late HeyGen
+                // polling momentarily regressed the provider status.
+                if (production.Status?.Value != VideoProductionStatus.ProviderVideoReady &&
+                    production.Status?.Value != VideoProductionStatus.Completed)
+                {
+                    production.SetStatus(VideoProductionStatus.ProviderVideoReady);
+                    production.ErrorMessage = null;
+                    await _videoProductionRepo.UpdateVideoProductionAsync(production);
+                    await PublishVideoProductionUpdatedAsync(production);
+                }
                 _adminLogger.Trace($"{this.Tag()} [IMPORT ALREADY COMPLETE] ProductionId={production.Id}, ProviderVideoId={production.ProviderVideoId}, MediaResourceId={production.FinalVideoMediaResource.Id}");
 
                 var completedMediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(production.FinalVideoMediaResource.Id, org, user);
