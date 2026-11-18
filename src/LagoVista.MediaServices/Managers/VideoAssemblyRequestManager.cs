@@ -110,6 +110,10 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<VideoAssemblyPreparationResult>.FromError(resolveResult.Errors[0].Message);
             }
 
+            var disclosureError = TrexelVideoDisclosurePolicy.Validate(effectiveComposition);
+            if (!String.IsNullOrWhiteSpace(disclosureError))
+                return InvokeResult<VideoAssemblyPreparationResult>.FromError(disclosureError);
+
             composition.CurrentInputSha256 = effectiveComposition.CalculateCurrentInputSha256();
             composition.ExecutionInputSha256 = composition.CurrentInputSha256;
             composition.SetStatus(VideoCompositionStatus.Preparing);
@@ -440,6 +444,26 @@ namespace LagoVista.MediaServices.Managers
                 composition.Status?.Value != VideoCompositionStatus.Completed) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The video composition must be completed before it can be published to Vimeo.");
             if (composition.OutputMediaResource == null || String.IsNullOrWhiteSpace(composition.OutputMediaResource.Id)) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The video composition does not have an object storage output media resource.");
 
+            // Publication checks the CURRENT render inputs, not just the saved text.
+            // This prevents publishing an older assembled asset after disclosure is changed.
+            if (TrexelVideoDisclosurePolicy.AppliesTo(composition))
+            {
+                var effectiveComposition = JsonConvert.DeserializeObject<VideoComposition>(JsonConvert.SerializeObject(composition));
+                var resolveResult = await ResolveReferencedBlocksAsync(effectiveComposition, org, user, cancellationToken);
+                if (!resolveResult.Successful)
+                    return InvokeResult<VideoAssemblyPreparationResult>.FromError(resolveResult.Errors[0].Message);
+
+                var disclosureError = TrexelVideoDisclosurePolicy.Validate(effectiveComposition);
+                if (!String.IsNullOrWhiteSpace(disclosureError))
+                    return InvokeResult<VideoAssemblyPreparationResult>.FromError(disclosureError);
+
+                if (!composition.IsReady ||
+                    String.IsNullOrWhiteSpace(composition.OutputInputSha256) ||
+                    !String.Equals(effectiveComposition.CalculateCurrentInputSha256(), composition.OutputInputSha256, StringComparison.OrdinalIgnoreCase))
+                    return InvokeResult<VideoAssemblyPreparationResult>.FromError(
+                        "The Trexel video must be assembled with the current AI disclosure before publishing. Reassemble the composition after changing its labels.");
+            }
+
             cancellationToken.ThrowIfCancellationRequested();
 
             var azureMediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(composition.OutputMediaResource.Id, org, user);
@@ -732,6 +756,9 @@ namespace LagoVista.MediaServices.Managers
                 resolved.Key = block.Key;
                 resolved.SortOrder = block.SortOrder;
                 resolved.SourceBlockTemplate = block.SourceBlockTemplate;
+                if (TrexelVideoDisclosurePolicy.AppliesTo(composition))
+                    TrexelVideoDisclosurePolicy.MergeEditableSlots(resolved, block);
+
                 var validation = new ValidationResult();
                 resolved.Validate(validation);
                 if (!validation.Successful)
