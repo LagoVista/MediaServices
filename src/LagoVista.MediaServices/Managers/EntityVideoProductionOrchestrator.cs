@@ -112,8 +112,7 @@ namespace LagoVista.MediaServices.Managers
                 (production.Status?.Value == VideoProductionStatus.ProviderVideoReady ||
                  production.Status?.Value == VideoProductionStatus.Completed) &&
                 production.FinalVideoMediaResource != null &&
-                !String.IsNullOrWhiteSpace(production.FinalVideoMediaResource.Id) &&
-                production.IsCurrent)
+                !String.IsNullOrWhiteSpace(production.FinalVideoMediaResource.Id))
             {
                 production.NotificationRunId = request.RunId;
                 await _videoProductionManager.UpdateVideoProductionAsync(production, org, user).ConfigureAwait(false);
