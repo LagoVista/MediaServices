@@ -359,6 +359,20 @@ namespace LagoVista.MediaServices.Models
             !String.IsNullOrWhiteSpace(OutputInputSha256) &&
             String.Equals(CurrentInputSha256, OutputInputSha256, StringComparison.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// A completed provider import is durable evidence that this exact HeyGen video
+        /// is already in our media library. Late provider polling/webhooks must not move
+        /// its lifecycle back to "rendering" or queue a second media import.
+        /// This is intentionally independent of IsCurrent: source edits can make an
+        /// existing completed video stale without making its import incomplete.
+        /// </summary>
+        public bool HasImportedCurrentProviderVideo() =>
+            IsReady &&
+            FinalVideoMediaResource != null &&
+            !String.IsNullOrWhiteSpace(FinalVideoMediaResource.Id) &&
+            !String.IsNullOrWhiteSpace(ProviderVideoId) &&
+            String.Equals(ProviderVideoImportCompletedProviderVideoId, ProviderVideoId, StringComparison.OrdinalIgnoreCase);
+
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoProduction_TargetEntityType, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
         public string TargetEntityType { get; set; }
