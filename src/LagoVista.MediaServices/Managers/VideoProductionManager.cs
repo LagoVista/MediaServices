@@ -845,9 +845,6 @@ namespace LagoVista.MediaServices.Managers
 
                 production.ProviderBackgroundAssetId = backgroundResult.Result;
             }
-            // Capture immutable inputs for the paid provider render before submission.
-            production.ExecutionInputSha256 = production.CalculateCurrentInputSha256();
-            production.IsReady = false;
             production.SetStatus(VideoProductionStatus.Submitting);
             production.ErrorMessage = null;
             production.LastStatusCheckUtc = UtcTimestamp.Now;
@@ -990,7 +987,7 @@ namespace LagoVista.MediaServices.Managers
                 await PublishVideoProductionUpdatedAsync(currentProduction);
                 await _cacheProvider.AddAsync(receiptKey, webhookEvent.EventType, WebhookReceiptDuration);
 
-                if (isSuccess && !currentProduction.HasImportedCurrentProviderVideo())
+                if (isSuccess)
                 {
                     QueueProviderVideoImport(currentProduction.Id, currentProduction.OwnerOrganization, currentProduction.LastUpdatedBy);
                     QueueProviderVideoStatusRefresh(currentProduction.Id, currentProduction.OwnerOrganization, currentProduction.LastUpdatedBy);
@@ -1069,9 +1066,6 @@ namespace LagoVista.MediaServices.Managers
 
         private async Task<VideoProduction> ApplySuccessfulWebhookAsync(VideoProduction production, HeyGenVideoWebhookData eventData)
         {
-            if (production.HasImportedCurrentProviderVideo())
-                return await EnsureCompletedProviderImportStatusAsync(production);
-
             var state = new VideoProductionProviderState
             {
                 ProviderVideoUrl = eventData.VideoUrl,
@@ -1089,9 +1083,6 @@ namespace LagoVista.MediaServices.Managers
 
         private async Task<VideoProduction> ApplyFailedWebhookAsync(VideoProduction production, HeyGenVideoWebhookData eventData)
         {
-            if (production.HasImportedCurrentProviderVideo())
-                return await EnsureCompletedProviderImportStatusAsync(production);
-
             var state = new VideoProductionProviderState
             {
                 ProviderVideoUrl = production.ProviderVideoUrl,
@@ -1255,13 +1246,6 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<VideoProduction>.FromError("Provider video ID has not been created.");
             }
 
-            // Provider completion is earlier than our durable media import. Once that
-            // import succeeded for this exact provider video, never downgrade it when
-            // the operator clicks Refresh status.
-            if (production.HasImportedCurrentProviderVideo())
-                return InvokeResult<VideoProduction>.Create(
-                    await EnsureCompletedProviderImportStatusAsync(production));
-
             var statusResult = await _heyGenVideoService.GetVideoStatusAsync(production.ProviderVideoId);
             if (!statusResult.Successful)
             {
@@ -1273,13 +1257,6 @@ namespace LagoVista.MediaServices.Managers
 
                 return statusResult.ToInvokeResult<VideoProduction>();
             }
-
-            // The import callback may have completed while HeyGen was being polled.
-            // Re-read before saving to avoid overwriting the newer durable state.
-            var latestProduction = await _repo.GetVideoProductionAsync(id);
-            if (latestProduction?.HasImportedCurrentProviderVideo() == true)
-                return InvokeResult<VideoProduction>.Create(
-                    await EnsureCompletedProviderImportStatusAsync(latestProduction));
 
             var providerStatus = statusResult.Result;
 
@@ -1329,29 +1306,6 @@ namespace LagoVista.MediaServices.Managers
             await PublishVideoProductionUpdatedAsync(production);
 
             return InvokeResult<VideoProduction>.Create(production);
-        }
-
-        private async Task<VideoProduction> EnsureCompletedProviderImportStatusAsync(VideoProduction production)
-        {
-            if (!production.HasImportedCurrentProviderVideo())
-                return production;
-
-            // Legacy completed imports may have a submitted Run hash but no
-            // OutputInputSha256. Restore only that provider-matched snapshot.
-            var restoredHash = production.RestoreCompletedOutputInputSha256();
-            var restoreStatus = production.Status?.Value != VideoProductionStatus.ProviderVideoReady &&
-                                production.Status?.Value != VideoProductionStatus.Completed;
-
-            if (!restoredHash && !restoreStatus)
-                return production;
-
-            if (restoreStatus)
-                production.SetStatus(VideoProductionStatus.ProviderVideoReady);
-
-            production.ErrorMessage = null;
-            await _repo.UpdateVideoProductionAsync(production);
-            await PublishVideoProductionUpdatedAsync(production);
-            return production;
         }
 
         private async Task ApplyActualVideoGenerationCostAsync(VideoProduction production)
