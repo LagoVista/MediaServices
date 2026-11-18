@@ -845,6 +845,9 @@ namespace LagoVista.MediaServices.Managers
 
                 production.ProviderBackgroundAssetId = backgroundResult.Result;
             }
+            // Capture immutable inputs for the paid provider render before submission.
+            production.ExecutionInputSha256 = production.CalculateCurrentInputSha256();
+            production.IsReady = false;
             production.SetStatus(VideoProductionStatus.Submitting);
             production.ErrorMessage = null;
             production.LastStatusCheckUtc = UtcTimestamp.Now;
@@ -1330,12 +1333,21 @@ namespace LagoVista.MediaServices.Managers
 
         private async Task<VideoProduction> EnsureCompletedProviderImportStatusAsync(VideoProduction production)
         {
-            if (!production.HasImportedCurrentProviderVideo() ||
-                production.Status?.Value == VideoProductionStatus.ProviderVideoReady ||
-                production.Status?.Value == VideoProductionStatus.Completed)
+            if (!production.HasImportedCurrentProviderVideo())
                 return production;
 
-            production.SetStatus(VideoProductionStatus.ProviderVideoReady);
+            // Legacy completed imports may have a submitted Run hash but no
+            // OutputInputSha256. Restore only that provider-matched snapshot.
+            var restoredHash = production.RestoreCompletedOutputInputSha256();
+            var restoreStatus = production.Status?.Value != VideoProductionStatus.ProviderVideoReady &&
+                                production.Status?.Value != VideoProductionStatus.Completed;
+
+            if (!restoredHash && !restoreStatus)
+                return production;
+
+            if (restoreStatus)
+                production.SetStatus(VideoProductionStatus.ProviderVideoReady);
+
             production.ErrorMessage = null;
             await _repo.UpdateVideoProductionAsync(production);
             await PublishVideoProductionUpdatedAsync(production);
