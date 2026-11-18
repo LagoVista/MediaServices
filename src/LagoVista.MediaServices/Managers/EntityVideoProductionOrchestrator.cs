@@ -331,6 +331,10 @@ namespace LagoVista.MediaServices.Managers
             }
 
             contentBlock.MediaResource = production.FinalVideoMediaResource;
+            // Presenter videos are produced independently and can vary in length.
+            // Do not let a master template's placeholder duration trim or extend the clip.
+            if (presenterMediaResource.DurationSeconds.HasValue && presenterMediaResource.DurationSeconds.Value > 0)
+                contentBlock.DurationSeconds = presenterMediaResource.DurationSeconds.Value;
             ApplyDefaultPresenterLayout(contentBlock, presenterMediaResource.Width.Value, presenterMediaResource.Height.Value);
             composition.NotificationRunId = request.RunId;
             composition.LastUpdatedBy = user;
