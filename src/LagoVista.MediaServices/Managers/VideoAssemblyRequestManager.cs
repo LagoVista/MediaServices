@@ -122,7 +122,21 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<VideoAssemblyPreparationResult>.FromError(disclosureError);
 
             if (TrexelVideoDisclosurePolicy.AppliesTo(composition))
+            {
+                // Store the effective master layout too, so the composition editor and
+                // assembly output describe the same current scenes and placeholders.
+                // The presenter media is retained by TrexelVideoCompositionTemplateRefresh.
+                composition.Blocks = effectiveComposition.Blocks;
+                composition.DefaultLocale = effectiveComposition.DefaultLocale;
+                composition.BackgroundMediaResource = effectiveComposition.BackgroundMediaResource;
+                composition.BackgroundAudioMediaResource = effectiveComposition.BackgroundAudioMediaResource;
+                composition.BackgroundAudioVolume = effectiveComposition.BackgroundAudioVolume;
+                composition.BackgroundAudioFadeInSeconds = effectiveComposition.BackgroundAudioFadeInSeconds;
+                composition.BackgroundAudioFadeOutSeconds = effectiveComposition.BackgroundAudioFadeOutSeconds;
+                composition.LoopBackgroundAudio = effectiveComposition.LoopBackgroundAudio;
                 composition.SourceCompositionTemplateVersion = effectiveComposition.SourceCompositionTemplateVersion;
+                composition.VideoDisclosurePolicyVersion = effectiveComposition.VideoDisclosurePolicyVersion;
+            }
 
             composition.CurrentInputSha256 = effectiveComposition.CalculateCurrentInputSha256();
             composition.ExecutionInputSha256 = composition.CurrentInputSha256;
@@ -792,6 +806,8 @@ namespace LagoVista.MediaServices.Managers
                     resolved.MediaResourceFileName = block.MediaResourceFileName;
                     resolved.MediaResourceMimeType = block.MediaResourceMimeType;
                     resolved.ThumbnailUrl = block.ThumbnailUrl;
+                    if (block.DurationSeconds.HasValue)
+                        resolved.DurationSeconds = block.DurationSeconds;
                 }
 
                 if (TrexelVideoDisclosurePolicy.AppliesTo(composition))
