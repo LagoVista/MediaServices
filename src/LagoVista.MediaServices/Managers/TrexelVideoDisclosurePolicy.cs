@@ -69,22 +69,22 @@ namespace LagoVista.MediaServices.Managers
         }
 
         /// <summary>
-        /// Referenced block templates replace their underlying block at render time.
-        /// Preserve only the explicit per-composition Trexel slots over the reference.
+        /// A top-level composition can supply bound Title/Subtitle/CallToAction labels
+        /// even when its block uses a live scene template. Overlay its authored labels
+        /// on top of the scene template by stable ID; keep all other live template labels.
+        /// The top-level master is refreshed before this merge.
         /// </summary>
         public static void MergeEditableSlots(VideoCompositionBlock resolved, VideoCompositionBlock stored)
         {
             if (resolved == null || stored?.CompositionLabels == null) return;
 
-            var overrides = stored.CompositionLabels
-                .Where(label => PolicySlotIds.Contains(label.Id, StringComparer.OrdinalIgnoreCase))
-                .ToList();
-            if (overrides.Count == 0) return;
-
             resolved.CompositionLabels = resolved.CompositionLabels ?? new List<VideoCompositionTextLabel>();
-            resolved.CompositionLabels.RemoveAll(label =>
-                PolicySlotIds.Contains(label.Id, StringComparer.OrdinalIgnoreCase));
-            resolved.CompositionLabels.AddRange(overrides);
+            foreach (var label in stored.CompositionLabels)
+            {
+                resolved.CompositionLabels.RemoveAll(item =>
+                    String.Equals(item.Id, label.Id, StringComparison.OrdinalIgnoreCase));
+                resolved.CompositionLabels.Add(label);
+            }
         }
 
         /// <summary>
