@@ -359,53 +359,6 @@ namespace LagoVista.MediaServices.Models
             !String.IsNullOrWhiteSpace(OutputInputSha256) &&
             String.Equals(CurrentInputSha256, OutputInputSha256, StringComparison.OrdinalIgnoreCase);
 
-        /// <summary>
-        /// A completed provider import is durable evidence that this exact HeyGen video
-        /// is already in our media library. Late provider polling/webhooks must not move
-        /// its lifecycle back to "rendering" or queue a second media import.
-        /// This is intentionally independent of IsCurrent: source edits can make an
-        /// existing completed video stale without making its import incomplete.
-        /// </summary>
-        public bool HasImportedCurrentProviderVideo() =>
-            IsReady &&
-            FinalVideoMediaResource != null &&
-            !String.IsNullOrWhiteSpace(FinalVideoMediaResource.Id) &&
-            !String.IsNullOrWhiteSpace(ProviderVideoId) &&
-            String.Equals(ProviderVideoImportCompletedProviderVideoId, ProviderVideoId, StringComparison.OrdinalIgnoreCase);
-
-        /// <summary>
-        /// Identifies the immutable input snapshot captured when the currently imported
-        /// provider video was submitted. Never infer it from today's editable settings.
-        /// </summary>
-        public string GetSubmittedInputSha256ForCurrentProviderVideo()
-        {
-            if (String.IsNullOrWhiteSpace(ProviderVideoId))
-                return null;
-
-            return Runs?.Find(run =>
-                run != null &&
-                String.Equals(run.ProviderVideoId, ProviderVideoId, StringComparison.OrdinalIgnoreCase) &&
-                !String.IsNullOrWhiteSpace(run.InputSha256))?.InputSha256;
-        }
-
-        /// <summary>
-        /// Repairs the missing output fingerprint on legacy imported presenter records.
-        /// Only the saved provider-matched run can supply the hash. A user who changed
-        /// script or voice afterwards will correctly remain non-current.
-        /// </summary>
-        public bool RestoreCompletedOutputInputSha256()
-        {
-            if (!HasImportedCurrentProviderVideo() || !String.IsNullOrWhiteSpace(OutputInputSha256))
-                return false;
-
-            var submittedHash = GetSubmittedInputSha256ForCurrentProviderVideo();
-            if (String.IsNullOrWhiteSpace(submittedHash))
-                return false;
-
-            OutputInputSha256 = submittedHash;
-            return true;
-        }
-
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoProduction_TargetEntityType, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
         public string TargetEntityType { get; set; }
