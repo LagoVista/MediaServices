@@ -158,6 +158,8 @@ namespace LagoVista.MediaServices.Managers
                 SourceContentSha256 = sourceContentSha256
             };
 
+            TrexelVideoDisclosurePolicy.EnsureEditableSlots(composition);
+
             var addResult = await _compositionManager.AddVideoCompositionAsync(composition, org, user).ConfigureAwait(false);
             if (!addResult.Successful)
             {
@@ -226,6 +228,7 @@ namespace LagoVista.MediaServices.Managers
                 info.TemplateVersion = template.Version;
             }
 
+            TrexelVideoDisclosurePolicy.EnsureEditableSlots(composition);
             composition.LastUpdatedBy = user;
             composition.LastUpdatedDate = UtcTimestamp.Now;
 
