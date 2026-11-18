@@ -234,11 +234,6 @@ namespace LagoVista.MediaServices.Managers
                 return await FailAsync(progressRequest, "The presenter video must finish rendering and importing before the composition can be created.", production: production.ToEntityHeader());
             }
 
-            if (!production.IsCurrent)
-            {
-                return await FailAsync(progressRequest, "The presenter video is out of date. Regenerate it before creating or refreshing the composition.", production: production.ToEntityHeader());
-            }
-
             var presenterMediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(
                 production.FinalVideoMediaResource.Id,
                 org,
