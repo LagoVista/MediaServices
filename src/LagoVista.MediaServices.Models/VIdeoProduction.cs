@@ -373,6 +373,39 @@ namespace LagoVista.MediaServices.Models
             !String.IsNullOrWhiteSpace(ProviderVideoId) &&
             String.Equals(ProviderVideoImportCompletedProviderVideoId, ProviderVideoId, StringComparison.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// Identifies the immutable input snapshot captured when the currently imported
+        /// provider video was submitted. Never infer it from today's editable settings.
+        /// </summary>
+        public string GetSubmittedInputSha256ForCurrentProviderVideo()
+        {
+            if (String.IsNullOrWhiteSpace(ProviderVideoId))
+                return null;
+
+            return Runs?.Find(run =>
+                run != null &&
+                String.Equals(run.ProviderVideoId, ProviderVideoId, StringComparison.OrdinalIgnoreCase) &&
+                !String.IsNullOrWhiteSpace(run.InputSha256))?.InputSha256;
+        }
+
+        /// <summary>
+        /// Repairs the missing output fingerprint on legacy imported presenter records.
+        /// Only the saved provider-matched run can supply the hash. A user who changed
+        /// script or voice afterwards will correctly remain non-current.
+        /// </summary>
+        public bool RestoreCompletedOutputInputSha256()
+        {
+            if (!HasImportedCurrentProviderVideo() || !String.IsNullOrWhiteSpace(OutputInputSha256))
+                return false;
+
+            var submittedHash = GetSubmittedInputSha256ForCurrentProviderVideo();
+            if (String.IsNullOrWhiteSpace(submittedHash))
+                return false;
+
+            OutputInputSha256 = submittedHash;
+            return true;
+        }
+
 
         [FormField(LabelResource: MediaServicesResources.Names.VideoProduction_TargetEntityType, FieldType: FieldTypes.Text, ResourceType: typeof(MediaServicesResources), IsRequired: false, IsUserEditable: true)]
         public string TargetEntityType { get; set; }
