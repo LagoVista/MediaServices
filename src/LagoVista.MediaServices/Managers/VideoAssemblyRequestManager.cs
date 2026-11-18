@@ -26,6 +26,7 @@ namespace LagoVista.MediaServices.Managers
     {
         private readonly IVideoCompositionRepo _videoCompositionRepo;
         private readonly IVideoCompositionBlockTemplateManager _blockTemplateManager;
+        private readonly IVideoCompositionTemplateManager _compositionTemplateManager;
         private readonly IMediaServicesManager _mediaServicesManager;
         private readonly IVideoAssemblyMediaSourceResolver _mediaSourceResolver;
         private readonly IVideoProcessorStorageUrlService _videoProcessorStorageUrlService;
@@ -44,10 +45,12 @@ namespace LagoVista.MediaServices.Managers
         public VideoAssemblyRequestManager(IVideoCompositionRepo videoCompositionRepo, IMediaServicesManager mediaServicesManager, IVideoAssemblyMediaSourceResolver mediaSourceResolver, 
             IVideoProcessorStorageUrlService videoProcessorStorageUrlService, IVideoProcessorRequestStore videoProcessorRequestStore, IVideoProcessorCallbackRegistrationStore videoProcessorCallbackRegistrationStore, 
             IVideoProcessorLauncher videoProcessorLauncher, IVimeoVideoService vimeoVideoService, IOrganizationLoaderRepo organizationLoaderRepo, ISecureStorage secureStorage, 
-            IMediaLibraryRepo mediaLibraryRepo, ICacheProvider cacheProvider, IVideoCompositionBlockTemplateManager blockTemplateManager, ICoreAppServices coreAppServices)
+            IMediaLibraryRepo mediaLibraryRepo, ICacheProvider cacheProvider, IVideoCompositionBlockTemplateManager blockTemplateManager,
+            IVideoCompositionTemplateManager compositionTemplateManager, ICoreAppServices coreAppServices)
         {
             _videoCompositionRepo = videoCompositionRepo ?? throw new ArgumentNullException(nameof(videoCompositionRepo));
             _blockTemplateManager = blockTemplateManager ?? throw new ArgumentNullException(nameof(blockTemplateManager));
+            _compositionTemplateManager = compositionTemplateManager ?? throw new ArgumentNullException(nameof(compositionTemplateManager));
             _mediaServicesManager = mediaServicesManager ?? throw new ArgumentNullException(nameof(mediaServicesManager));
             _mediaSourceResolver = mediaSourceResolver ?? throw new ArgumentNullException(nameof(mediaSourceResolver));
             _videoProcessorStorageUrlService = videoProcessorStorageUrlService ?? throw new ArgumentNullException(nameof(videoProcessorStorageUrlService));
@@ -104,6 +107,10 @@ namespace LagoVista.MediaServices.Managers
 
             _adminLogger.Trace($"{this.Tag()} [ASSEMBLY COMPOSITION VALIDATED] CompositionId={composition.Id}, BlockCount={composition.Blocks.Count}, CurrentStatus={composition.Status?.Value}");
             var effectiveComposition = JsonConvert.DeserializeObject<VideoComposition>(JsonConvert.SerializeObject(composition));
+            var masterResult = await RefreshTrexelTemplateAsync(effectiveComposition, org, user);
+            if (!masterResult.Successful)
+                return InvokeResult<VideoAssemblyPreparationResult>.FromError(masterResult.Errors[0].Message);
+
             var resolveResult = await ResolveReferencedBlocksAsync(effectiveComposition, org, user, cancellationToken);
             if (!resolveResult.Successful)
             {
@@ -113,6 +120,9 @@ namespace LagoVista.MediaServices.Managers
             var disclosureError = TrexelVideoDisclosurePolicy.Validate(effectiveComposition);
             if (!String.IsNullOrWhiteSpace(disclosureError))
                 return InvokeResult<VideoAssemblyPreparationResult>.FromError(disclosureError);
+
+            if (TrexelVideoDisclosurePolicy.AppliesTo(composition))
+                composition.SourceCompositionTemplateVersion = effectiveComposition.SourceCompositionTemplateVersion;
 
             composition.CurrentInputSha256 = effectiveComposition.CalculateCurrentInputSha256();
             composition.ExecutionInputSha256 = composition.CurrentInputSha256;
@@ -449,6 +459,10 @@ namespace LagoVista.MediaServices.Managers
             if (TrexelVideoDisclosurePolicy.AppliesTo(composition))
             {
                 var effectiveComposition = JsonConvert.DeserializeObject<VideoComposition>(JsonConvert.SerializeObject(composition));
+                var masterResult = await RefreshTrexelTemplateAsync(effectiveComposition, org, user);
+                if (!masterResult.Successful)
+                    return InvokeResult<VideoAssemblyPreparationResult>.FromError(masterResult.Errors[0].Message);
+
                 var resolveResult = await ResolveReferencedBlocksAsync(effectiveComposition, org, user, cancellationToken);
                 if (!resolveResult.Successful)
                     return InvokeResult<VideoAssemblyPreparationResult>.FromError(resolveResult.Errors[0].Message);
@@ -733,6 +747,20 @@ namespace LagoVista.MediaServices.Managers
             });
         }
 
+        private async Task<InvokeResult> RefreshTrexelTemplateAsync(VideoComposition composition, EntityHeader org, EntityHeader user)
+        {
+            if (!TrexelVideoDisclosurePolicy.AppliesTo(composition))
+                return InvokeResult.Success;
+
+            if (String.IsNullOrWhiteSpace(composition.SourceCompositionTemplate?.Id))
+                return InvokeResult.FromError("Select a standard three-block VideoCompositionTemplate before assembling a Trexel video.");
+
+            var template = await _compositionTemplateManager.GetVideoCompositionTemplateAsync(
+                composition.SourceCompositionTemplate.Id, org, user).ConfigureAwait(false);
+            var error = TrexelVideoCompositionTemplateRefresh.Apply(composition, template);
+            return String.IsNullOrWhiteSpace(error) ? InvokeResult.Success : InvokeResult.FromError(error);
+        }
+
         private async Task<InvokeResult> ResolveReferencedBlocksAsync(VideoComposition composition, EntityHeader org, EntityHeader user, CancellationToken cancellationToken)
         {
             var resolvedBlocks = new List<VideoCompositionBlock>();
@@ -756,6 +784,16 @@ namespace LagoVista.MediaServices.Managers
                 resolved.Key = block.Key;
                 resolved.SortOrder = block.SortOrder;
                 resolved.SourceBlockTemplate = block.SourceBlockTemplate;
+                resolved.Role = block.Role;
+                if (block.Role == VideoCompositionBlockRole.Content)
+                {
+                    // The presenter media is Trexel-specific even when its scene uses a live block template.
+                    resolved.MediaResource = block.MediaResource;
+                    resolved.MediaResourceFileName = block.MediaResourceFileName;
+                    resolved.MediaResourceMimeType = block.MediaResourceMimeType;
+                    resolved.ThumbnailUrl = block.ThumbnailUrl;
+                }
+
                 if (TrexelVideoDisclosurePolicy.AppliesTo(composition))
                     TrexelVideoDisclosurePolicy.MergeEditableSlots(resolved, block);
 
