@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 namespace LagoVista.MediaServices.MediaTests
 {
     [TestClass]
+    [TestCategory("Integration")]
     public class ImageSearchTests
     {
 
