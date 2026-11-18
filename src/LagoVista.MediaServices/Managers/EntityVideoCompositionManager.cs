@@ -228,6 +228,21 @@ namespace LagoVista.MediaServices.Managers
                 info.TemplateVersion = template.Version;
             }
 
+            if (TrexelVideoDisclosurePolicy.AppliesTo(composition))
+            {
+                if (template == null)
+                    return InvokeResult<VideoComposition>.FromError(
+                        "The Trexel's standard video composition template is missing.");
+
+                var previousInputHash = composition.CalculateCurrentInputSha256();
+                var refreshError = TrexelVideoCompositionTemplateRefresh.Apply(composition, template);
+                if (!String.IsNullOrWhiteSpace(refreshError))
+                    return InvokeResult<VideoComposition>.FromError(refreshError);
+
+                if (!String.Equals(previousInputHash, composition.CalculateCurrentInputSha256(), StringComparison.OrdinalIgnoreCase))
+                    composition.IsReady = false;
+            }
+
             TrexelVideoDisclosurePolicy.EnsureEditableSlots(composition);
             composition.LastUpdatedBy = user;
             composition.LastUpdatedDate = UtcTimestamp.Now;
