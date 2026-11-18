@@ -498,6 +498,14 @@ namespace LagoVista.MediaServices.Models
             content.AppendLine($"callToAction={NormalizeHashValue(CallToAction)}");
             if (!String.IsNullOrWhiteSpace(VideoDisclosurePolicyVersion))
                 content.AppendLine($"videoDisclosurePolicyVersion={NormalizeHashValue(VideoDisclosurePolicyVersion)}");
+
+            // Existing non-Trexel composition hashes stay backward-compatible.
+            // Trexel renders pin the exact source master-template version.
+            if (String.Equals(SourceEntityType, "VirtualTeamMember", StringComparison.OrdinalIgnoreCase))
+            {
+                content.AppendLine($"sourceCompositionTemplateId={NormalizeHashValue(SourceCompositionTemplate?.Id)}");
+                content.AppendLine($"sourceCompositionTemplateVersion={SourceCompositionTemplateVersion}");
+            }
             content.AppendLine($"backgroundMediaResourceId={NormalizeHashValue(BackgroundMediaResource?.Id)}");
             content.AppendLine($"backgroundAudioMediaResourceId={NormalizeHashValue(BackgroundAudioMediaResource?.Id)}");
             content.AppendLine($"backgroundAudioVolume={NormalizeHashValue(BackgroundAudioVolume)}");
