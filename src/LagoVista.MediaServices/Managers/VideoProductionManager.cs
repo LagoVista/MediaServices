@@ -886,6 +886,9 @@ namespace LagoVista.MediaServices.Managers
             production.Runs.Insert(0, new VideoProductionRun
             {
                 ProviderVideoId = production.ProviderVideoId,
+                ProviderRequestId = submitResult.Result.RequestId,
+                QualityAtSubmission = production.Quality,
+                BillingRequired = true,
                 Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.Submitted),
                 InputSha256 = production.ExecutionInputSha256 ?? production.CurrentInputSha256,
                 SubmittedUtc = production.SubmittedUtc,
@@ -1225,6 +1228,12 @@ namespace LagoVista.MediaServices.Managers
                     var errorMessage = refreshResult.Errors?.FirstOrDefault()?.Message ?? "The provider video status refresh failed.";
                     _logger.AddCustomEvent(LogLevel.Warning, this.Tag(), $"Provider video status refresh failed for production '{productionId}'. {errorMessage}");
                 }
+
+                // Reconcile independently of provider status: an import callback may
+                // already have advanced the production past ProviderCompleted.
+                var reconcileResult = await ReconcileVideoProductionCostsAsync(productionId, org, user, cancellationToken);
+                if (!reconcileResult.Successful)
+                    _logger.AddCustomEvent(LogLevel.Warning, this.Tag(), $"HeyGen charge reconciliation failed for production '{productionId}': {reconcileResult.Errors?.FirstOrDefault()?.Message}");
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -1385,9 +1394,7 @@ namespace LagoVista.MediaServices.Managers
         private async Task ApplyActualVideoGenerationCostAsync(VideoProduction production)
         {
             if (!production.ActualDurationSeconds.HasValue || production.ActualDurationSeconds.Value <= 0)
-            {
                 return;
-            }
 
             var run = GetCurrentRun(production);
             if (run == null)
@@ -1403,16 +1410,7 @@ namespace LagoVista.MediaServices.Managers
                 production.Runs.Insert(0, run);
             }
 
-            var quality = production.Quality?.Value ?? VideoProductionQuality.Standard;
-            var videoGenerationCostPerSecond = quality == VideoProductionQuality.Standard ? 1.0m / 60.0m : 3.0m / 60.0m;
-            var actualCost = EstimateCost(production.ActualDurationSeconds.Value, videoGenerationCostPerSecond);
-
-            production.ActualVideoGenerationCost = actualCost;
-            production.CostCurrency = String.IsNullOrWhiteSpace(production.CostCurrency) ? "USD" : production.CostCurrency;
-            production.CostModelVersion = String.IsNullOrWhiteSpace(production.CostModelVersion) ? "heygen-standard-premium-2026-07" : production.CostModelVersion;
-
             run.DurationSeconds = production.ActualDurationSeconds;
-            run.ActualVideoGenerationCost = actualCost;
             run.ProviderVideoUrl = production.ProviderVideoUrl;
             run.ProviderThumbnailUrl = production.ProviderThumbnailUrl;
             run.ProviderCaptionUrl = production.ProviderCaptionUrl;
@@ -1421,19 +1419,30 @@ namespace LagoVista.MediaServices.Managers
             run.LastStatusCheckUtc = production.LastStatusCheckUtc;
             run.ErrorMessage = production.ErrorMessage;
 
-            if (String.IsNullOrWhiteSpace(run.BillingEventId))
+            var quality = run.QualityAtSubmission?.Value ?? production.Quality?.Value ?? VideoProductionQuality.Standard;
+            var estimatedCost = EstimateCost(run.DurationSeconds.Value,
+                quality == VideoProductionQuality.Standard ? 1.0m / 60.0m : 3.0m / 60.0m);
+            run.ActualVideoGenerationCost = run.ProviderChargeUsd ?? estimatedCost;
+            run.CostSource = run.ProviderChargeUsd.HasValue ? "HeyGenRequestLogUsd" : "DurationRateEstimate";
+            production.ActualVideoGenerationCost = run.ActualVideoGenerationCost;
+            production.CostCurrency = String.IsNullOrWhiteSpace(production.CostCurrency) ? "USD" : production.CostCurrency;
+            production.CostModelVersion = String.IsNullOrWhiteSpace(production.CostModelVersion) ? "heygen-standard-premium-2026-07" : production.CostModelVersion;
+
+            // New renders have a stable business identity. Old unverified records are
+            // reconciled for cost only to avoid double invoicing historical work.
+            if (run.BillingRequired && String.IsNullOrWhiteSpace(run.BillingEventId))
             {
                 var billingEventType = quality == VideoProductionQuality.Standard
                     ? BillingEventType.VideoGenerationStandard
                     : BillingEventType.VideoGenerationPremium;
-                var qualityLabel = production.Quality?.Text ?? production.Quality?.Id ?? quality.ToString();
-                var duration = (double)production.ActualDurationSeconds.Value;
-                var billingEventId = await _billingEventRecorder.RecordUsageAsync(billingEventType, duration, $"HeyGen {qualityLabel} Video Production {production.Name}, provider video: {production.ProviderVideoId}, duration: {duration}", production.OwnerOrganization, production.LastUpdatedBy);
-
+                var key = $"heygen-video-generation:{production.OwnerOrganization?.Id}:{production.Id}:{run.ProviderVideoId}".ToLowerInvariant();
+                var duration = (double)run.DurationSeconds.Value;
+                var billingEventId = await _billingEventRecorder.RecordUsageAsync(
+                    billingEventType, duration,
+                    $"HeyGen video generation {production.Name}, provider video: {run.ProviderVideoId}, duration: {duration} seconds",
+                    production.OwnerOrganization, production.LastUpdatedBy, key);
                 run.BillingEventId = billingEventId.ToString();
                 production.VideoGenerationBillingEventId = run.BillingEventId;
-                production.VideoGenerationCount++;
-                production.TotalVideoGenerationCost = (production.TotalVideoGenerationCost ?? 0) + actualCost;
             }
 
             RecalculateProductionCosts(production);
@@ -1490,6 +1499,17 @@ namespace LagoVista.MediaServices.Managers
 
         private static void RecalculateProductionCosts(VideoProduction production)
         {
+            EnsureRuns(production);
+            var runs = production.Runs.Where(run => run != null).ToList();
+            production.TotalVideoGenerationCost = runs.Sum(run => run.ActualVideoGenerationCost ?? 0m);
+            production.TotalHeyGenCredits = runs
+                .Where(run => String.Equals(run.ProviderChargeUnit, "credits", StringComparison.OrdinalIgnoreCase))
+                .Sum(run => run.ProviderChargeAmount ?? 0m);
+            production.TotalHeyGenMinutes = runs
+                .Where(run => String.Equals(run.ProviderChargeUnit, "minutes", StringComparison.OrdinalIgnoreCase))
+                .Sum(run => run.ProviderChargeAmount ?? 0m);
+            production.TotalProviderReportedVideoCostUsd = runs.Sum(run => run.ProviderChargeUsd ?? 0m);
+            production.VideoGenerationCount = runs.Count(run => run.ActualVideoGenerationCost.HasValue);
             production.ActualTotalCost =
                 (production.ActualPreviewAudioCost ?? 0) +
                 (production.ActualAvatarCreationCost ?? 0) +
