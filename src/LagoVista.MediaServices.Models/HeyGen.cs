@@ -126,6 +126,7 @@ namespace LagoVista.MediaServices.Models
     public sealed class HeyGenVideoSubmission
     {
         public string VideoId { get; set; }
+        public string RequestId { get; set; }
     }
 
     public sealed class HeyGenAssetUploadResult
