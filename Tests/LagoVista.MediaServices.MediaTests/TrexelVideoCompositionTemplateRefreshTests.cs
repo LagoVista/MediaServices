@@ -25,13 +25,36 @@ namespace LagoVista.MediaServices.MediaTests
             Assert.IsNull(error);
             Assert.AreEqual(2, composition.SourceCompositionTemplateVersion);
             Assert.AreEqual("New master opening", composition.Blocks.Single(x => x.Role == VideoCompositionBlockRole.Intro).CompositionLabels.First().Text);
-            Assert.AreEqual("Pay for outcomes, not hours worked.",
-                composition.Blocks.Single(x => x.Role == VideoCompositionBlockRole.CallToAction).CompositionLabels.Single(x => x.Id == TrexelVideoDisclosurePolicy.ClosingValueSlot).Text);
+            Assert.AreEqual("Template-owned marketing copy",
+                composition.Blocks.Single(x => x.Role == VideoCompositionBlockRole.CallToAction).CompositionLabels.Single(x => x.Text == "Template-owned marketing copy").Text);
             Assert.AreEqual(mediaId, composition.Blocks.Single(x => x.Role == VideoCompositionBlockRole.Content).MediaResource.Id);
             Assert.AreEqual(priorContentId, composition.Blocks.Single(x => x.Role == VideoCompositionBlockRole.Content).Id);
             Assert.AreEqual("1", composition.VideoDisclosurePolicyVersion);
             Assert.AreNotEqual(oldHash, composition.CalculateCurrentInputSha256());
             Assert.IsNull(TrexelVideoDisclosurePolicy.Validate(composition), "AI disclosure must be present on all three refreshed blocks.");
+        }
+
+        [TestMethod]
+        public void RefreshDoesNotReinsertPreviouslyInjectedMarketingCopy()
+        {
+            var composition = MakeComposition();
+            var closing = composition.Blocks.Single(x => x.Role == VideoCompositionBlockRole.CallToAction);
+            closing.CompositionLabels.Add(new VideoCompositionTextLabel
+            {
+                Id = "A17E0000000000000000000000000004",
+                Text = "Pay for outcomes, not hours worked."
+            });
+
+            var template = MakeTemplate();
+            template.Blocks.Single(x => x.Role == VideoCompositionBlockRole.CallToAction).CompositionLabels.Clear();
+
+            Assert.IsNull(TrexelVideoCompositionTemplateRefresh.Apply(composition, template));
+            closing = composition.Blocks.Single(x => x.Role == VideoCompositionBlockRole.CallToAction);
+            Assert.IsFalse(closing.CompositionLabels.Any(x => x.Text == "Pay for outcomes, not hours worked."));
+            Assert.IsFalse(closing.CompositionLabels.Any(x => x.Id == "A17E0000000000000000000000000004"));
+            Assert.IsTrue(closing.CompositionLabels.Any(x =>
+                x.Id == TrexelVideoDisclosurePolicy.ClosingIdentitySlot &&
+                x.Text == TrexelVideoDisclosurePolicy.Identity));
         }
 
         [TestMethod]
@@ -115,8 +138,8 @@ namespace LagoVista.MediaServices.MediaTests
                         {
                             new VideoCompositionTextLabel
                             {
-                                Id = TrexelVideoDisclosurePolicy.ClosingValueSlot,
-                                Text = "Pay for outcomes, not hours worked."
+                                Id = "A17E0000000000000000000000000010",
+                                Text = "Template-owned marketing copy"
                             }
                         }
                     }
