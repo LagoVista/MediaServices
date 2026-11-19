@@ -16,17 +16,13 @@ The presenter script is always `VirtualTeamMember.VideoIntroScript`. The policy 
 
 ## Configurable marketing copy
 
-The closing block has a separate editable value-proposition label, initially:
-
-> Pay for outcomes, not hours worked.
-
-This tagline is marketing copy, **not** the disclosure. It may be revised without changing `VideoIntroScript` or regenerating the presenter. The default video call-to-action is “Meet [AvatarName] on AppTrex.” The clickable link to the canonical Trexel home page is attached to the video placement/player or advertising destination; ordinary burned-in text is not a clickable link.
+Closing marketing copy, including any value-proposition tagline, is authored and positioned **only in the master VideoCompositionTemplate**. The policy does not create a default marketing label. This copy is **not** the required AI disclosure; it may be revised without changing `VideoIntroScript` or regenerating the presenter. The default video call-to-action is “Meet [AvatarName] on AppTrex.” The clickable link to the canonical Trexel home page is attached to the video placement/player or advertising destination; ordinary burned-in text is not a clickable link.
 
 No specific price, hourly-rate comparison, human-equivalent credentials, or guaranteed outcomes should be asserted without substantiation.
 
 ## Technical enforcement
 
-- The `TrexelVideoDisclosurePolicy` code injects four stable editable text-label slots on new or synchronized Trexel compositions.
+- The `TrexelVideoDisclosurePolicy` code manages three required AI-identity label slots on new or synchronized Trexel compositions. It does not inject marketing taglines.
 - The `VideoComposition.VideoDisclosurePolicyVersion` field identifies the policy used and contributes to the composition's input hash.
 - Assembly preparation checks the version and mandatory labels on all three **effective** blocks, including referenced block templates.
 - Vimeo publishing rechecks the effective labels and requires a current, successfully assembled output that matches those inputs. Editing or removing identity labels after assembly requires a compliant reassembly before publishing.
@@ -62,7 +58,7 @@ composition. Vimeo publication re-evaluates that same master and rejects
 outdated renders until reassembled.
 
 **Ownership boundary:** The master owns visual treatment and marketing
-copy, including the closing value-proposition label.
+copy, including any closing value-proposition label that the author chooses to add.
 The VTM owns the presenter video, `VideoIntroScript`, identity and title.
 `VideoComposition.CallToAction` is the *video* home-page invitation, not
 the home-page meeting or chat CTA.
