@@ -103,6 +103,18 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return _manager.RefreshVideoProductionStatusAsync(id, OrgEntityHeader, UserEntityHeader);
         }
 
+        [HttpPost("/api/media/videoproduction/{id}/cost/reconcile")]
+        public Task<InvokeResult<VideoProduction>> ReconcileVideoProductionCostsAsync(string id, CancellationToken cancellationToken = default)
+        {
+            return _manager.ReconcileVideoProductionCostsAsync(id, OrgEntityHeader, UserEntityHeader, cancellationToken);
+        }
+
+        [HttpPost("/api/media/videoproductions/cost/backfill")]
+        public Task<InvokeResult<int>> QueueHistoricalVideoCostBackfillAsync()
+        {
+            return _manager.QueueHistoricalVideoCostBackfillAsync(OrgEntityHeader, UserEntityHeader);
+        }
+
         [HttpPost("/api/media/videoproduction/{id}/vimeo/publish")]
         public Task<InvokeResult<VideoProduction>> PublishVideoProductionToVimeoAsync(string id, CancellationToken cancellationToken = default)
         {
