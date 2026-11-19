@@ -4,6 +4,74 @@ using System.Collections.Generic;
 
 namespace LagoVista.MediaServices.Services
 {
+    // HeyGen /v3/requests is the authoritative per-job billing evidence source.
+    internal sealed class HeyGenRequestLogsResponse
+    {
+        [JsonProperty("data")]
+        public List<HeyGenRequestLogEntry> Data { get; set; } = new List<HeyGenRequestLogEntry>();
+
+        [JsonProperty("has_more")]
+        public bool HasMore { get; set; }
+
+        [JsonProperty("next_token")]
+        public string NextToken { get; set; }
+    }
+
+    internal sealed class HeyGenRequestLogEntry
+    {
+        [JsonProperty("request_id")]
+        public string RequestId { get; set; }
+
+        [JsonProperty("endpoint")]
+        public string Endpoint { get; set; }
+
+        [JsonProperty("job")]
+        public HeyGenRequestLogJob Job { get; set; }
+
+        [JsonProperty("charge")]
+        public HeyGenRequestLogCharge Charge { get; set; }
+
+        [JsonProperty("charge_recorded")]
+        public bool ChargeRecorded { get; set; }
+    }
+
+    internal sealed class HeyGenRequestLogJob
+    {
+        [JsonProperty("id")]
+        public string Id { get; set; }
+
+        [JsonProperty("status")]
+        public string Status { get; set; }
+    }
+
+    internal sealed class HeyGenRequestLogCharge
+    {
+        [JsonProperty("amount")]
+        public decimal Amount { get; set; }
+
+        [JsonProperty("unit")]
+        public string Unit { get; set; }
+
+        [JsonProperty("amount_usd")]
+        public decimal? AmountUsd { get; set; }
+
+        [JsonProperty("refunded")]
+        public bool Refunded { get; set; }
+    }
+
+    public sealed class HeyGenVideoChargeResult
+    {
+        public bool Found { get; set; }
+        public bool ChargeRecorded { get; set; }
+        public decimal? Amount { get; set; }
+        public string Unit { get; set; }
+        public decimal? AmountUsd { get; set; }
+        public bool Refunded { get; set; }
+        public string RequestId { get; set; }
+        public string JobStatus { get; set; }
+        public int MatchingRequests { get; set; }
+    }
+
     public sealed class HeyGenPhotoAvatarRequest
     {
         [JsonProperty("type")]
