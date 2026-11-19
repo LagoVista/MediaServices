@@ -100,6 +100,24 @@ namespace LagoVista.MediaServices.CloudRepos
                 throw new InvalidOperationException($"Could not find video production '{id}'.");
             }
 
+            // A late HeyGen webhook only describes provider rendering. It cannot undo
+            // a video import, publication, or later production state already persisted.
+            if (state.Status?.Value == VideoProductionStatus.ProviderCompleted ||
+                state.Status?.Value == VideoProductionStatus.Failed)
+            {
+                switch (production.Status?.Value)
+                {
+                    case VideoProductionStatus.ImportingProviderVideo:
+                    case VideoProductionStatus.ProviderVideoReady:
+                    case VideoProductionStatus.ImportingToVimeo:
+                    case VideoProductionStatus.ProcessingAtVimeo:
+                    case VideoProductionStatus.UpdatingEntity:
+                    case VideoProductionStatus.Completed:
+                    case VideoProductionStatus.Cancelled:
+                        return production;
+                }
+            }
+
             if(state.ActualCost.HasValue)
                 production.ActualVideoGenerationCost = state.ActualCost.Value;
            
