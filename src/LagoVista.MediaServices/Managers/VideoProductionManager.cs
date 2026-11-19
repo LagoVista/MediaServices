@@ -96,6 +96,27 @@ namespace LagoVista.MediaServices.Managers
             await AuthorizeAsync(production, AuthorizeResult.AuthorizeActions.Update, user, org);
 
             var existing = await _repo.GetVideoProductionAsync(production.Id);
+            // A look and voice binding belong to a specific avatar. Do not carry the
+            // previous avatar's binding into an edited production after an avatar swap.
+            if (existing != null &&
+                !String.Equals(existing.VideoAvatar?.Id, production.VideoAvatar?.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                if (String.Equals(production.VideoAvatarLookId, existing.VideoAvatarLookId, StringComparison.OrdinalIgnoreCase))
+                    production.VideoAvatarLookId = null;
+
+                if (String.Equals(production.ProviderAvatarId, existing.ProviderAvatarId, StringComparison.OrdinalIgnoreCase))
+                    production.ProviderAvatarId = null;
+
+                if (String.Equals(production.VoiceBindingId, existing.VoiceBindingId, StringComparison.OrdinalIgnoreCase))
+                {
+                    production.VoiceBindingId = null;
+                    production.VoiceId = null;
+                    production.VoiceName = null;
+                    production.LanguageCode = null;
+                    production.Locale = null;
+                }
+            }
+
             if (production.FinalVideoMediaResource != null && !String.IsNullOrWhiteSpace(production.FinalVideoMediaResource.Id))
             {
                 var mediaResource = await _mediaRepo.GetMediaResourceRecordAsync(production.FinalVideoMediaResource.Id);
@@ -804,10 +825,16 @@ namespace LagoVista.MediaServices.Managers
             var lookResult = ResolveAvatarLook(production, avatarStatusResult.Result);
             if (!lookResult.Successful)
             {
-                production.SetStatus(VideoProductionStatus.Failed);
+                // Invalid new inputs must not replace the status of an already imported
+                // video. Preserve its MediaResource and cost history while the user
+                // selects a valid look. Without an imported video, await a valid avatar.
+                if (!HasCompletedCurrentProviderImport(production))
+                    production.SetStatus(VideoProductionStatus.WaitingForAvatar);
+
                 production.ErrorMessage = lookResult.Errors[0].Message;
                 production.LastStatusCheckUtc = UtcTimestamp.Now;
                 await _repo.UpdateVideoProductionAsync(production);
+                await PublishVideoProductionUpdatedAsync(production);
                 return lookResult.ToInvokeResult<VideoProduction>();
             }
 
@@ -1285,10 +1312,19 @@ namespace LagoVista.MediaServices.Managers
         {
             var production = await GetVideoProductionAsync(id, org, user);
 
-            // Recover an import callback that succeeded before a stale HeyGen poll reset the status.
-            if (production.Status?.Value == VideoProductionStatus.ProviderCompleted && HasCompletedCurrentProviderImport(production))
+            // Recover a completed import after an older provider poll or a later
+            // invalid avatar-look submission changed the status. Never re-render here.
+            // The input/output fingerprints still decide whether the recovered video
+            // represents the CURRENT avatar and script.
+            var recoverableLookFailure = production.Status?.Value == VideoProductionStatus.Failed &&
+                production.ErrorMessage?.StartsWith("Video avatar look '", StringComparison.OrdinalIgnoreCase) == true &&
+                production.ErrorMessage.EndsWith("could not be found or is inactive.", StringComparison.OrdinalIgnoreCase);
+            if (HasCompletedCurrentProviderImport(production) &&
+                (production.Status?.Value == VideoProductionStatus.ProviderCompleted || recoverableLookFailure))
             {
                 production.SetStatus(VideoProductionStatus.ProviderVideoReady);
+                production.ErrorMessage = null;
+                production.LastStatusCheckUtc = UtcTimestamp.Now;
                 SyncCurrentRun(production);
                 await _repo.UpdateVideoProductionAsync(production);
                 await PublishVideoProductionUpdatedAsync(production);
