@@ -10,6 +10,7 @@ using RingCentral;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -316,9 +317,11 @@ namespace LagoVista.MediaServices.Services
                 return InvokeResult<HeyGenVideoSubmission>.FromError("HeyGen video submission completed without returning a video ID.");
             }
 
+            response.Headers.TryGetValues("X-HeyGen-Request-Id", out var requestIds);
             return InvokeResult<HeyGenVideoSubmission>.Create(new HeyGenVideoSubmission
             {
-                VideoId = submissionResponse.Data.VideoId
+                VideoId = submissionResponse.Data.VideoId,
+                RequestId = requestIds?.FirstOrDefault()
             });
         }
 
@@ -780,6 +783,99 @@ namespace LagoVista.MediaServices.Services
             }
 
             return InvokeResult<HeyGenVideoDetails>.Create(videoResponse.Data);
+        }
+
+        public async Task<InvokeResult<HeyGenVideoChargeResult>> GetVideoChargeAsync(string videoId, string submittedUtc, CancellationToken cancellationToken = default)
+        {
+            if (String.IsNullOrWhiteSpace(videoId))
+                return InvokeResult<HeyGenVideoChargeResult>.FromError("HeyGen video ID is required.");
+            if (String.IsNullOrWhiteSpace(_settings.HeyGenApiKey))
+                return InvokeResult<HeyGenVideoChargeResult>.FromError("HeyGen API key has not been configured.");
+
+            // Request logs are retained for 12 months and accept a maximum 90-day range.
+            // A known submission timestamp makes historical lookups inexpensive; older
+            // records without it are searched in bounded windows as a best effort.
+            var now = DateTimeOffset.UtcNow;
+            var earliest = now.AddMonths(-12);
+            var windows = new List<KeyValuePair<DateTimeOffset, DateTimeOffset>>();
+            if (DateTimeOffset.TryParse(submittedUtc, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var submitted))
+            {
+                var start = submitted.ToUniversalTime().AddDays(-1);
+                if (start < earliest) start = earliest;
+                var end = submitted.ToUniversalTime().AddDays(30);
+                if (end > now) end = now;
+                if (end > start) windows.Add(new KeyValuePair<DateTimeOffset, DateTimeOffset>(start, end));
+            }
+            else
+            {
+                var end = now;
+                while (end > earliest)
+                {
+                    var start = end.AddDays(-89);
+                    if (start < earliest) start = earliest;
+                    windows.Add(new KeyValuePair<DateTimeOffset, DateTimeOffset>(start, end));
+                    end = start;
+                }
+            }
+
+            var matches = new List<HeyGenRequestLogEntry>();
+            foreach (var window in windows)
+            {
+                string token = null;
+                for (var page = 0; page < 25; page++)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var uri = $"v3/requests?start_time={window.Key.ToUnixTimeSeconds()}&end_time={window.Value.ToUnixTimeSeconds()}&job_id={Uri.EscapeDataString(videoId)}&limit=100";
+                    if (!String.IsNullOrWhiteSpace(token))
+                        uri += $"&token={Uri.EscapeDataString(token)}";
+
+                    using (var request = new HttpRequestMessage(HttpMethod.Get, uri))
+                    {
+                        request.Headers.Add("x-api-key", _settings.HeyGenApiKey);
+                        using (var response = await _httpClient.SendAsync(request, cancellationToken))
+                        {
+                            var body = await response.Content.ReadAsStringAsync();
+                            if (!response.IsSuccessStatusCode)
+                            {
+                                return InvokeResult<HeyGenVideoChargeResult>.FromError(
+                                    $"HeyGen request logs failed with status {(int)response.StatusCode}: {body}");
+                            }
+
+                            var logs = JsonConvert.DeserializeObject<HeyGenRequestLogsResponse>(body);
+                            if (logs == null)
+                                return InvokeResult<HeyGenVideoChargeResult>.FromError("HeyGen request logs did not return data.");
+
+                            matches.AddRange((logs.Data ?? new List<HeyGenRequestLogEntry>())
+                                .Where(entry => String.Equals(entry.Job?.Id, videoId, StringComparison.OrdinalIgnoreCase)));
+
+                            if (!logs.HasMore || String.IsNullOrWhiteSpace(logs.NextToken))
+                                break;
+                            token = logs.NextToken;
+                        }
+                    }
+                }
+
+                if (matches.Count > 0) break;
+            }
+
+            var result = new HeyGenVideoChargeResult { Found = matches.Count > 0, MatchingRequests = matches.Count };
+            if (matches.Count == 0)
+                return InvokeResult<HeyGenVideoChargeResult>.Create(result);
+
+            result.ChargeRecorded = matches.All(entry => entry.ChargeRecorded);
+            var charges = matches.Where(entry => entry.Charge != null).Select(entry => entry.Charge).ToList();
+            var units = charges.Select(charge => charge.Unit ?? String.Empty).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            result.Unit = units.Count == 1 ? units[0] : (units.Count > 1 ? "mixed" : null);
+            if (units.Count <= 1 && result.ChargeRecorded)
+                result.Amount = charges.Sum(charge => charge.Amount);
+            if (result.ChargeRecorded && charges.All(charge => charge.AmountUsd.HasValue))
+                result.AmountUsd = charges.Sum(charge => charge.AmountUsd ?? 0m);
+
+            result.Refunded = charges.Any(charge => charge.Refunded);
+            var creationRequest = matches.FirstOrDefault(entry => String.Equals(entry.Endpoint, "/v3/videos", StringComparison.OrdinalIgnoreCase)) ?? matches[0];
+            result.RequestId = creationRequest.RequestId;
+            result.JobStatus = matches.Select(entry => entry.Job?.Status).FirstOrDefault(status => !String.IsNullOrWhiteSpace(status));
+            return InvokeResult<HeyGenVideoChargeResult>.Create(result);
         }
 
         private static string ComputeWebhookSignature(string rawPayload, string signingSecret)
