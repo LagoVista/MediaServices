@@ -180,6 +180,10 @@ namespace LagoVista.MediaServices.Models
         public decimal? ActualVideoGenerationCost { get; set; }
         // Provider charge and cost provenance are independent of internal product pricing.
         public string ProviderRequestId { get; set; }
+        public EntityHeader<VideoProductionQuality> QualityAtSubmission { get; set; }
+        // True only for renders submitted after durable billing tracking was introduced.
+        // Historical runs are backfilled for cost without risking a duplicate invoice.
+        public bool BillingRequired { get; set; }
         public decimal? ProviderChargeAmount { get; set; }
         public string ProviderChargeUnit { get; set; }
         public decimal? ProviderChargeUsd { get; set; }
