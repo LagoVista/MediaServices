@@ -22,6 +22,8 @@ namespace LagoVista.MediaServices.Interfaces
         Task<InvokeResult<VideoProduction>> GeneratePreviewAudioAsync(string id, EntityHeader org, EntityHeader user);
         Task<InvokeResult<VideoProduction>> SubmitVideoProductionAsync(string id, EntityHeader org, EntityHeader user);
         Task<InvokeResult<VideoProduction>> RefreshVideoProductionStatusAsync(string id, EntityHeader org, EntityHeader user);
+        Task<InvokeResult<VideoProduction>> ReconcileVideoProductionCostsAsync(string id, EntityHeader org, EntityHeader user, CancellationToken cancellationToken = default);
+        Task<InvokeResult<int>> QueueHistoricalVideoCostBackfillAsync(EntityHeader org, EntityHeader user);
         Task<InvokeResult<VideoProduction>> ProcessHeyGenWebhookAsync(HeyGenWebhookEvent webhookEvent, CancellationToken cancellationToken = default);
         Task<InvokeResult<VideoProduction>> PublishVideoProductionToVimeoAsync(string id, EntityHeader org, EntityHeader user, CancellationToken cancellationToken = default);
         Task<InvokeResult<VideoProduction>> RefreshVimeoVideoProductionStatusAsync(string id, EntityHeader org, EntityHeader user, CancellationToken cancellationToken = default);
