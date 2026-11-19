@@ -1419,12 +1419,28 @@ namespace LagoVista.MediaServices.Managers
             run.LastStatusCheckUtc = production.LastStatusCheckUtc;
             run.ErrorMessage = production.ErrorMessage;
 
+            await ApplyRunVideoGenerationCostAsync(production, run);
+            RecalculateProductionCosts(production);
+        }
+
+        private async Task ApplyRunVideoGenerationCostAsync(VideoProduction production, VideoProductionRun run)
+        {
+            if (!run.DurationSeconds.HasValue || run.DurationSeconds.Value <= 0)
+            {
+                if (run.ProviderChargeUsd.HasValue)
+                {
+                    run.ActualVideoGenerationCost = run.ProviderChargeUsd;
+                    run.CostSource = "HeyGenRequestLogUsd";
+                }
+                return;
+            }
             var quality = run.QualityAtSubmission?.Value ?? production.Quality?.Value ?? VideoProductionQuality.Standard;
             var estimatedCost = EstimateCost(run.DurationSeconds.Value,
                 quality == VideoProductionQuality.Standard ? 1.0m / 60.0m : 3.0m / 60.0m);
             run.ActualVideoGenerationCost = run.ProviderChargeUsd ?? estimatedCost;
             run.CostSource = run.ProviderChargeUsd.HasValue ? "HeyGenRequestLogUsd" : "DurationRateEstimate";
-            production.ActualVideoGenerationCost = run.ActualVideoGenerationCost;
+            if (String.Equals(production.ProviderVideoId, run.ProviderVideoId, StringComparison.OrdinalIgnoreCase))
+                production.ActualVideoGenerationCost = run.ActualVideoGenerationCost;
             production.CostCurrency = String.IsNullOrWhiteSpace(production.CostCurrency) ? "USD" : production.CostCurrency;
             production.CostModelVersion = String.IsNullOrWhiteSpace(production.CostModelVersion) ? "heygen-standard-premium-2026-07" : production.CostModelVersion;
 
@@ -1445,7 +1461,6 @@ namespace LagoVista.MediaServices.Managers
                 production.VideoGenerationBillingEventId = run.BillingEventId;
             }
 
-            RecalculateProductionCosts(production);
         }
 
         private static void EnsureRuns(VideoProduction production)
