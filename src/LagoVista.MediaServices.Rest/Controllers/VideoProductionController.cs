@@ -7,6 +7,7 @@ using LagoVista.IoT.Web.Common.Controllers;
 using LagoVista.MediaServices.Interfaces;
 using LagoVista.MediaServices.Models;
 using LagoVista.UserAdmin.Models.Users;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -46,6 +47,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return form;
         }
 
+        [McpEndpoint("video-production-get", Description = "Get a video production and its retake history for the authenticated organization.", FamilyId = "media")]
+        [Authorize]
         [HttpGet("/api/media/videoproduction/{id}")]
         public async Task<DetailResponse<VideoProduction>> GetVideoProductionAsync(string id)
         {
@@ -53,6 +56,8 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return DetailResponse<VideoProduction>.Create(production);
         }
 
+        [McpEndpoint("video-production-list", Description = "List video productions for the authenticated organization.", FamilyId = "media")]
+        [Authorize]
         [HttpGet("/api/media/videoproductions")]
         public Task<ListResponse<VideoProductionSummary>> GetVideoProductionsAsync()
         {
@@ -103,12 +108,16 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return _manager.RefreshVideoProductionStatusAsync(id, OrgEntityHeader, UserEntityHeader);
         }
 
+        [McpEndpoint("video-production-cost-reconcile", Description = "Reconcile one video production and all its HeyGen retakes against available provider request charges; update lifetime costs and publish billing usage only for new billable runs.", FamilyId = "media")]
+        [Authorize]
         [HttpPost("/api/media/videoproduction/{id}/cost/reconcile")]
         public Task<InvokeResult<VideoProduction>> ReconcileVideoProductionCostsAsync(string id, CancellationToken cancellationToken = default)
         {
             return _manager.ReconcileVideoProductionCostsAsync(id, OrgEntityHeader, UserEntityHeader, cancellationToken);
         }
 
+        [McpEndpoint("video-production-cost-backfill", Description = "Queue a best-effort reconciliation of all historical HeyGen video production runs for the authenticated organization. Existing legacy runs are updated for cost accounting without automatically issuing duplicate historical billing events.", FamilyId = "media")]
+        [Authorize]
         [HttpPost("/api/media/videoproductions/cost/backfill")]
         public Task<InvokeResult<int>> QueueHistoricalVideoCostBackfillAsync()
         {
