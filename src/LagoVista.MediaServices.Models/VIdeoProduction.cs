@@ -178,6 +178,15 @@ namespace LagoVista.MediaServices.Models
         public string LastStatusCheckUtc { get; set; }
         public int? DurationSeconds { get; set; }
         public decimal? ActualVideoGenerationCost { get; set; }
+        // Provider charge and cost provenance are independent of internal product pricing.
+        public string ProviderRequestId { get; set; }
+        public decimal? ProviderChargeAmount { get; set; }
+        public string ProviderChargeUnit { get; set; }
+        public decimal? ProviderChargeUsd { get; set; }
+        public bool? ProviderChargeRecorded { get; set; }
+        public bool ProviderChargeRefunded { get; set; }
+        public string ProviderChargeCheckedUtc { get; set; }
+        public string CostSource { get; set; }
         public string BillingEventId { get; set; }
         public string ProviderVideoUrl { get; set; }
         public string ProviderThumbnailUrl { get; set; }
@@ -414,6 +423,10 @@ namespace LagoVista.MediaServices.Models
         public decimal? ActualVideoGenerationCost { get; set; }
         public int VideoGenerationCount { get; set; }
         public decimal? TotalVideoGenerationCost { get; set; }
+        // Provider-native lifetime totals; keep credits/minutes separate from USD estimates.
+        public decimal? TotalHeyGenCredits { get; set; }
+        public decimal? TotalHeyGenMinutes { get; set; }
+        public decimal? TotalProviderReportedVideoCostUsd { get; set; }
 
         public decimal? EstimatedTotalCost { get; set; }
         public decimal? ActualTotalCost { get; set; }
