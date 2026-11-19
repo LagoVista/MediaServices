@@ -828,11 +828,8 @@ namespace LagoVista.MediaServices.Services
                     if (!String.IsNullOrWhiteSpace(token))
                         uri += $"&token={Uri.EscapeDataString(token)}";
 
-                    using (var request = new HttpRequestMessage(HttpMethod.Get, uri))
+                    using (var response = await GetRequestLogWithRetryAsync(uri, cancellationToken))
                     {
-                        request.Headers.Add("x-api-key", _settings.HeyGenApiKey);
-                        using (var response = await _httpClient.SendAsync(request, cancellationToken))
-                        {
                             var body = await response.Content.ReadAsStringAsync();
                             if (!response.IsSuccessStatusCode)
                             {
@@ -850,7 +847,6 @@ namespace LagoVista.MediaServices.Services
                             if (!logs.HasMore || String.IsNullOrWhiteSpace(logs.NextToken))
                                 break;
                             token = logs.NextToken;
-                        }
                     }
                 }
 
@@ -875,6 +871,34 @@ namespace LagoVista.MediaServices.Services
             result.RequestId = creationRequest.RequestId;
             result.JobStatus = matches.Select(entry => entry.Job?.Status).FirstOrDefault(status => !String.IsNullOrWhiteSpace(status));
             return InvokeResult<HeyGenVideoChargeResult>.Create(result);
+        }
+
+        // Retrying the read-only request log is safe: each attempt returns the same
+        // provider charge evidence and cannot create a new video or billing event.
+        private async Task<HttpResponseMessage> GetRequestLogWithRetryAsync(string uri, CancellationToken cancellationToken)
+        {
+            const int maxRetries = 3;
+            for (var retry = 0; ; retry++)
+            {
+                using (var request = new HttpRequestMessage(HttpMethod.Get, uri))
+                {
+                    request.Headers.Add("x-api-key", _settings.HeyGenApiKey);
+                    var response = await _httpClient.SendAsync(request, cancellationToken);
+
+                    var statusCode = (int)response.StatusCode;
+                    if (response.IsSuccessStatusCode ||
+                        retry >= maxRetries ||
+                        (statusCode != 429 && (statusCode < 500 || statusCode > 599)))
+                    {
+                        return response;
+                    }
+
+                    response.Dispose();
+                }
+
+                // 0.5s, 1s, 2s. Respect cancellation and avoid hammering HeyGen.
+                await Task.Delay(TimeSpan.FromMilliseconds(500 * (1 << retry)), cancellationToken);
+            }
         }
 
         private static string ComputeWebhookSignature(string rawPayload, string signingSecret)
