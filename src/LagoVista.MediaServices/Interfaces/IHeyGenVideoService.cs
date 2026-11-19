@@ -25,6 +25,7 @@ namespace LagoVista.MediaServices.Interfaces
         Task<InvokeResult<HeyGenVideoDetails>> GetVideoAsync(string videoId, CancellationToken cancellationToken = default);
 
         Task<InvokeResult<HeyGenVideoStatusResult>> GetVideoStatusAsync(string videoId, CancellationToken cancellationToken = default);
+        Task<InvokeResult<HeyGenVideoChargeResult>> GetVideoChargeAsync(string videoId, string submittedUtc, CancellationToken cancellationToken = default);
     }
 
     internal sealed class HeyGenCreateWebhookEndpointRequest
