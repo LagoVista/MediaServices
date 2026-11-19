@@ -17,19 +17,24 @@ namespace LagoVista.MediaServices.MediaTests
     {
         private sealed class TestHandler : HttpMessageHandler
         {
-            private readonly Func<HttpRequestMessage, string> _respond;
-            public TestHandler(Func<HttpRequestMessage, string> respond) { _respond = respond; }
+            private readonly Func<HttpRequestMessage, HttpResponseMessage> _respond;
+            public TestHandler(Func<HttpRequestMessage, HttpResponseMessage> respond) { _respond = respond; }
 
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = new StringContent(_respond(request))
-                });
+                return Task.FromResult(_respond(request));
             }
         }
 
         private static HeyGenVideoService CreateService(Func<HttpRequestMessage, string> respond)
+        {
+            return CreateService(request => new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(respond(request))
+            });
+        }
+
+        private static HeyGenVideoService CreateService(Func<HttpRequestMessage, HttpResponseMessage> respond)
         {
             var factory = new Mock<IHttpClientFactory>();
             factory.Setup(client => client.CreateClient(It.IsAny<string>()))
@@ -42,6 +47,76 @@ namespace LagoVista.MediaServices.MediaTests
                 settings.Object,
                 new Mock<ISecureStorage>().Object,
                 new Mock<ICacheProvider>().Object);
+        }
+
+        [TestMethod]
+        public async Task RequestLogs_Retry503AndUseConfirmedUsdWhenProviderRecovers()
+        {
+            var requests = 0;
+            var service = CreateService(request =>
+            {
+                requests++;
+                if (requests <= 2)
+                    return new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+                    {
+                        Content = new StringContent("temporary provider outage")
+                    };
+
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(@"{""data"":[{""request_id"":""request-recovered"",
+                        ""endpoint"":""/v3/videos"",""job"":{""id"":""video-503"",""status"":""completed""},
+                        ""charge_recorded"":true,""charge"":{""amount"":1.08,""unit"":""credits"",""amount_usd"":1.08}}],
+                        ""has_more"":false}")
+                };
+            });
+
+            var result = await service.GetVideoChargeAsync("video-503", DateTimeOffset.UtcNow.ToString("O"));
+
+            Assert.IsTrue(result.Successful);
+            Assert.AreEqual(3, requests);
+            Assert.AreEqual(1.08m, result.Result.AmountUsd.Value);
+            Assert.AreEqual("request-recovered", result.Result.RequestId);
+        }
+
+        [TestMethod]
+        public async Task RequestLogs_StopRetrying503AfterBoundedAttempts()
+        {
+            var requests = 0;
+            var service = CreateService(request =>
+            {
+                requests++;
+                return new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+                {
+                    Content = new StringContent("provider still unavailable")
+                };
+            });
+
+            var result = await service.GetVideoChargeAsync("video-503", DateTimeOffset.UtcNow.ToString("O"));
+
+            Assert.IsFalse(result.Successful);
+            Assert.AreEqual(4, requests);
+            StringAssert.Contains(result.Errors[0].Message, "status 503");
+        }
+
+        [TestMethod]
+        public async Task RequestLogs_DoNotRetryNonTransientErrors()
+        {
+            var requests = 0;
+            var service = CreateService(request =>
+            {
+                requests++;
+                return new HttpResponseMessage(HttpStatusCode.Unauthorized)
+                {
+                    Content = new StringContent("invalid provider key")
+                };
+            });
+
+            var result = await service.GetVideoChargeAsync("video-auth", DateTimeOffset.UtcNow.ToString("O"));
+
+            Assert.IsFalse(result.Successful);
+            Assert.AreEqual(1, requests);
+            StringAssert.Contains(result.Errors[0].Message, "status 401");
         }
 
         [TestMethod]
