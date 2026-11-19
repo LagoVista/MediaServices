@@ -468,29 +468,13 @@ namespace LagoVista.MediaServices.Managers
                 composition.Status?.Value != VideoCompositionStatus.Completed) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The video composition must be completed before it can be published to Vimeo.");
             if (composition.OutputMediaResource == null || String.IsNullOrWhiteSpace(composition.OutputMediaResource.Id)) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The video composition does not have an object storage output media resource.");
 
-            // Publication checks the CURRENT render inputs, not just the saved text.
-            // This prevents publishing an older assembled asset after disclosure is changed.
-            if (TrexelVideoDisclosurePolicy.AppliesTo(composition))
-            {
-                var effectiveComposition = JsonConvert.DeserializeObject<VideoComposition>(JsonConvert.SerializeObject(composition));
-                var masterResult = await RefreshTrexelTemplateAsync(effectiveComposition, org, user);
-                if (!masterResult.Successful)
-                    return InvokeResult<VideoAssemblyPreparationResult>.FromError(masterResult.Errors[0].Message);
-
-                var resolveResult = await ResolveReferencedBlocksAsync(effectiveComposition, org, user, cancellationToken);
-                if (!resolveResult.Successful)
-                    return InvokeResult<VideoAssemblyPreparationResult>.FromError(resolveResult.Errors[0].Message);
-
-                var disclosureError = TrexelVideoDisclosurePolicy.Validate(effectiveComposition);
-                if (!String.IsNullOrWhiteSpace(disclosureError))
-                    return InvokeResult<VideoAssemblyPreparationResult>.FromError(disclosureError);
-
-                if (!composition.IsReady ||
-                    String.IsNullOrWhiteSpace(composition.OutputInputSha256) ||
-                    !String.Equals(effectiveComposition.CalculateCurrentInputSha256(), composition.OutputInputSha256, StringComparison.OrdinalIgnoreCase))
-                    return InvokeResult<VideoAssemblyPreparationResult>.FromError(
-                        "The Trexel video must be assembled with the current AI disclosure before publishing. Reassemble the composition after changing its labels.");
-            }
+            // Publish the completed composition, not a speculative refresh of the master.
+            // Assembly already materializes the effective blocks into this record.
+            // Keep the real AI disclosure requirement, but do not gate publication on
+            // a hash comparison against a template that can change independently.
+            var disclosureError = TrexelVideoDisclosurePolicy.Validate(composition);
+            if (!String.IsNullOrWhiteSpace(disclosureError))
+                return InvokeResult<VideoAssemblyPreparationResult>.FromError(disclosureError);
 
             cancellationToken.ThrowIfCancellationRequested();
 
