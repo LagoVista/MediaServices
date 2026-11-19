@@ -14,22 +14,12 @@ namespace LagoVista.MediaServices.Managers
     {
         public const string Version = "1";
         public const string Identity = "AI Virtual Team Member";
-        public const string ValueProposition = "Pay for outcomes, not hours worked.";
 
         // Stable, per-block label IDs are the editable slots in the composition.
         // IDs are 32-character hexadecimal strings, compatible with existing label IDs.
         public const string OpeningIdentitySlot = "A17E0000000000000000000000000001";
         public const string PresenterIdentitySlot = "A17E0000000000000000000000000002";
         public const string ClosingIdentitySlot = "A17E0000000000000000000000000003";
-        public const string ClosingValueSlot = "A17E0000000000000000000000000004";
-
-        private static readonly string[] PolicySlotIds =
-        {
-            OpeningIdentitySlot,
-            PresenterIdentitySlot,
-            ClosingIdentitySlot,
-            ClosingValueSlot
-        };
 
         public static bool AppliesTo(VideoComposition composition) =>
             composition != null &&
@@ -43,29 +33,8 @@ namespace LagoVista.MediaServices.Managers
             EnsureIdentity(composition, VideoCompositionBlockRole.Intro, OpeningIdentitySlot, 90);
             EnsureIdentity(composition, VideoCompositionBlockRole.Content, PresenterIdentitySlot, 980);
             EnsureIdentity(composition, VideoCompositionBlockRole.CallToAction, ClosingIdentitySlot, 90);
-
-            var closing = composition.Blocks?.FirstOrDefault(block => block.Role == VideoCompositionBlockRole.CallToAction);
-            if (closing != null)
-            {
-                closing.CompositionLabels = closing.CompositionLabels ?? new List<VideoCompositionTextLabel>();
-                if (!closing.CompositionLabels.Any(label => label.Id == ClosingValueSlot))
-                {
-                    closing.CompositionLabels.Add(new VideoCompositionTextLabel
-                    {
-                        Id = ClosingValueSlot,
-                        Text = ValueProposition,
-                        Binding = VideoCompositionLabelBinding.None,
-                        X = 960,
-                        Y = 740,
-                        MaxWidth = 1600,
-                        FontSize = 44,
-                        Bold = true,
-                        Alignment = VideoCompositionTextAlignment.Center,
-                        Effect = VideoCompositionTextEffect.DropShadow,
-                        EffectColor = "#000000"
-                    });
-                }
-            }
+            // Marketing copy and its layout belong to the composition template.
+            // Only the mandatory AI identity disclosure is managed by this policy.
         }
 
         /// <summary>
