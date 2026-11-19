@@ -1066,6 +1066,14 @@ namespace LagoVista.MediaServices.Managers
 
         private async Task<VideoProduction> ApplySuccessfulWebhookAsync(VideoProduction production, HeyGenVideoWebhookData eventData)
         {
+            // The provider reports rendering completion, not completion of our downstream import.
+            // A delayed/replayed webhook must not move an already imported video backwards.
+            var latest = await _repo.GetVideoProductionAsync(production.Id);
+            if (HasCompletedCurrentProviderImport(latest) || IsImportOrLater(latest))
+            {
+                return latest;
+            }
+
             var state = new VideoProductionProviderState
             {
                 ProviderVideoUrl = eventData.VideoUrl,
@@ -1237,9 +1245,51 @@ namespace LagoVista.MediaServices.Managers
             return $"media-services:heygen:webhook-receipt:{eventId}".ToLowerInvariant();
         }
 
+        private static bool IsImportOrLater(VideoProduction production)
+        {
+            switch (production?.Status?.Value)
+            {
+                case VideoProductionStatus.ImportingProviderVideo:
+                case VideoProductionStatus.ProviderVideoReady:
+                case VideoProductionStatus.ImportingToVimeo:
+                case VideoProductionStatus.ProcessingAtVimeo:
+                case VideoProductionStatus.UpdatingEntity:
+                case VideoProductionStatus.Completed:
+                case VideoProductionStatus.Failed:
+                case VideoProductionStatus.Cancelled:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool HasCompletedCurrentProviderImport(VideoProduction production)
+        {
+            return production != null &&
+                   !String.IsNullOrWhiteSpace(production.ProviderVideoId) &&
+                   String.Equals(production.ProviderVideoImportCompletedProviderVideoId, production.ProviderVideoId, StringComparison.OrdinalIgnoreCase) &&
+                   !String.IsNullOrWhiteSpace(production.FinalVideoMediaResource?.Id) &&
+                   !String.IsNullOrWhiteSpace(production.ProviderVideoImportCompletedUtc?.ToString());
+        }
+
         public async Task<InvokeResult<VideoProduction>> RefreshVideoProductionStatusAsync(string id, EntityHeader org, EntityHeader user)
         {
             var production = await GetVideoProductionAsync(id, org, user);
+
+            // Recover an import callback that succeeded before a stale HeyGen poll reset the status.
+            if (production.Status?.Value == VideoProductionStatus.ProviderCompleted && HasCompletedCurrentProviderImport(production))
+            {
+                production.SetStatus(VideoProductionStatus.ProviderVideoReady);
+                SyncCurrentRun(production);
+                await _repo.UpdateVideoProductionAsync(production);
+                await PublishVideoProductionUpdatedAsync(production);
+                return InvokeResult<VideoProduction>.Create(production);
+            }
+
+            if (IsImportOrLater(production))
+            {
+                return InvokeResult<VideoProduction>.Create(production);
+            }
 
             if (String.IsNullOrWhiteSpace(production.ProviderVideoId))
             {
@@ -1259,6 +1309,30 @@ namespace LagoVista.MediaServices.Managers
             }
 
             var providerStatus = statusResult.Result;
+
+            // HeyGen may have responded while the video processor was completing the import.
+            // Re-read before applying provider state so an older request cannot undo that work.
+            var latestProduction = await _repo.GetVideoProductionAsync(production.Id);
+            if (!String.Equals(latestProduction?.ProviderVideoId, production.ProviderVideoId, StringComparison.OrdinalIgnoreCase))
+            {
+                return InvokeResult<VideoProduction>.Create(latestProduction);
+            }
+
+            production = latestProduction;
+            if (HasCompletedCurrentProviderImport(production) &&
+                production.Status?.Value == VideoProductionStatus.ProviderCompleted)
+            {
+                production.SetStatus(VideoProductionStatus.ProviderVideoReady);
+                SyncCurrentRun(production);
+                await _repo.UpdateVideoProductionAsync(production);
+                await PublishVideoProductionUpdatedAsync(production);
+                return InvokeResult<VideoProduction>.Create(production);
+            }
+
+            if (IsImportOrLater(production))
+            {
+                return InvokeResult<VideoProduction>.Create(production);
+            }
 
             production.LastStatusCheckUtc = UtcTimestamp.Now;
             production.ProviderVideoUrl = providerStatus.VideoUrl ?? production.ProviderVideoUrl;
