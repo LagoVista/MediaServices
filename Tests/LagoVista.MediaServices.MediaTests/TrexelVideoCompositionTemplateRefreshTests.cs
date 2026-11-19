@@ -58,6 +58,26 @@ namespace LagoVista.MediaServices.MediaTests
         }
 
         [TestMethod]
+        public void PersistedAssemblyDisclosureIsValidEvenWhenTemplateHashesDiffer()
+        {
+            // A later master-template edit does not invalidate the disclosures
+            // that were materialized into the saved composition during assembly.
+            var composition = MakeComposition();
+            TrexelVideoDisclosurePolicy.EnsureEditableSlots(composition);
+            composition.IsReady = true;
+            composition.CurrentInputSha256 = new string('a', 64);
+            composition.OutputInputSha256 = new string('b', 64);
+
+            Assert.IsFalse(composition.IsCurrent);
+            Assert.IsNull(TrexelVideoDisclosurePolicy.Validate(composition));
+
+            // The three AI identity disclosures still must be present.
+            var presenter = composition.Blocks.Single(x => x.Role == VideoCompositionBlockRole.Content);
+            presenter.CompositionLabels.RemoveAll(x => x.Id == TrexelVideoDisclosurePolicy.PresenterIdentitySlot);
+            Assert.IsNotNull(TrexelVideoDisclosurePolicy.Validate(composition));
+        }
+
+        [TestMethod]
         public void RefreshRejectsBrokenMasterWithoutModifyingExistingVideo()
         {
             var composition = MakeComposition();
