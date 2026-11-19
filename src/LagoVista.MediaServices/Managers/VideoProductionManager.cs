@@ -1431,6 +1431,8 @@ namespace LagoVista.MediaServices.Managers
                 {
                     run.ActualVideoGenerationCost = run.ProviderChargeUsd;
                     run.CostSource = "HeyGenRequestLogUsd";
+                    if (String.Equals(production.ProviderVideoId, run.ProviderVideoId, StringComparison.OrdinalIgnoreCase))
+                        production.ActualVideoGenerationCost = run.ActualVideoGenerationCost;
                 }
                 return;
             }
@@ -1453,9 +1455,12 @@ namespace LagoVista.MediaServices.Managers
                     : BillingEventType.VideoGenerationPremium;
                 var key = $"heygen-video-generation:{production.OwnerOrganization?.Id}:{production.Id}:{run.ProviderVideoId}".ToLowerInvariant();
                 var duration = (double)run.DurationSeconds.Value;
+                var providerChargeNote = run.ProviderChargeAmount.HasValue
+                    ? $", HeyGen charge: {run.ProviderChargeAmount.Value} {run.ProviderChargeUnit}"
+                    : ", HeyGen charge: pending";
                 var billingEventId = await _billingEventRecorder.RecordUsageAsync(
                     billingEventType, duration,
-                    $"HeyGen video generation {production.Name}, provider video: {run.ProviderVideoId}, duration: {duration} seconds",
+                    $"HeyGen video generation {production.Name}, provider video: {run.ProviderVideoId}, duration: {duration} seconds{providerChargeNote}",
                     production.OwnerOrganization, production.LastUpdatedBy, key);
                 run.BillingEventId = billingEventId.ToString();
                 production.VideoGenerationBillingEventId = run.BillingEventId;
@@ -1484,6 +1489,25 @@ namespace LagoVista.MediaServices.Managers
             {
                 var production = await _repo.GetVideoProductionAsync(id);
                 EnsureRuns(production);
+                // Older productions predate run tracking. Preserve their latest render
+                // and its existing billing reference rather than silently skipping it.
+                if (!String.IsNullOrWhiteSpace(production.ProviderVideoId) &&
+                    !production.Runs.Any(run => String.Equals(run?.ProviderVideoId, production.ProviderVideoId, StringComparison.OrdinalIgnoreCase)))
+                {
+                    production.Runs.Insert(0, new VideoProductionRun
+                    {
+                        ProviderVideoId = production.ProviderVideoId,
+                        Status = production.Status,
+                        SubmittedUtc = production.SubmittedUtc,
+                        CompletedUtc = production.CompletedUtc,
+                        DurationSeconds = production.ActualDurationSeconds,
+                        ActualVideoGenerationCost = production.ActualVideoGenerationCost,
+                        BillingEventId = production.VideoGenerationBillingEventId,
+                        QualityAtSubmission = production.Quality,
+                        BillingRequired = false
+                    });
+                }
+
                 foreach (var run in production.Runs.Where(item => item != null && !String.IsNullOrWhiteSpace(item.ProviderVideoId)))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
@@ -1674,13 +1698,12 @@ namespace LagoVista.MediaServices.Managers
             EnsureRuns(production);
             var runs = production.Runs.Where(run => run != null).ToList();
             production.TotalVideoGenerationCost = runs.Sum(run => run.ActualVideoGenerationCost ?? 0m);
-            production.TotalHeyGenCredits = runs
-                .Where(run => String.Equals(run.ProviderChargeUnit, "credits", StringComparison.OrdinalIgnoreCase))
-                .Sum(run => run.ProviderChargeAmount ?? 0m);
-            production.TotalHeyGenMinutes = runs
-                .Where(run => String.Equals(run.ProviderChargeUnit, "minutes", StringComparison.OrdinalIgnoreCase))
-                .Sum(run => run.ProviderChargeAmount ?? 0m);
-            production.TotalProviderReportedVideoCostUsd = runs.Sum(run => run.ProviderChargeUsd ?? 0m);
+            var creditRuns = runs.Where(run => String.Equals(run.ProviderChargeUnit, "credits", StringComparison.OrdinalIgnoreCase) && run.ProviderChargeAmount.HasValue).ToList();
+            var minuteRuns = runs.Where(run => String.Equals(run.ProviderChargeUnit, "minutes", StringComparison.OrdinalIgnoreCase) && run.ProviderChargeAmount.HasValue).ToList();
+            var usdRuns = runs.Where(run => run.ProviderChargeUsd.HasValue).ToList();
+            production.TotalHeyGenCredits = creditRuns.Count > 0 ? creditRuns.Sum(run => run.ProviderChargeAmount ?? 0m) : (decimal?)null;
+            production.TotalHeyGenMinutes = minuteRuns.Count > 0 ? minuteRuns.Sum(run => run.ProviderChargeAmount ?? 0m) : (decimal?)null;
+            production.TotalProviderReportedVideoCostUsd = usdRuns.Count > 0 ? usdRuns.Sum(run => run.ProviderChargeUsd ?? 0m) : (decimal?)null;
             production.VideoGenerationCount = runs.Count(run => run.ActualVideoGenerationCost.HasValue);
             production.ActualTotalCost =
                 (production.ActualPreviewAudioCost ?? 0) +
