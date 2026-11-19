@@ -1463,6 +1463,163 @@ namespace LagoVista.MediaServices.Managers
 
         }
 
+        /// <summary>
+        /// Reconcile all retakes independently. Request-log charges are provider evidence;
+        /// duration-derived dollar values remain clearly marked estimates when HeyGen
+        /// returns only credits/minutes. Legacy runs are never auto-invoiced.
+        /// </summary>
+        public async Task<InvokeResult<VideoProduction>> ReconcileVideoProductionCostsAsync(
+            string id, EntityHeader org, EntityHeader user, CancellationToken cancellationToken = default)
+        {
+            var initial = await GetVideoProductionAsync(id, org, user);
+            if (!String.Equals(initial.OwnerOrganization?.Id, org?.Id, StringComparison.OrdinalIgnoreCase))
+                return InvokeResult<VideoProduction>.FromError("Only the owning organization can reconcile video production charges.");
+
+            var lockKey = $"media-services:heygen:charge-reconcile:{id}".ToLowerInvariant();
+            var lockToken = Guid.NewGuid().ToString("N");
+            if (!await _cacheProvider.AttemptAcquireLockAsync(lockKey, lockToken, TimeSpan.FromMinutes(10)))
+                return InvokeResult<VideoProduction>.FromError("Video charge reconciliation is already in progress.");
+
+            try
+            {
+                var production = await _repo.GetVideoProductionAsync(id);
+                EnsureRuns(production);
+                foreach (var run in production.Runs.Where(item => item != null && !String.IsNullOrWhiteSpace(item.ProviderVideoId)))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var submittedUtc = run.SubmittedUtc;
+                    if (String.IsNullOrWhiteSpace(submittedUtc) &&
+                        String.Equals(run.ProviderVideoId, production.ProviderVideoId, StringComparison.OrdinalIgnoreCase))
+                        submittedUtc = production.SubmittedUtc;
+
+                    try
+                    {
+                        var chargeResult = await _heyGenVideoService.GetVideoChargeAsync(run.ProviderVideoId, submittedUtc, cancellationToken);
+                        run.ProviderChargeCheckedUtc = UtcTimestamp.Now.ToString();
+                        if (chargeResult.Successful && chargeResult.Result?.Found == true)
+                        {
+                            var charge = chargeResult.Result;
+                            run.ProviderRequestId = String.IsNullOrWhiteSpace(run.ProviderRequestId) ? charge.RequestId : run.ProviderRequestId;
+                            run.ProviderChargeRecorded = charge.ChargeRecorded;
+                            run.ProviderChargeRefunded = charge.Refunded;
+                            if (charge.ChargeRecorded)
+                            {
+                                run.ProviderChargeAmount = charge.Amount;
+                                run.ProviderChargeUnit = charge.Unit;
+                                run.ProviderChargeUsd = charge.AmountUsd;
+                            }
+
+                            if (String.Equals(charge.JobStatus, "completed", StringComparison.OrdinalIgnoreCase) &&
+                                (run.Status == null || run.Status.Value == VideoProductionStatus.Submitted ||
+                                 run.Status.Value == VideoProductionStatus.Rendering))
+                                run.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.ProviderCompleted);
+                        }
+                        else if (!chargeResult.Successful)
+                        {
+                            _logger.AddCustomEvent(LogLevel.Warning, this.Tag(),
+                                $"HeyGen request-log lookup failed for provider video '{run.ProviderVideoId}': {chargeResult.Errors?.FirstOrDefault()?.Message}");
+                        }
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+                    catch (Exception ex)
+                    {
+                        _logger.AddException(this.Tag(), ex,
+                            new KeyValuePair<string, string>("ProviderVideoId", run.ProviderVideoId));
+                    }
+
+                    var isComplete = run.Status?.Value == VideoProductionStatus.ProviderCompleted ||
+                        run.Status?.Value == VideoProductionStatus.ImportingProviderVideo ||
+                        run.Status?.Value == VideoProductionStatus.ProviderVideoReady ||
+                        run.Status?.Value == VideoProductionStatus.ImportingToVimeo ||
+                        run.Status?.Value == VideoProductionStatus.ProcessingAtVimeo ||
+                        run.Status?.Value == VideoProductionStatus.UpdatingEntity ||
+                        run.Status?.Value == VideoProductionStatus.Completed;
+
+                    if (!isComplete || !run.DurationSeconds.HasValue || run.DurationSeconds.Value <= 0)
+                    {
+                        try
+                        {
+                            var detailsResult = await _heyGenVideoService.GetVideoAsync(run.ProviderVideoId, cancellationToken);
+                            if (detailsResult.Successful && detailsResult.Result != null)
+                            {
+                                var details = detailsResult.Result;
+                                if (details.Duration.HasValue && details.Duration.Value > 0)
+                                    run.DurationSeconds = Convert.ToInt32(Math.Ceiling(details.Duration.Value));
+                                if (String.Equals(details.Status, "completed", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    isComplete = true;
+                                    if (run.Status == null || run.Status.Value == VideoProductionStatus.Submitted ||
+                                        run.Status.Value == VideoProductionStatus.Rendering)
+                                        run.Status = EntityHeader<VideoProductionStatus>.Create(VideoProductionStatus.ProviderCompleted);
+                                }
+                            }
+                        }
+                        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+                        catch (Exception ex)
+                        {
+                            _logger.AddException(this.Tag(), ex,
+                                new KeyValuePair<string, string>("ProviderVideoId", run.ProviderVideoId));
+                        }
+                    }
+
+                    if (isComplete || run.ProviderChargeUsd.HasValue)
+                    {
+                        await ApplyRunVideoGenerationCostAsync(production, run);
+                    }
+                }
+
+                RecalculateProductionCosts(production);
+                await _repo.UpdateVideoProductionAsync(production);
+                await PublishVideoProductionUpdatedAsync(production);
+                return InvokeResult<VideoProduction>.Create(production);
+            }
+            finally
+            {
+                await _cacheProvider.ReleaseLockAsync(lockKey, lockToken);
+            }
+        }
+
+        /// <summary>Operator-triggered best-effort backfill. Missing old charges do not stop the batch.</summary>
+        public async Task<InvokeResult<int>> QueueHistoricalVideoCostBackfillAsync(EntityHeader org, EntityHeader user)
+        {
+            var productions = (await _repo.GetFullVideoProductionsForOrgAsync(org.Id))
+                .Where(production => String.Equals(production.OwnerOrganization?.Id, org.Id, StringComparison.OrdinalIgnoreCase)
+                    && (production.Runs?.Any(run => !String.IsNullOrWhiteSpace(run?.ProviderVideoId)) == true ||
+                        !String.IsNullOrWhiteSpace(production.ProviderVideoId)))
+                .ToList();
+
+            var queue = BackgroundServiceTaskQueueProvider.Instance;
+            if (queue == null)
+                return InvokeResult<int>.FromError("Background task queue is unavailable.");
+
+            var orgSnapshot = EntityHeader.Create(org.Id, org.Text);
+            var userSnapshot = EntityHeader.Create(user.Id, user.Text);
+            var queued = queue.TryQueueBackgroundWorkItem(async cancellationToken =>
+            {
+                foreach (var candidate in productions)
+                {
+                    if (cancellationToken.IsCancellationRequested) break;
+                    try
+                    {
+                        var result = await ReconcileVideoProductionCostsAsync(candidate.Id, orgSnapshot, userSnapshot, cancellationToken);
+                        if (!result.Successful)
+                            _logger.AddCustomEvent(LogLevel.Warning, this.Tag(),
+                                $"Historical HeyGen backfill for '{candidate.Id}' failed: {result.Errors?.FirstOrDefault()?.Message}");
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { break; }
+                    catch (Exception ex)
+                    {
+                        _logger.AddException(this.Tag(), ex, new KeyValuePair<string, string>("ProductionId", candidate.Id));
+                    }
+                    await Task.Delay(250, cancellationToken);
+                }
+            });
+
+            return queued
+                ? InvokeResult<int>.Create(productions.Count)
+                : InvokeResult<int>.FromError("Could not enqueue the historical video cost backfill.");
+        }
+
         private static void EnsureRuns(VideoProduction production)
         {
             if (production.Runs == null)
