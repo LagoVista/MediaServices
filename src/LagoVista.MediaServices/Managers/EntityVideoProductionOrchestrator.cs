@@ -108,11 +108,34 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<EntityVideoProductionWorkspace>.Create(activeWorkspace);
             }
 
+            // Select the Look requested on the VTM (or preserve the prior production binding).
+            // An explicit selection must never silently fall back to the primary Look.
+            var requestedLookId = !String.IsNullOrWhiteSpace(info?.VideoAvatarLookId)
+                ? info.VideoAvatarLookId
+                : production?.VideoAvatarLookId;
+            var selectedLook = VideoAvatarLookSelection.Resolve(avatar, requestedLookId);
+            if (selectedLook == null)
+            {
+                return await FailAsync(request, String.IsNullOrWhiteSpace(requestedLookId)
+                    ? $"Video avatar '{avatar.Name}' does not have any active Looks."
+                    : $"The selected presenter Look '{requestedLookId}' no longer exists or is inactive. Choose another ready Look.");
+            }
+
+            if (selectedLook.Status?.Value != VideoAvatarStatus.Ready ||
+                String.IsNullOrWhiteSpace(selectedLook.ProviderAvatarId))
+            {
+                var waiting = CreateWorkspace(request, EntityVideoProductionStage.WaitingForAvatar,
+                    $"The selected Look '{selectedLook.Name ?? selectedLook.Id}' is not ready yet.", null, production);
+                await PublishAsync(request, waiting.Stage, waiting.Message, null, production?.ToEntityHeader());
+                return InvokeResult<EntityVideoProductionWorkspace>.Create(waiting);
+            }
+
             if (production != null &&
                 (production.Status?.Value == VideoProductionStatus.ProviderVideoReady ||
                  production.Status?.Value == VideoProductionStatus.Completed) &&
                 production.FinalVideoMediaResource != null &&
-                !String.IsNullOrWhiteSpace(production.FinalVideoMediaResource.Id))
+                !String.IsNullOrWhiteSpace(production.FinalVideoMediaResource.Id) &&
+                !VideoAvatarLookSelection.RequiresNewRender(production, info?.VideoAvatarLookId))
             {
                 production.NotificationRunId = request.RunId;
                 await _videoProductionManager.UpdateVideoProductionAsync(production, org, user).ConfigureAwait(false);
@@ -137,7 +160,7 @@ namespace LagoVista.MediaServices.Managers
                 };
             }
 
-            ApplyProductionSettings(production, source, avatar, voice, request, user);
+            ApplyProductionSettings(production, source, avatar, selectedLook, voice, request, user);
 
             InvokeResult<VideoProduction> saveResult;
             if (isNewProduction)
@@ -371,13 +394,12 @@ namespace LagoVista.MediaServices.Managers
             VideoProduction production,
             EntityVideoCompositionSource source,
             VideoAvatar avatar,
+            VideoAvatarLook look,
             VideoAvatarVoice voice,
             PrepareEntityVideoProductionRequest request,
             EntityHeader user)
         {
             var content = source.GetContent() ?? new VideoCompositionContent();
-            var look = avatar.Looks?.FirstOrDefault(item => item.IsPrimary && item.IsActive)
-                ?? avatar.Looks?.FirstOrDefault(item => item.IsActive);
 
             production.VideoAvatar = avatar.ToEntityHeader();
             production.VideoAvatarLookId = look?.Id;
