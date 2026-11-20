@@ -489,8 +489,9 @@ namespace LagoVista.MediaServices.Managers
             var composition = await _videoCompositionRepo.GetVideoCompositionAsync(compositionId);
             if (composition == null) return InvokeResult<VideoAssemblyPreparationResult>.FromError($"Could not find video composition '{compositionId}'.");
             if (composition.OwnerOrganization == null || !String.Equals(composition.OwnerOrganization.Id, org.Id, StringComparison.OrdinalIgnoreCase)) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The video composition does not belong to the active organization.");
-            if (composition.Status?.Value != VideoCompositionStatus.ProcessingAtVimeo &&
-                composition.Status?.Value != VideoCompositionStatus.Failed &&
+            if (composition.Status?.Value == VideoCompositionStatus.ProcessingAtVimeo)
+                return InvokeResult<VideoAssemblyPreparationResult>.FromError("Vimeo publishing is already in progress for this composition. Refresh its status before submitting another publication.");
+            if (composition.Status?.Value != VideoCompositionStatus.Failed &&
                 composition.Status?.Value != VideoCompositionStatus.Cancelled &&
                 composition.Status?.Value != VideoCompositionStatus.Completed) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The video composition must be completed before it can be published to Vimeo.");
             if (composition.OutputMediaResource == null || String.IsNullOrWhiteSpace(composition.OutputMediaResource.Id)) return InvokeResult<VideoAssemblyPreparationResult>.FromError("The video composition does not have an object storage output media resource.");
@@ -741,6 +742,38 @@ namespace LagoVista.MediaServices.Managers
 
             var videoUri = uploadResult.Result.Uri;
             var videoId = ResolveVimeoVideoId(videoUri);
+
+            // Retain a publication entry for each Vimeo upload, including its full
+            // provider link (unlisted Vimeo URLs can include a private hash).
+            // The completion callback promotes this pending entry to Ready.
+            var publishedMediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(
+                composition.PublishedVideoMediaResource.Id, composition.OwnerOrganization, user);
+            if (publishedMediaResource == null)
+                return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError(
+                    "The composition publishing media resource is unavailable.");
+
+            publishedMediaResource.ExternalAssets = publishedMediaResource.ExternalAssets ?? new List<MediaExternalAsset>();
+            if (!publishedMediaResource.ExternalAssets.Any(asset =>
+                asset.Provider?.Value == MediaExternalAssetProvider.Vimeo &&
+                asset.Purpose?.Value == MediaExternalAssetPurpose.Publication &&
+                String.Equals(asset.ProviderAssetId, videoId, StringComparison.OrdinalIgnoreCase)))
+            {
+                publishedMediaResource.ExternalAssets.Add(new MediaExternalAsset
+                {
+                    Provider = EntityHeader<MediaExternalAssetProvider>.Create(MediaExternalAssetProvider.Vimeo),
+                    Purpose = EntityHeader<MediaExternalAssetPurpose>.Create(MediaExternalAssetPurpose.Publication),
+                    ProviderAssetId = videoId,
+                    ProviderUri = videoUri,
+                    ExternalUrl = uploadResult.Result.Link,
+                    Status = EntityHeader<MediaExternalAssetStatus>.Create(MediaExternalAssetStatus.Pending),
+                    CreatedUtc = UtcTimestamp.Now
+                });
+                publishedMediaResource.LastUpdatedDate = UtcTimestamp.Now;
+                publishedMediaResource.LastUpdatedBy = user;
+                var updated = await _mediaServicesManager.UpdateMediaResourceRecordAsync(
+                    publishedMediaResource, composition.OwnerOrganization, user);
+                if (!updated.Successful) return updated.ToInvokeResult<VideoAssemblyVimeoSessionResponse>();
+            }
 
             composition.VimeoVideoUri = videoUri;
             composition.VimeoVideoId = videoId;
