@@ -792,6 +792,8 @@ namespace LagoVista.MediaServices.Managers
                     resolved.ThumbnailUrl = block.ThumbnailUrl;
                     if (block.DurationSeconds.HasValue)
                         resolved.DurationSeconds = block.DurationSeconds;
+                    if (TrexelVideoDisclosurePolicy.AppliesTo(composition))
+                        TrexelVideoCompositionTemplateRefresh.OverlaySupportingGraphic(resolved, block);
                 }
 
                 if (TrexelVideoDisclosurePolicy.AppliesTo(composition))
