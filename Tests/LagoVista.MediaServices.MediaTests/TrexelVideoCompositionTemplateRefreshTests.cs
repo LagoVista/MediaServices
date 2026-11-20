@@ -223,6 +223,74 @@ namespace LagoVista.MediaServices.MediaTests
             Assert.AreEqual("Master artwork", images.Single().MediaResource.Text);
         }
 
+        [TestMethod]
+        public void ReassemblyRefitsOversizedCroppedPresenterAfterTemplateRefresh()
+        {
+            var composition = MakeComposition();
+            var original = composition.Blocks.Single(x => x.Role == VideoCompositionBlockRole.Content);
+            original.PresenterScale = 0.42; // Historically saved layout: 1117px for 758x1050.
+            original.PresenterPositionX = 0.68;
+            original.PresenterPositionY = 1.0;
+            var presenterMediaId = original.MediaResource.Id;
+
+            var template = MakeTemplate();
+            template.Blocks.Single(x => x.Role == VideoCompositionBlockRole.Content).PresenterScale = 0.42;
+            Assert.IsNull(TrexelVideoCompositionTemplateRefresh.Apply(composition, template));
+
+            // The assembly preparation path runs this after the master and any
+            // referenced block templates are resolved, not before refresh.
+            var content = composition.Blocks.Single(x => x.Role == VideoCompositionBlockRole.Content);
+            TrexelPresenterLayout.Apply(content, 758, 1050);
+
+            var renderedHeight = TrexelPresenterLayout.CompositionCanvasWidth *
+                content.PresenterScale * 1050.0 / 758.0;
+            Assert.AreEqual(864.0, renderedHeight, 0.001);
+            Assert.AreEqual(0.5, content.PresenterPositionX, 0.000001);
+            Assert.AreEqual(1.0, content.PresenterPositionY, 0.000001);
+            Assert.AreEqual(presenterMediaId, content.MediaResource.Id);
+            Assert.AreEqual(38.0, content.DurationSeconds.Value, 0.000001);
+        }
+
+        [TestMethod]
+        public void RepeatedReassemblyRefitsFromLatestPresenterDimensions()
+        {
+            var composition = MakeComposition();
+            var template = MakeTemplate();
+
+            Assert.IsNull(TrexelVideoCompositionTemplateRefresh.Apply(composition, template));
+            var content = composition.Blocks.Single(x => x.Role == VideoCompositionBlockRole.Content);
+            TrexelPresenterLayout.Apply(content, 758, 1050);
+            var portraitScale = content.PresenterScale;
+
+            // The next reassembly refreshes the template again; it must
+            // recalculate from the current cropped media dimensions each time.
+            Assert.IsNull(TrexelVideoCompositionTemplateRefresh.Apply(composition, template));
+            content = composition.Blocks.Single(x => x.Role == VideoCompositionBlockRole.Content);
+            TrexelPresenterLayout.Apply(content, 1104, 1070);
+
+            var renderedHeight = TrexelPresenterLayout.CompositionCanvasWidth *
+                content.PresenterScale * 1070.0 / 1104.0;
+            Assert.AreEqual(864.0, renderedHeight, 0.001);
+            Assert.AreNotEqual(portraitScale, content.PresenterScale);
+            Assert.AreEqual(1.0, content.PresenterPositionY, 0.000001);
+        }
+
+        [TestMethod]
+        public void ExtremelyWidePresenterIsLimitedByCanvasWidth()
+        {
+            var content = new VideoCompositionBlock
+            {
+                Role = VideoCompositionBlockRole.Content,
+                PresenterScale = 4.0
+            };
+
+            TrexelPresenterLayout.Apply(content, 4000, 400);
+
+            Assert.AreEqual(1.0, content.PresenterScale, 0.000001);
+            Assert.AreEqual(0.5, content.PresenterPositionX, 0.000001);
+            Assert.AreEqual(1.0, content.PresenterPositionY, 0.000001);
+        }
+
         private static VideoComposition MakeComposition()
         {
             return new VideoComposition
