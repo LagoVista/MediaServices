@@ -291,6 +291,73 @@ namespace LagoVista.MediaServices.MediaTests
             Assert.AreEqual(1.0, content.PresenterPositionY, 0.000001);
         }
 
+        [TestMethod]
+        public void SwitchingTrexelTemplateKeepsPresenterAndSupportingGraphic()
+        {
+            var composition = MakeComposition();
+            composition.Id = "A17E0000000000000000000000000099";
+            composition.OutputMediaResource = EntityHeader.Create("A17E0000000000000000000000000700", "Previous assembly");
+            composition.PublishedVideoMediaResource = EntityHeader.Create("A17E0000000000000000000000000701", "Previous Vimeo publication");
+            var presenter = composition.Blocks.Single(x => x.Role == VideoCompositionBlockRole.Content);
+            presenter.OverlayImages.Add(new VideoCompositionBlockImage
+            {
+                Id = TrexelVideoCompositionTemplateRefresh.SupportingGraphicOverlaySlot,
+                MediaResource = EntityHeader.Create("A17E0000000000000000000000000601", "Trexel task graphic")
+            });
+            var mediaId = presenter.MediaResource.Id;
+            var template = MakeTemplate();
+            template.Id = "A17E0000000000000000000000000199";
+            template.Version = 9;
+            template.Blocks.Single(x => x.Role == VideoCompositionBlockRole.Intro)
+                .CompositionLabels.First().Text = "New template opening";
+
+            Assert.IsNull(TrexelVideoCompositionTemplateRefresh.ApplySelectedTemplate(composition, template));
+            Assert.AreEqual(template.Id, composition.SourceCompositionTemplate.Id);
+            Assert.AreEqual(9, composition.SourceCompositionTemplateVersion);
+            Assert.AreEqual("A17E0000000000000000000000000099", composition.Id);
+            Assert.AreEqual("New template opening",
+                composition.Blocks.Single(x => x.Role == VideoCompositionBlockRole.Intro).CompositionLabels.First().Text);
+            presenter = composition.Blocks.Single(x => x.Role == VideoCompositionBlockRole.Content);
+            Assert.AreEqual(mediaId, presenter.MediaResource.Id);
+            Assert.AreEqual(38.0, presenter.DurationSeconds.Value, 0.001);
+            Assert.AreEqual(1, presenter.OverlayImages.Count(x =>
+                x.Id == TrexelVideoCompositionTemplateRefresh.SupportingGraphicOverlaySlot));
+            Assert.AreEqual("A17E0000000000000000000000000700", composition.OutputMediaResource.Id);
+            Assert.AreEqual("A17E0000000000000000000000000701", composition.PublishedVideoMediaResource.Id);
+            Assert.IsNull(TrexelVideoDisclosurePolicy.Validate(composition));
+        }
+
+        [TestMethod]
+        public void InvalidTemplateSwitchLeavesExistingCompositionUntouched()
+        {
+            var composition = MakeComposition();
+            var originalHash = composition.CalculateCurrentInputSha256();
+            var originalTemplateId = composition.SourceCompositionTemplate.Id;
+            var template = MakeTemplate();
+            template.Id = "A17E0000000000000000000000000199";
+            template.Blocks.RemoveAll(x => x.Role == VideoCompositionBlockRole.CallToAction);
+
+            var error = TrexelVideoCompositionTemplateRefresh.ApplySelectedTemplate(composition, template);
+
+            Assert.IsFalse(String.IsNullOrWhiteSpace(error));
+            Assert.AreEqual(originalTemplateId, composition.SourceCompositionTemplate.Id);
+            Assert.AreEqual(originalHash, composition.CalculateCurrentInputSha256());
+        }
+
+        [TestMethod]
+        public void SwitchingTemplateIsLimitedToTrexelCompositions()
+        {
+            var composition = MakeComposition();
+            composition.SourceEntityType = "MediaResource";
+            var originalTemplateId = composition.SourceCompositionTemplate.Id;
+            var template = MakeTemplate();
+            template.Id = "A17E0000000000000000000000000199";
+
+            Assert.IsFalse(String.IsNullOrWhiteSpace(
+                TrexelVideoCompositionTemplateRefresh.ApplySelectedTemplate(composition, template)));
+            Assert.AreEqual(originalTemplateId, composition.SourceCompositionTemplate.Id);
+        }
+
         private static VideoComposition MakeComposition()
         {
             return new VideoComposition
