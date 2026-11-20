@@ -38,6 +38,30 @@ namespace LagoVista.MediaServices.Managers
                 JsonConvert.SerializeObject(graphic)));
         }
 
+        /// <summary>
+        /// Switch an existing Trexel composition to another approved master template,
+        /// preserving its identity, presenter media, supporting graphic, and output
+        /// history. The new blocks are staged in memory; reject a broken template
+        /// without changing the persisted source-template binding.
+        /// </summary>
+        public static string ApplySelectedTemplate(VideoComposition composition, VideoCompositionTemplate template)
+        {
+            if (composition == null)
+                return "The Trexel video composition is required.";
+            if (template == null)
+                return "The selected video composition template is missing.";
+            if (!TrexelVideoDisclosurePolicy.AppliesTo(composition))
+                return "Only Trexel compositions support changing their source master template.";
+
+            var previousSource = composition.SourceCompositionTemplate;
+            composition.SourceCompositionTemplate = LagoVista.Core.Models.EntityHeader.Create(template.Id, template.Name);
+            var error = Apply(composition, template);
+            if (!String.IsNullOrWhiteSpace(error))
+                composition.SourceCompositionTemplate = previousSource;
+
+            return error;
+        }
+
         public static string Apply(VideoComposition composition, VideoCompositionTemplate template)
         {
             if (!TrexelVideoDisclosurePolicy.AppliesTo(composition))
