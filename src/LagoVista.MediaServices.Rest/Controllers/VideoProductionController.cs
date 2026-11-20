@@ -148,7 +148,19 @@ namespace LagoVista.MediaServices.Rest.Controllers
             return RedirectToVideoProductionMediaAsync(mediaResourceId, true, cancellationToken);
         }
 
-        private async Task<IActionResult> RedirectToVideoProductionMediaAsync(string mediaResourceId, bool thumbnail, CancellationToken cancellationToken)
+        // Playback of an immutable historical presenter/assembly video revision.
+        // Use the video processor's storage service, not the generic media blob
+        // download (processed videos are written through the processor storage path).
+        [HttpGet("/api/media/videoproduction/mediaresource/{mediaResourceId}/revision/{revisionId}/video")]
+        public Task<IActionResult> DownloadGeneratedVideoRevisionAsync(string mediaResourceId, string revisionId, CancellationToken cancellationToken = default)
+        {
+            if (String.IsNullOrWhiteSpace(revisionId))
+                return Task.FromResult<IActionResult>(BadRequest("Video revision ID is required."));
+
+            return RedirectToVideoProductionMediaAsync(mediaResourceId, false, cancellationToken, revisionId);
+        }
+
+        private async Task<IActionResult> RedirectToVideoProductionMediaAsync(string mediaResourceId, bool thumbnail, CancellationToken cancellationToken, string revisionId = null)
         {
             if (String.IsNullOrWhiteSpace(mediaResourceId))
             {
@@ -172,14 +184,16 @@ namespace LagoVista.MediaServices.Rest.Controllers
                 return Conflict("The generated video media resource is not ready.");
             }
 
-            var currentRevision = mediaResource.GetCurrentRevision();
-            var storageReferenceName = thumbnail
-                ? currentRevision?.ThumbnailStorageReferenceName ?? mediaResource.ThumbnailStorageReferenceName
-                : currentRevision?.StorageReferenceName ?? mediaResource.StorageReferenceName;
+            // For an explicit revision we require that exact ready revision;
+            // never silently play the current video instead of an older retake.
+            var storageReferenceName = VideoProductionMediaRevision.ResolveStorageReferenceName(
+                mediaResource, revisionId, thumbnail);
 
             if (String.IsNullOrWhiteSpace(storageReferenceName))
             {
-                return NotFound(thumbnail ? "The generated video thumbnail is not available." : "The generated video file is not available.");
+                return NotFound(!String.IsNullOrWhiteSpace(revisionId)
+                    ? $"The requested ready video revision '{revisionId}' was not found."
+                    : (thumbnail ? "The generated video thumbnail is not available." : "The generated video file is not available."));
             }
 
             var readUrlResult = await _videoProcessorStorageUrlService.CreateReadUrlAsync(OrgEntityHeader.Id, storageReferenceName, cancellationToken);
