@@ -117,6 +117,33 @@ namespace LagoVista.MediaServices.Managers
                 return InvokeResult<VideoAssemblyPreparationResult>.FromError(resolveResult.Errors[0].Message);
             }
 
+            if (TrexelVideoDisclosurePolicy.AppliesTo(effectiveComposition))
+            {
+                // Both the master composition and referenced block templates have
+                // now been resolved. Fit the restored presenter to its actual
+                // cropped media dimensions *after* those defaults are applied.
+                var presenterBlock = effectiveComposition.Blocks.SingleOrDefault(
+                    block => block.Role == VideoCompositionBlockRole.Content);
+                if (String.IsNullOrWhiteSpace(presenterBlock?.MediaResource?.Id))
+                    return InvokeResult<VideoAssemblyPreparationResult>.FromError(
+                        "The Trexel presenter block does not contain a source video.");
+
+                var presenterMedia = await _mediaServicesManager.GetMediaResourceRecordAsync(
+                    presenterBlock.MediaResource.Id, org, user);
+                if (presenterMedia == null)
+                    return InvokeResult<VideoAssemblyPreparationResult>.FromError(
+                        $"Could not find Trexel presenter video '{presenterBlock.MediaResource.Id}'.");
+
+                if (!presenterMedia.Width.HasValue || presenterMedia.Width.Value <= 0 ||
+                    !presenterMedia.Height.HasValue || presenterMedia.Height.Value <= 0)
+                    return InvokeResult<VideoAssemblyPreparationResult>.FromError(
+                        "The Trexel presenter video must have valid cropped width and height metadata to assemble.");
+
+                TrexelPresenterLayout.Apply(presenterBlock, presenterMedia.Width.Value, presenterMedia.Height.Value);
+                _adminLogger.Trace(
+                    $"{this.Tag()} [TREXEL PRESENTER FIT] CompositionId={composition.Id}, Source={presenterMedia.Width}x{presenterMedia.Height}, Scale={presenterBlock.PresenterScale}, PositionX={presenterBlock.PresenterPositionX}, PositionY={presenterBlock.PresenterPositionY}");
+            }
+
             var disclosureError = TrexelVideoDisclosurePolicy.Validate(effectiveComposition);
             if (!String.IsNullOrWhiteSpace(disclosureError))
                 return InvokeResult<VideoAssemblyPreparationResult>.FromError(disclosureError);
