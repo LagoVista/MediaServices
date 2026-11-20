@@ -362,7 +362,11 @@ namespace LagoVista.MediaServices.Managers
 
             publication.ProviderAssetId = videoOutput.ExternalId;
             publication.ProviderUri = videoOutput.ExternalUri;
-            publication.ExternalUrl = videoOutput.ExternalUri;
+            // The session stored the full Vimeo link, including any unlisted
+            // privacy hash. Never replace it with the callback's /videos/{id} URI.
+            if (String.IsNullOrWhiteSpace(publication.ExternalUrl) ||
+                !publication.ExternalUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                publication.ExternalUrl = videoOutput.ExternalUri;
             publication.ContentSha256 = videoOutput.Sha256;
             publication.Status = EntityHeader<MediaExternalAssetStatus>.Create(MediaExternalAssetStatus.Ready);
             publication.ReadyUtc = String.IsNullOrWhiteSpace(callback.TimestampUtc) ? UtcTimestamp.Now.Value : callback.TimestampUtc;
@@ -395,6 +399,19 @@ namespace LagoVista.MediaServices.Managers
             var mediaResource = await _mediaServicesRepo.GetMediaResourceRecordAsync(mediaResourceId);
             if (mediaResource == null) return;
 
+            // Preserve prior completed publications. Mark only the current
+            // Vimeo upload attempt as failed when a provider asset was created.
+            var pendingPublication = mediaResource.ExternalAssets?.FirstOrDefault(asset =>
+                asset.Provider?.Value == MediaExternalAssetProvider.Vimeo &&
+                asset.Purpose?.Value == MediaExternalAssetPurpose.Publication &&
+                asset.Status?.Value == MediaExternalAssetStatus.Pending &&
+                String.Equals(asset.ProviderAssetId, composition.VimeoVideoId, StringComparison.OrdinalIgnoreCase));
+            if (pendingPublication != null)
+            {
+                pendingPublication.Status = EntityHeader<MediaExternalAssetStatus>.Create(MediaExternalAssetStatus.Failed);
+                pendingPublication.ErrorMessage = errorMessage;
+                pendingPublication.LastStatusCheckUtc = callbackTimestamp;
+            }
             mediaResource.Status = EntityHeader<MediaResourceStatus>.Create(MediaResourceStatus.Failed);
             mediaResource.LastUpdatedDate = UtcTimestamp.Now;
             mediaResource.LastUpdatedBy = composition.LastUpdatedBy ?? composition.CreatedBy;
