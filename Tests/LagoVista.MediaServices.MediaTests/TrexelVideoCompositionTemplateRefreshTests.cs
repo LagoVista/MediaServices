@@ -312,9 +312,9 @@ namespace LagoVista.MediaServices.MediaTests
                 .CompositionLabels.First().Text = "New template opening";
 
             Assert.IsNull(TrexelVideoCompositionTemplateRefresh.ApplySelectedTemplate(composition, template));
-            Assert.AreEqual(template.Id, composition.SourceCompositionTemplate.Id);
+            Assert.AreEqual(template.Id.Value, composition.SourceCompositionTemplate.Id);
             Assert.AreEqual(9, composition.SourceCompositionTemplateVersion);
-            Assert.AreEqual("A17E0000000000000000000000000099", composition.Id);
+            Assert.AreEqual("A17E0000000000000000000000000099", composition.Id.Value);
             Assert.AreEqual("New template opening",
                 composition.Blocks.Single(x => x.Role == VideoCompositionBlockRole.Intro).CompositionLabels.First().Text);
             presenter = composition.Blocks.Single(x => x.Role == VideoCompositionBlockRole.Content);
