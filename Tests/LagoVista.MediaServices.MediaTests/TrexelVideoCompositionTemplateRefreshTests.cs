@@ -102,6 +102,127 @@ namespace LagoVista.MediaServices.MediaTests
             Assert.AreEqual(originalHash, composition.CalculateCurrentInputSha256());
         }
 
+        [TestMethod]
+        public void RefreshPreservesOnlyCompositionOwnedSupportingGraphic()
+        {
+            var composition = MakeComposition();
+            var presenter = composition.Blocks.Single(b => b.Role == VideoCompositionBlockRole.Content);
+            presenter.OverlayImages.Add(new VideoCompositionBlockImage
+            {
+                Id = TrexelVideoCompositionTemplateRefresh.SupportingGraphicOverlaySlot,
+                MediaResource = EntityHeader.Create("A17E0000000000000000000000000601", "Task graphic"),
+                Scale = 1,
+                PositionX = 0.5,
+                PositionY = 0.5,
+                DelaySeconds = 16,
+                VisibleDurationSeconds = 5,
+                FadeInSeconds = 0.5,
+                FadeOutSeconds = 0.5
+            });
+            presenter.OverlayImages.Add(new VideoCompositionBlockImage
+            {
+                Id = "A17E0000000000000000000000000602",
+                MediaResource = EntityHeader.Create("A17E0000000000000000000000000603", "Stale local art")
+            });
+
+            var master = MakeTemplate();
+            master.Blocks.Single(b => b.Role == VideoCompositionBlockRole.Content)
+                .OverlayImages.Add(new VideoCompositionBlockImage
+                {
+                    Id = "A17E0000000000000000000000000604",
+                    MediaResource = EntityHeader.Create("A17E0000000000000000000000000605", "Master artwork")
+                });
+
+            Assert.IsNull(TrexelVideoCompositionTemplateRefresh.Apply(composition, master));
+            presenter = composition.Blocks.Single(b => b.Role == VideoCompositionBlockRole.Content);
+            Assert.AreEqual(2, presenter.OverlayImages.Count, "Keep one master image and one Trexel-owned graphic.");
+            Assert.IsTrue(presenter.OverlayImages.Any(i => i.MediaResource?.Text == "Master artwork"));
+            Assert.IsFalse(presenter.OverlayImages.Any(i => i.MediaResource?.Text == "Stale local art"));
+
+            var graphic = presenter.OverlayImages.Single(i =>
+                i.Id == TrexelVideoCompositionTemplateRefresh.SupportingGraphicOverlaySlot);
+            Assert.AreEqual("Task graphic", graphic.MediaResource.Text);
+            Assert.AreEqual(16d, graphic.DelaySeconds);
+            Assert.AreEqual(5d, graphic.VisibleDurationSeconds.Value);
+            Assert.AreEqual(0.5d, graphic.FadeInSeconds);
+        }
+
+        [TestMethod]
+        public void RebuildingAgainDoesNotDuplicateTrexelGraphic()
+        {
+            var composition = MakeComposition();
+            var presenter = composition.Blocks.Single(b => b.Role == VideoCompositionBlockRole.Content);
+            presenter.OverlayImages.Add(new VideoCompositionBlockImage
+            {
+                Id = TrexelVideoCompositionTemplateRefresh.SupportingGraphicOverlaySlot,
+                MediaResource = EntityHeader.Create("A17E0000000000000000000000000601", "Task graphic"),
+                Scale = 1,
+                VisibleDurationSeconds = 5
+            });
+
+            var template = MakeTemplate();
+            Assert.IsNull(TrexelVideoCompositionTemplateRefresh.Apply(composition, template));
+            Assert.IsNull(TrexelVideoCompositionTemplateRefresh.Apply(composition, template));
+            Assert.AreEqual(1, composition.Blocks.Single(b => b.Role == VideoCompositionBlockRole.Content)
+                .OverlayImages.Count(i => i.Id == TrexelVideoCompositionTemplateRefresh.SupportingGraphicOverlaySlot));
+        }
+
+        [TestMethod]
+        public void ResolvedPresenterTemplateKeepsMasterArtworkAndTrexelGraphic()
+        {
+            // Assembly uses a separate live block template. Its artwork is
+            // authoritative, while only the Trexel-specific graphic is overlaid.
+            var fromComposition = new VideoCompositionBlock
+            {
+                Role = VideoCompositionBlockRole.Content,
+                OverlayImages = new List<VideoCompositionBlockImage>
+                {
+                    new VideoCompositionBlockImage
+                    {
+                        Id = TrexelVideoCompositionTemplateRefresh.SupportingGraphicOverlaySlot,
+                        MediaResource = EntityHeader.Create("A17E0000000000000000000000000601", "Task graphic"),
+                        Scale = 1,
+                        VisibleDurationSeconds = 5
+                    }
+                }
+            };
+            var resolved = new VideoCompositionBlock
+            {
+                Role = VideoCompositionBlockRole.Content,
+                OverlayImages = new List<VideoCompositionBlockImage>
+                {
+                    new VideoCompositionBlockImage
+                    {
+                        Id = "A17E0000000000000000000000000604",
+                        MediaResource = EntityHeader.Create("A17E0000000000000000000000000605", "Master artwork")
+                    }
+                }
+            };
+
+            TrexelVideoCompositionTemplateRefresh.OverlaySupportingGraphic(resolved, fromComposition);
+            TrexelVideoCompositionTemplateRefresh.OverlaySupportingGraphic(resolved, fromComposition);
+            Assert.AreEqual(2, resolved.OverlayImages.Count);
+            Assert.IsTrue(resolved.OverlayImages.Any(i => i.MediaResource?.Text == "Master artwork"));
+            Assert.IsTrue(resolved.OverlayImages.Any(i => i.MediaResource?.Text == "Task graphic"));
+        }
+
+        [TestMethod]
+        public void RefreshWithoutGraphicLeavesPresentersMasterOverlaysUnchanged()
+        {
+            var composition = MakeComposition();
+            var template = MakeTemplate();
+            template.Blocks.Single(b => b.Role == VideoCompositionBlockRole.Content)
+                .OverlayImages.Add(new VideoCompositionBlockImage
+                {
+                    Id = "A17E0000000000000000000000000604",
+                    MediaResource = EntityHeader.Create("A17E0000000000000000000000000605", "Master artwork")
+                });
+            Assert.IsNull(TrexelVideoCompositionTemplateRefresh.Apply(composition, template));
+            var images = composition.Blocks.Single(b => b.Role == VideoCompositionBlockRole.Content).OverlayImages;
+            Assert.AreEqual(1, images.Count);
+            Assert.AreEqual("Master artwork", images.Single().MediaResource.Text);
+        }
+
         private static VideoComposition MakeComposition()
         {
             return new VideoComposition
