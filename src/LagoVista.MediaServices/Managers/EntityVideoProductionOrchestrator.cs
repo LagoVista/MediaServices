@@ -15,7 +15,9 @@ namespace LagoVista.MediaServices.Managers
     {
         private const double CompositionCanvasWidth = 1920.0;
         private const double CompositionCanvasHeight = 1080.0;
-        private const double PresenterHeightRatio = 2.0 / 3.0;
+        // Size the cropped transparent presenter to 80% of the canvas height,
+        // leaving 20% headroom when anchored to the bottom.
+        private const double PresenterHeightRatio = 0.80;
 
         private readonly IEntityVideoCompositionManager _entityCompositionManager;
         private readonly IVideoCompositionTemplateManager _templateManager;
