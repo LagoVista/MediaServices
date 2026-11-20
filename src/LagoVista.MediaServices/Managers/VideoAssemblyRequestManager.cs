@@ -28,6 +28,7 @@ namespace LagoVista.MediaServices.Managers
         private readonly IVideoCompositionBlockTemplateManager _blockTemplateManager;
         private readonly IVideoCompositionTemplateManager _compositionTemplateManager;
         private readonly IMediaServicesManager _mediaServicesManager;
+        private readonly IMediaServicesRepo _mediaServicesRepo;
         private readonly IVideoAssemblyMediaSourceResolver _mediaSourceResolver;
         private readonly IVideoProcessorStorageUrlService _videoProcessorStorageUrlService;
         private readonly IVideoProcessorRequestStore _videoProcessorRequestStore;
@@ -42,7 +43,7 @@ namespace LagoVista.MediaServices.Managers
         private readonly ICacheProvider _cacheProvider;
         private readonly IMediaLibraryRepo _mediaLibraryRepo;
 
-        public VideoAssemblyRequestManager(IVideoCompositionRepo videoCompositionRepo, IMediaServicesManager mediaServicesManager, IVideoAssemblyMediaSourceResolver mediaSourceResolver, 
+        public VideoAssemblyRequestManager(IVideoCompositionRepo videoCompositionRepo, IMediaServicesManager mediaServicesManager, IMediaServicesRepo mediaServicesRepo, IVideoAssemblyMediaSourceResolver mediaSourceResolver, 
             IVideoProcessorStorageUrlService videoProcessorStorageUrlService, IVideoProcessorRequestStore videoProcessorRequestStore, IVideoProcessorCallbackRegistrationStore videoProcessorCallbackRegistrationStore, 
             IVideoProcessorLauncher videoProcessorLauncher, IVimeoVideoService vimeoVideoService, IOrganizationLoaderRepo organizationLoaderRepo, ISecureStorage secureStorage, 
             IMediaLibraryRepo mediaLibraryRepo, ICacheProvider cacheProvider, IVideoCompositionBlockTemplateManager blockTemplateManager,
@@ -52,6 +53,7 @@ namespace LagoVista.MediaServices.Managers
             _blockTemplateManager = blockTemplateManager ?? throw new ArgumentNullException(nameof(blockTemplateManager));
             _compositionTemplateManager = compositionTemplateManager ?? throw new ArgumentNullException(nameof(compositionTemplateManager));
             _mediaServicesManager = mediaServicesManager ?? throw new ArgumentNullException(nameof(mediaServicesManager));
+            _mediaServicesRepo = mediaServicesRepo ?? throw new ArgumentNullException(nameof(mediaServicesRepo));
             _mediaSourceResolver = mediaSourceResolver ?? throw new ArgumentNullException(nameof(mediaSourceResolver));
             _videoProcessorStorageUrlService = videoProcessorStorageUrlService ?? throw new ArgumentNullException(nameof(videoProcessorStorageUrlService));
             _videoProcessorRequestStore = videoProcessorRequestStore ?? throw new ArgumentNullException(nameof(videoProcessorRequestStore));
@@ -717,6 +719,15 @@ namespace LagoVista.MediaServices.Managers
             if (composition.OwnerOrganization == null || !String.Equals(composition.OwnerOrganization.Id, registration.OrganizationId, StringComparison.OrdinalIgnoreCase)) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError("The video composition does not belong to the registered organization.");
             if (composition.PublishedVideoMediaResource == null || !String.Equals(composition.PublishedVideoMediaResource.Id, registration.MediaResourceId, StringComparison.OrdinalIgnoreCase)) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError("The registered Vimeo media resource does not match the composition publishing resource.");
 
+            // This operation is authenticated by the short-lived processor token above, not
+            // by an interactive user's claims. Resolve the exact registered resource through
+            // the internal repository after confirming its tenant ownership, before contacting
+            // Vimeo (so an invalid resource cannot leave an orphaned Vimeo upload).
+            var publishingResourceResult = await GetRegisteredVimeoPublishingResourceAsync(_mediaServicesRepo, composition, registration);
+            if (!publishingResourceResult.Successful)
+                return publishingResourceResult.ToInvokeResult<VideoAssemblyVimeoSessionResponse>();
+            var publishedMediaResource = publishingResourceResult.Result;
+
             var organization = await _organizationLoaderRepo.GetOrganizationAsync(registration.OrganizationId);
             if (organization == null) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError($"Could not load organization '{registration.OrganizationId}'.");
             if (!organization.VimeoEnabled) return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError("Vimeo publishing is not enabled for this organization.");
@@ -746,12 +757,6 @@ namespace LagoVista.MediaServices.Managers
             // Retain a publication entry for each Vimeo upload, including its full
             // provider link (unlisted Vimeo URLs can include a private hash).
             // The completion callback promotes this pending entry to Ready.
-            var publishedMediaResource = await _mediaServicesManager.GetMediaResourceRecordAsync(
-                composition.PublishedVideoMediaResource.Id, composition.OwnerOrganization, user);
-            if (publishedMediaResource == null)
-                return InvokeResult<VideoAssemblyVimeoSessionResponse>.FromError(
-                    "The composition publishing media resource is unavailable.");
-
             publishedMediaResource.ExternalAssets = publishedMediaResource.ExternalAssets ?? new List<MediaExternalAsset>();
             if (!publishedMediaResource.ExternalAssets.Any(asset =>
                 asset.Provider?.Value == MediaExternalAssetProvider.Vimeo &&
@@ -770,9 +775,7 @@ namespace LagoVista.MediaServices.Managers
                 });
                 publishedMediaResource.LastUpdatedDate = UtcTimestamp.Now;
                 publishedMediaResource.LastUpdatedBy = user;
-                var updated = await _mediaServicesManager.UpdateMediaResourceRecordAsync(
-                    publishedMediaResource, composition.OwnerOrganization, user);
-                if (!updated.Successful) return updated.ToInvokeResult<VideoAssemblyVimeoSessionResponse>();
+                await _mediaServicesRepo.UpdateMediaResourceRecordAsync(publishedMediaResource);
             }
 
             composition.VimeoVideoUri = videoUri;
@@ -803,6 +806,29 @@ namespace LagoVista.MediaServices.Managers
                 VideoUri = videoUri,
                 VideoId = videoId
             });
+        }
+
+        // This helper is only used after the job token, registration expiry, request/attempt,
+        // production and composition ownership have been validated by the session endpoint.
+        // Never use an unscoped repository read as a replacement for ordinary user authorization.
+        private static async Task<InvokeResult<MediaResource>> GetRegisteredVimeoPublishingResourceAsync(
+            IMediaServicesRepo mediaServicesRepo, VideoComposition composition, VideoProcessorCallbackRegistration registration)
+        {
+            if (registration == null || String.IsNullOrWhiteSpace(registration.OrganizationId) ||
+                composition?.OwnerOrganization?.Id == null ||
+                !String.Equals(composition.OwnerOrganization.Id, registration.OrganizationId, StringComparison.OrdinalIgnoreCase))
+                return InvokeResult<MediaResource>.FromError("The video composition does not belong to the registered organization.");
+
+            if (String.IsNullOrWhiteSpace(registration.MediaResourceId) ||
+                !String.Equals(composition.PublishedVideoMediaResource?.Id, registration.MediaResourceId, StringComparison.OrdinalIgnoreCase))
+                return InvokeResult<MediaResource>.FromError("The registered Vimeo media resource does not match the composition publishing resource.");
+
+            var mediaResource = await mediaServicesRepo.GetMediaResourceRecordAsync(registration.MediaResourceId);
+            if (mediaResource == null || mediaResource.OwnerOrganization == null ||
+                !String.Equals(mediaResource.OwnerOrganization.Id, registration.OrganizationId, StringComparison.OrdinalIgnoreCase))
+                return InvokeResult<MediaResource>.FromError("The composition publishing media resource is unavailable or does not belong to the registered organization.");
+
+            return InvokeResult<MediaResource>.Create(mediaResource);
         }
 
         private async Task<InvokeResult> RefreshTrexelTemplateAsync(VideoComposition composition, EntityHeader org, EntityHeader user)
