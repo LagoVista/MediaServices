@@ -14,6 +14,30 @@ namespace LagoVista.MediaServices.Managers
     /// </summary>
     public static class TrexelVideoCompositionTemplateRefresh
     {
+        // Stable semantic slot: a Trexel-specific image overlaid mid-presenter.
+        // It belongs to the composition, not the master scene template.
+        public const string SupportingGraphicOverlaySlot = "A17E0000000000000000000000000201";
+
+        /// <summary>
+        /// Apply only the supporting graphic owned by this Trexel composition.
+        /// All other artwork/overlays continue to come from the current master.
+        /// Also used after live presenter block-template resolution at assembly time.
+        /// </summary>
+        public static void OverlaySupportingGraphic(VideoCompositionBlock target, VideoCompositionBlock existing)
+        {
+            if (target == null || existing == null) return;
+
+            var graphic = existing.OverlayImages?.FirstOrDefault(image =>
+                image != null && String.Equals(image.Id, SupportingGraphicOverlaySlot, StringComparison.OrdinalIgnoreCase));
+            if (graphic == null) return;
+
+            target.OverlayImages = target.OverlayImages ?? new List<VideoCompositionBlockImage>();
+            target.OverlayImages.RemoveAll(image => image != null &&
+                String.Equals(image.Id, SupportingGraphicOverlaySlot, StringComparison.OrdinalIgnoreCase));
+            target.OverlayImages.Add(JsonConvert.DeserializeObject<VideoCompositionBlockImage>(
+                JsonConvert.SerializeObject(graphic)));
+        }
+
         public static string Apply(VideoComposition composition, VideoCompositionTemplate template)
         {
             if (!TrexelVideoDisclosurePolicy.AppliesTo(composition))
@@ -52,6 +76,7 @@ namespace LagoVista.MediaServices.Managers
             newContent.MediaResourceFileName = currentContent.MediaResourceFileName;
             newContent.MediaResourceMimeType = currentContent.MediaResourceMimeType;
             newContent.ThumbnailUrl = currentContent.ThumbnailUrl;
+            OverlaySupportingGraphic(newContent, currentContent);
             // Presenter duration is media-specific, not a global template setting.
             if (currentContent.DurationSeconds.HasValue && currentContent.DurationSeconds.Value > 0)
                 newContent.DurationSeconds = currentContent.DurationSeconds;
