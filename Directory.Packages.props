@@ -9,7 +9,7 @@
     <PackageVersion Include="LagoVista.Core.Configuration" Version="7.0.73" />
     <PackageVersion Include="LagoVista.Core.TestBase" Version="7.0.73" />
     <PackageVersion Include="LagoVista.IoT.Web.Common" Version="7.0.84" />
-    <PackageVersion Include="LagoVista.UserAdmin" Version="7.0.46" />
+    <PackageVersion Include="LagoVista.UserAdmin" Version="7.0.47" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.13" />
     <PackageVersion Include="Microsoft.Extensions.Http" Version="9.0.13" />
     <PackageVersion Include="ModelContextProtocol.Core" Version="2.3.0" />
