@@ -313,17 +313,40 @@ namespace LagoVista.MediaServices.Managers
             }
             else
             {
-                if (info.CompositionTemplate == null ||
-                    !String.Equals(info.CompositionTemplate.Id, template.Id, StringComparison.OrdinalIgnoreCase))
-                {
-                    return await FailAsync(progressRequest, "The entity is already bound to a different video composition template.", info.Composition, production.ToEntityHeader());
-                }
-
                 composition = await _compositionManager.GetVideoCompositionAsync(info.Composition.Id, org, user).ConfigureAwait(false);
                 if (composition == null)
                 {
                     return await FailAsync(progressRequest, $"Could not find bound video composition '{info.Composition.Id}'.", info.Composition, production.ToEntityHeader());
                 }
+
+                // Do not replace a composition while an assembly or Vimeo job
+                // is still writing its output/callback state.
+                var status = composition.Status?.Value;
+                if (status == VideoCompositionStatus.Preparing ||
+                    status == VideoCompositionStatus.Queued ||
+                    status == VideoCompositionStatus.Assembling ||
+                    status == VideoCompositionStatus.Uploading ||
+                    status == VideoCompositionStatus.ProcessingAtVimeo)
+                {
+                    return await FailAsync(progressRequest,
+                        "Wait for the current assembly or Vimeo publication to complete before regenerating the composition.",
+                        composition.ToEntityHeader(), production.ToEntityHeader());
+                }
+
+                // Rebuild from the newly selected master, not the old template.
+                // This keeps the existing composition identity, presenter video,
+                // supporting graphic, and prior assembled/published media records.
+                var refreshError = TrexelVideoCompositionTemplateRefresh.ApplySelectedTemplate(composition, template);
+                if (!String.IsNullOrWhiteSpace(refreshError))
+                {
+                    return await FailAsync(progressRequest, refreshError,
+                        composition.ToEntityHeader(), production.ToEntityHeader());
+                }
+
+                composition.IsReady = false;
+                composition.SetStatus(VideoCompositionStatus.Draft);
+                composition.AssemblyState.Message = "Template applied. Review the composition and reassemble to produce a new video.";
+                composition.ErrorMessage = null;
             }
 
             var contentBlocks = composition.Blocks?.Where(block => block.Role == VideoCompositionBlockRole.Content).ToList();
@@ -362,6 +385,8 @@ namespace LagoVista.MediaServices.Managers
             source = await _entityCompositionManager.GetSourceAsync(request.EntityType, request.EntityId, org, user, cancellationToken).ConfigureAwait(false);
             info = source?.Source.VideoCompositionInfo ?? new EntityVideoCompositionInfo();
             info.VideoProduction = production.ToEntityHeader();
+            info.CompositionTemplate = template.ToEntityHeader();
+            info.TemplateVersion = template.Version;
             info.ActiveRunId = request.RunId;
 
             var patchResult = await _entityCompositionManager.PatchVideoCompositionInfoAsync(request.EntityType, request.EntityId, info, org, user, cancellationToken).ConfigureAwait(false);
