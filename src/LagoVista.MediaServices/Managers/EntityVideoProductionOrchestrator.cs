@@ -13,12 +13,6 @@ namespace LagoVista.MediaServices.Managers
 {
     public class EntityVideoProductionOrchestrator : IEntityVideoProductionOrchestrator
     {
-        private const double CompositionCanvasWidth = 1920.0;
-        private const double CompositionCanvasHeight = 1080.0;
-        // Size the cropped transparent presenter to 80% of the canvas height,
-        // leaving 20% headroom when anchored to the bottom.
-        private const double PresenterHeightRatio = 0.80;
-
         private readonly IEntityVideoCompositionManager _entityCompositionManager;
         private readonly IVideoCompositionTemplateManager _templateManager;
         private readonly IVideoCompositionManager _compositionManager;
@@ -354,7 +348,7 @@ namespace LagoVista.MediaServices.Managers
             // Do not let a master template's placeholder duration trim or extend the clip.
             if (presenterMediaResource.DurationSeconds.HasValue && presenterMediaResource.DurationSeconds.Value > 0)
                 contentBlock.DurationSeconds = presenterMediaResource.DurationSeconds.Value;
-            ApplyDefaultPresenterLayout(contentBlock, presenterMediaResource.Width.Value, presenterMediaResource.Height.Value);
+            TrexelPresenterLayout.Apply(contentBlock, presenterMediaResource.Width.Value, presenterMediaResource.Height.Value);
             composition.NotificationRunId = request.RunId;
             composition.LastUpdatedBy = user;
             composition.LastUpdatedDate = UtcTimestamp.Now;
@@ -379,17 +373,6 @@ namespace LagoVista.MediaServices.Managers
             var workspace = CreateWorkspace(progressRequest, EntityVideoProductionStage.CompositionReady, "The three-block composition is ready for review and assembly.", composition, production);
             await PublishAsync(progressRequest, workspace.Stage, workspace.Message, workspace.Composition, workspace.VideoProduction);
             return InvokeResult<EntityVideoProductionWorkspace>.Create(workspace);
-        }
-
-        private static void ApplyDefaultPresenterLayout(VideoCompositionBlock contentBlock, int sourceWidth, int sourceHeight)
-        {
-            var targetHeight = CompositionCanvasHeight * PresenterHeightRatio;
-            var widthAtTargetHeight = targetHeight * sourceWidth / sourceHeight;
-            var presenterWidth = Math.Min(CompositionCanvasWidth, widthAtTargetHeight);
-
-            contentBlock.PresenterScale = presenterWidth / CompositionCanvasWidth;
-            contentBlock.PresenterPositionX = 0.5;
-            contentBlock.PresenterPositionY = 1.0;
         }
 
         private static void ApplyProductionSettings(
