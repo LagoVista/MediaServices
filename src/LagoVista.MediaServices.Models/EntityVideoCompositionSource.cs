@@ -19,6 +19,10 @@ namespace LagoVista.MediaServices.Models
 
         public EntityHeader VideoAvatar { get; set; }
 
+        // Requested Look for the next presenter production. Persisted separately from
+        // VideoProduction.VideoAvatarLookId so completed renders retain their source.
+        public string VideoAvatarLookId { get; set; }
+
         public EntityHeader VideoProduction { get; set; }
 
         public string ActiveRunId { get; set; }
